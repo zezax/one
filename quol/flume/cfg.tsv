@@ -1,0 +1,64 @@
+# settings
+set	tailer.bufsize	8192
+set	actor.debug	1
+set	rrd.debug	3
+set	rrd.interval	59.9
+set	mail.debug	3
+set	mail.sleep	9.9
+set	mail.interval	300
+set	mail.limit	100
+# auth.log
+scan	/var/log/auth.log	sshd.*Accepted password for	rrd	/var/log/attack.rrd	sshokpw	1
+scan	/var/log/auth.log	sshd.*Accepted publickey for	rrd	/var/log/attack.rrd	sshokpk	1
+scan	/var/log/auth.log	sshd.*Failed password for root	rrd	/var/log/attack.rrd	sshbadroot	1
+scan	/var/log/auth.log	sshd.*Failed password for invalid user	rrd	/var/log/attack.rrd	sshbadusr	1
+scan	/var/log/auth.log	sshd.*Failed password for	rrd	/var/log/attack.rrd	sshbadpw	1
+scan	/var/log/auth.log	sshd.*Connection closed by.*preauth	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Did not receive identification string	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Received disconnect from.*preauth	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Bad protocol	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Protocol	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Unable to negotiate	rrd	/var/log/attack.rrd	ssherr	1
+# mail.log
+scan	/var/log/mail.log	cyrus.*: login:	rrd	/var/log/attack.rrd	saslok	1
+scan	/var/log/mail.log	postgrey.*action=greylist	rrd	/var/log/spam.rrd	greyblock	1
+scan	/var/log/mail.log	postgrey.*action=pass	rrd	/var/log/spam.rrd	greyok	1
+scan	/var/log/mail.log	amavis.*Passed CLEAN	rrd	/var/log/spam.rrd	amvok	1
+scan	/var/log/mail.log	amavis.*Quarantined	rrd	/var/log/spam.rrd	amvquar	1
+scan	/var/log/mail.log	cyrus.*imaps TLS negotiation failed:	rrd	/var/log/attack.rrd	cyrerrtls	1
+scan	/var/log/mail.log	cyrus.*Connection reset by peer	rrd	/var/log/attack.rrd	cyrerr	1
+scan	/var/log/mail.log	cyrus.*Connection timed out	rrd	/var/log/attack.rrd	cyrerr	1
+scan	/var/log/mail.log	cyrus/lmtp.*: Delivered:	rrd	/var/log/spam.rrd	deliver	1
+scan	/var/log/mail.log	dmarc-recv.*exception	mail	name@example.com	ALERT	\*
+# external.log
+scan	/var/log/external.log	smtp.*status=sent	rrd	/var/log/spam.rrd	extsent	1
+scan	/var/log/external.log	smtpd.*: client=	rrd	/var/log/spam.rrd	extall	1
+scan	/var/log/external.log	smtpd.*lost connection	rrd	/var/log/attack.rrd	exterrconn	1
+scan	/var/log/external.log	smtpd.*does not resolve to address	rrd	/var/log/spam.rrd	extbaddns	1
+scan	/var/log/external.log	smtpd.*Helo.*Host not found	rrd	/var/log/spam.rrd	extbadhelo	1
+scan	/var/log/external.log	smtpd.*cannot find your hostname	rrd	/var/log/spam.rrd	extbadrev	1
+scan	/var/log/external.log	smtpd.*Sender.*Domain not found	rrd	/var/log/spam.rrd	extbadfrom	1
+scan	/var/log/external.log	smtpd.*blocked using zen.spamhaus.org	rrd	/var/log/spam.rrd	extrblzen	1
+scan	/var/log/external.log	smtpd.*blocked using bl.spamcop.net	rrd	/var/log/spam.rrd	extrblsc	1
+scan	/var/log/external.log	smtpd.*blocked using b.barracudacentral.org	rrd	/var/log/spam.rrd	extrblbc	1
+scan	/var/log/external.log	smtpd.*too many errors	rrd	/var/log/spam.rrd	exterrnum	1
+scan	/var/log/external.log	smtpd.*Relay access denied	rrd	/var/log/spam.rrd	extbadrelay	1
+scan	/var/log/external.log	smtpd.*User unknown in local recipient table	rrd	/var/log/spam.rrd	extbadusr	1
+# internal.log
+scan	/var/log/internal.log	lmtp.*status=sent	rrd	/var/log/spam.rrd	intsent	1
+scan	/var/log/internal.log	smtp.*status=deferred	rrd	/var/log/spam.rrd	intdefer	1
+scan	/var/log/internal.log	smtp.*status=bounced	rrd	/var/log/spam.rrd	intbounce	1
+scan	/var/log/internal.log	smtpd.*lost connection	rrd	/var/log/attack.rrd	interrconn	1
+scan	/var/log/internal.log	smtpd.*does not resolve to address	rrd	/var/log/spam.rrd	intbaddns	1
+scan	/var/log/internal.log	smtpd.*SSL_accept error	rrd	/var/log/attack.rrd	saslerr	1
+scan	/var/log/internal.log	smtpd.*SASL LOGIN authentication	rrd	/var/log/attack.rrd	saslbadlogin	1
+scan	/var/log/internal.log	smtpd.*SASL PLAIN authentication	rrd	/var/log/attack.rrd	saslbadplain	1
+scan	/var/log/internal.log	smtpd.*SASL authentication failure	rrd	/var/log/attack.rrd	saslbadauth	1
+scan	/var/log/internal.log	smtpd.*too many errors after	rrd	/var/log/spam.rrd	interrnum	1
+scan	/var/log/internal.log	smtpd.*non-SMTP command from	rrd	/var/log/attack.rrd	intbadsmtp	1
+# daemon.log
+scan	/var/log/daemon.log	sensord.*Sensor alarm	mail	name@example.com	ALERT	\*
+scan	/var/log/daemon.log	allsnap	mail	name@example.com	ALERT	\*
+scan	/var/log/daemon.log	DHCP	mail	name@example.com	DHCP	\*
+# apache
+scan	/var/log/apache2/access.log	/etc/passwd	rrd	/var/log/attack.rrd	wwwprobe

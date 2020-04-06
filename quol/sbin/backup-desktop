@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# TODO:
+# - system keychain and /var/db/SystemKey
+
+set -f
+
+EMAIL=name@example.com
+HOST=`hostname -s | tr 'A-Z' 'a-z'`
+LOG=/tmp/backup2.out
+date > $LOG
+
+RSYNC=/usr/bin/rsync
+RHOST=backupserver
+FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t --delete-during --delete-excluded --ignore-errors"
+
+
+backdir() { # <srcpath> <dstpath> <excludes>
+  xSRC=$1/
+  xDST=${RHOST}::$2/
+  xEXCL=$3
+  xCMD="$RSYNC $FLAGS $xEXCL $xSRC $xDST"
+  echo $xCMD >> $LOG
+  $xCMD >> $LOG 2>&1
+  xRES=$?
+  if [ $xRES -ne 0 -a $xRES -ne 23 -a $xRES -ne 24 ]; then
+    echo Failed to back up ${HOST}:$xSRC $xRES \
+    | mail -s "BACKUP2 $HOST $xSRC" $EMAIL
+  fi
+  date >> $LOG
+}
+
+
+backdir $HOME backedup/$USER/${HOST}_home '--exclude=.Trash/ --exclude=/build/ --exclude=Caches/ --exclude=/Music/ --exclude=iTunes* --exclude=iPhoto*'
+
+backdir $HOME/Music nobackup/$USER/${HOST}_music ''
+backdir /Volumes/LargeDisk/$USER/Photos backedup/shared/${HOST}_photos ''
+backdir /Volumes/LargeDisk/ameyer/Scans backedup/shared/${HOST}_scans ''
+backdir /Volumes/MacintoshHD/Movies nobackup/$USER/${HOST}_movies ''

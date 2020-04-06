@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# run as root
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+RRD=/var/log/hdtemp.rrd
+VALS=N
+
+for X in a b c d e f g h i j k; do
+  ARY=($(smartctl -n standby -A /dev/sd${X} | grep '^19[04]'))
+  VALS="${VALS}:${ARY[9]}"
+done
+
+rrdtool update "${RRD}" "${VALS}"
+
+##### EOF #####

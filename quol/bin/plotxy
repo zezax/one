@@ -1,0 +1,621 @@
+#!/usr/bin/python
+#
+# Easy command-line front-end to Gnuplot.
+#
+# To do:
+# - Python 3
+#
+###############################################################################
+
+import sys
+import os
+import re
+import time
+import signal
+import struct
+import hashlib
+
+###############################################################################
+
+def usage():
+  m = '''Usage: plotxy [<options>] [<infile>]
+  -debug
+  -sleep
+  -nots
+  -nogrid
+  -dots
+  -lines
+  -impulses
+  -filled
+  -smooth
+  -title <str>
+  -key
+  -xlabel <str>
+  -xformat <str>
+  -xrange <#>:<#>
+  -ylabel <str>
+  -yformat <str>
+  -yrange <#>:<#>
+  -zlabel <str>
+  -zformat <str>
+  -zrange <#>:<#>
+  -log
+  -loglog
+  -out <path>
+  -dumb
+  -ps
+  -png
+  -svg
+  -notrans
+  -fontscale <num>
+  -size <WxH>      set output pixel size
+  -fbpost          short for -size 470x394
+  -fbcom           short for -size 260x210
+  -col <spec>      set columns <#>[:<label>],<#>[:<label>]]...
+  -transpose
+  -sort <spec>
+  -inc <regex>     include only lines matching
+  -exc <regex>     exclude lines matching
+  -3d
+  -pm3d
+  -image
+  -heatmap
+  -matrix
+  -colorbox
+  -cbrange <#>:<#>
+'''
+  print m
+
+
+def fmt(x):
+  if not x:
+    return '%g'
+  if x == 'sci':
+    return '%.1s%c'
+  if x == 'sci0':
+    return '%.0s%c'
+  if x == 'int':
+    return '%.0f'
+  if len(x) == 1:
+    return '%' + x
+  return '%g'
+
+###############################################################################
+
+class plotxy_t(object):
+
+  tmppfx = '/tmp/pxy'
+
+  sizere = re.compile(r'(\s|[xX,])+')
+  incre = re.compile(r'')
+  excre = re.compile(r'$.^')
+
+
+  def __init__(self):
+    self.suffix = '.out'
+    self.fontscale = 0.75
+    self.debug = False
+    self.sleep = False
+    self.timestamp = True
+    self.grid = True
+    self.smooth = False
+    self.trans = True
+    self.waitfor = True
+    self.tofile = False
+    self.threed = False
+    self.pm3d = False
+    self.image = False
+    self.matrix = False
+    self.transpose = False
+    self.sort = False
+    self.heatmap = False
+    self.colorbox = False
+    self.input = None
+    self.size = None
+    self.term = None
+    self.outfn = None
+    self.tmpfn = None
+    self.title = None
+    self.xlabel = None
+    self.xformat = None
+    self.xrange = None
+    self.xincr = 'autofreq'
+    self.ylabel = None
+    self.yformat = None
+    self.yrange = None
+    self.zlabel = None
+    self.zformat = None
+    self.zrange = None
+    self.cbrange = None
+    self.logscale = None
+    self.style = None
+    self.key = None
+    self.col = None
+    self.availterms = {}
+    self.data = []
+    self.rows = 0
+
+
+  def run(self):
+    try:
+      self.querygnuplot()
+      self.slurpinput()
+      self.fixopts()
+      head = self.buildhead()
+      self.doplot(head)
+    finally:
+      if self.tmpfn:
+        os.unlink(self.tmpfn)
+
+
+  def doplot(self, cmds):
+    if self.debug:
+      syscmd = 'cat'
+    else:
+      syscmd = 'gnuplot'
+
+    inrr, inww = os.pipe()
+    pid = os.fork()
+    if pid == 0:  # child
+      os.close(inww)
+      os.dup2(inrr, 0)   # stdin
+      os.close(inrr)
+      try:
+        os.execvp(syscmd, [syscmd])
+      except:
+        os._exit(1)
+
+    os.close(inrr)
+    pip = os.fdopen(inww, 'w')
+    pip.write(cmds)
+
+    if self.threed:
+      self.sendsplot(pip)
+    else:
+      self.sendplot(pip)
+
+    if not self.waitfor:
+      pip.write('exit\n')
+    pip.flush()
+
+    if self.waitfor and not self.debug:
+      if self.sleep:
+        time.sleep(0x7fffffff)
+      else:
+        raw_input('Press enter...')
+    pip.close()
+    os.waitpid(pid, 0)
+
+
+  def sendplot(self, pip):
+    cols, labels = self.arrangecolumns()
+
+    if self.smooth:
+      cstr = '"-" smooth csplines'
+    else:
+      cstr = '"-"'
+
+    if len(cols) <= 1:
+      pip.write('plot ' + cstr + '\n')
+      for x in cols[0]:
+        pip.write('%s\n' % x)
+      pip.write('e\n')
+    else:
+      cstr += ' title "%s"'
+      ary = [cstr % i for i in labels[1 : ]]
+      pip.write('plot ' + ', '.join(ary) + '\n')
+      czero = cols[0]
+      if self.transpose:
+        for col in cols[1 : ]:
+          for a, b in zip(czero, col):
+            pip.write('%s %s\n' % (b, a))
+          pip.write('e\n')
+      else:
+        for col in cols[1 : ]:
+          for a, b in zip(czero, col):
+            pip.write('%s %s\n' % (a, b))
+          pip.write('e\n')
+
+
+  def sendsplot(self, pip):
+    cols, labels = self.arrangecolumns()
+
+    if self.matrix:
+      cstr = 'splot "-"'
+      if self.pm3d:
+        cstr += ' with pm3d'
+      elif self.image:
+        cstr += ' with image'
+      pip.write(cstr + '\n')
+      if self.transpose:
+        for j, col in enumerate(cols):
+          for i, a in enumerate(col):
+            pip.write('%d %d %s\n' % (j, i, a))
+          pip.write('\n')
+      else:
+        for i in xrange(self.rows):
+          for j, col in enumerate(cols):
+            pip.write('%d %d %s\n' % (i, j, col[i]))
+          pip.write('\n')
+      #for i in xrange(self.rows):
+      #  pip.write('# row %d\n' % i)
+      #  for col in cols:
+      #    pip.write(col[i] + '\n')
+      #for j, col in enumerate(cols):
+      #  pip.write('# col %d\n' % j)
+      #  for a in col:
+      #    pip.write(a + '\n')
+      #  pip.write('\n')
+      pip.write('e\n')
+    else:
+      raise RuntimeError, 'FIXME implement x,y,z splot'
+
+
+  def arrangecolumns(self):
+    if self.col:
+      cols = []
+      labels = []
+      for x in self.col.split(','):
+        if '..' in x:  # range slice
+          beg, end = x.split('..', 1)
+          for i in xrange(int(beg), int(end) + 1):
+            cols.append(self.data[i - 1])
+            labels.append(str(i))
+        else:
+          exp = x.split(':', 1)  # named labels
+          i = int(exp[0])
+          if i <= 0:
+            cols.append(range(self.rows))  # col zero is sequence number
+          else:
+            cols.append(self.data[i - 1])
+          if len(exp) > 1:
+            labels.append(exp[1])
+          else:
+            labels.append(str(i))
+    else:
+      cols = self.data
+      labels = range(1, len(cols) + 1)
+    return (cols, labels)
+
+
+  def buildhead(self):
+    b = ''
+    if self.threed:
+      b += 'set tics border nomirror out\n'
+      b += 'set ticslevel 0\n'
+      b += 'set hidden3d\n'
+    else:
+      b += 'set xtics border nomirror out %s\n' % self.xincr
+      b += 'set ytics border nomirror out autofreq\n'
+      b += 'set tics back\n'
+      b += 'set border back\n'
+
+    if self.timestamp:
+      b += 'set timestamp "%m/%d/%Y %H:%M:%S" rotate\n'
+    if self.grid:
+      b += 'set grid\n'
+    if self.key:
+      b += 'set key right top opaque box\n'
+    else:
+      b += 'unset key\n'
+    if not self.colorbox:
+      b += 'unset colorbox\n'
+    if self.title:
+      b += 'set title "%s"\n' % self.title
+    if self.xlabel:
+      b += 'set xlabel "%s"\n' % self.xlabel
+    if self.ylabel:
+      b += 'set ylabel "%s"\n' % self.ylabel
+    if self.zlabel:
+      b += 'set zlabel "%s"\n' % self.zlabel
+    if self.xformat:
+      b += 'set format x "%s"\n' % self.xformat
+    if self.yformat:
+      b += 'set format y "%s"\n' % self.yformat
+    if self.zformat:
+      b += 'set format z "%s"\n' % self.zformat
+      b += 'set format cb "%s"\n' % self.zformat
+    if self.xrange:
+      b += 'set xrange [%s]\n' % self.xrange
+    if self.yrange:
+      b += 'set yrange [%s]\n' % self.yrange
+    if self.zrange:
+      b += 'set zrange [%s]\n' % self.zrange
+    if self.cbrange:
+      b += 'set cbrange [%s]\n' % self.cbrange
+    if self.logscale:
+      b += 'set logscale %s\n' % self.logscale
+    if self.style:
+      b += 'set style data %s\n' % self.style
+    if self.pm3d or self.image:
+      b += 'set palette model HSV functions (gray+1)/2, gray**1.5, 1-gray/3\n'
+      b += 'set cbrange [0:50000]\n'
+    if self.heatmap:
+      b += 'set view map\n'
+      b += 'set tmargin at screen 0.9\n'
+      b += 'set bmargin at screen 0.14\n'
+      b += 'set lmargin at screen 0.1\n'
+      if self.colorbox:
+        b += 'set rmargin at screen 0.84\n'
+      else:
+        b += 'set rmargin at screen 0.92\n'
+    b += self.buildterm()
+    return b
+
+
+  def buildterm(self):
+    t = self.term
+    if not t:
+      return ''
+    s = 'set terminal ' + t
+    if t.startswith('png'):
+      self.suffix = '.png'
+      if self.trans:
+        s += ' transparent'
+    if t == 'pngcairo':
+      if self.fontscale:
+        s += ' fontscale %f' % self.fontscale
+    if t == 'png':
+      s += ' truecolor font arial 10'
+    if t == 'svg':
+      if self.fontscale:
+        s += ' fsize %.0f' % (self.fontscale * 12)
+    if t == 'dumb':
+      s += ' nofeed'
+    if self.size:
+      s += ' size ' + self.size
+    s += '\n'
+    if self.tofile:
+      if not self.outfn:
+        self.mktemp()
+      s += 'set output "%s"\n' % self.outfn
+    return s
+
+
+  def slurpinput(self):
+    cols = []
+    row = 0
+    while True:
+      lin = self.input.readline()
+      if not lin:
+        break
+      if self.excre.search(lin):
+        continue
+      if not self.incre.search(lin):
+        continue
+      exp = lin.strip().split()
+      n = len(exp)
+      while len(cols) < n:
+        cols.append([0.0] * row)
+      for i in xrange(n):
+        cols[i].append(exp[i])
+      row += 1
+    if not cols:
+      cols = [[0.0]]
+    if self.sort:
+      for s in self.sort.split(','):
+        exp = s.split(':', 1)
+        i = int(exp[0]) - 1
+        if (len(exp) > 1) and (exp[1] == 'r'):
+          cols[i].sort(reverse = True, key = lambda x: float(x))
+        else:
+          cols[i].sort(key = lambda x: float(x))
+    self.data = cols
+    self.rows = row
+
+
+  def fixopts(self):
+    if self.size:
+      self.size = self.sizere.sub(', ', self.size.strip())
+      if not self.term:
+        self.term = 'x11'
+    if self.term == 'png':
+      if 'pngcairo' in self.availterms:
+        self.term = 'pngcairo'
+    if self.term:
+      if self.term != 'x11':
+        self.waitfor = False
+        self.tofile = (self.outfn is not None)
+
+
+  def querygnuplot(self):
+    os.environ['PAGER'] = 'cat'
+    pip = os.popen('gnuplot -e "set terminal"')
+    for lin in pip:
+      lin = lin.strip()
+      if (len(lin) == 0) or lin.endswith(':'):
+        continue
+      key, rest = lin.split(None, 1)
+      self.availterms[key] = True
+    pip.close()
+
+
+  def mktemp(self):
+    la = os.getloadavg()
+    bin = struct.pack("Hdddd", os.getpid(), time.time(), la[0], la[1], la[2])
+    kk = bin + ''.join(os.uname())
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    for i in xrange(100):
+      try:
+        ctx = hashlib.md5(kk + str(i))
+        tok = ctx.hexdigest()
+        pth = self.tmppfx + tok + self.suffix
+        fd = os.open(pth, flags, 0666)
+        os.close(fd)
+        self.tmpfn = pth
+        self.outfn = pth
+        return
+      except OSError:
+        pass
+    raise RuntimeError, 'cannot create temp file'
+
+
+  def dumptmp(self):
+    if self.tmpfn:
+      fil = open(self.tmpfn)
+      while True:
+        buf = fil.read(8192)
+        if not buf:
+          break
+        sys.stdout.write(buf)
+      fil.close()
+
+###############################################################################
+
+def parseargs(pxy, args):
+  pos = []
+  while args:
+    arg = args.pop(0)
+    if arg.startswith('-'):
+      if arg == '-debug':
+        pxy.debug = True
+      elif arg == '-sleep':
+        pxy.sleep = True
+      elif arg == '-nots':
+        pxy.timestamp = False
+      elif arg == '-nogrid':
+        pxy.grid = False
+
+      elif arg == '-dots':
+        pxy.style = 'dots'
+      elif arg == '-lines':
+        pxy.style = 'lines'
+      elif arg == '-impulses':
+        pxy.style = 'impulses'
+      elif arg == '-filled':
+        pxy.style = 'filledcurves x1'
+      elif arg == '-smooth':
+        pxy.smooth = True
+
+      elif arg == '-title':
+        pxy.title = args.pop(0)
+      elif arg == '-key':
+        pxy.key = True
+
+      elif arg == '-xlabel':
+        pxy.xlabel = args.pop(0)
+      elif arg == '-xformat':
+        pxy.xformat = fmt(args.pop(0))
+      elif arg == '-xrange':
+        pxy.xrange = args.pop(0)
+      elif arg == '-xincr':
+        pxy.xincr = args.pop(0)
+
+      elif arg == '-ylabel':
+        pxy.ylabel = args.pop(0)
+      elif arg == '-yformat':
+        pxy.yformat = fmt(args.pop(0))
+      elif arg == '-yrange':
+        pxy.yrange = args.pop(0)
+
+      elif arg == '-zlabel':
+        pxy.zlabel = args.pop(0)
+        pxy.threed = True
+      elif arg == '-zformat':
+        pxy.zformat = fmt(args.pop(0))
+        pxy.threed = True
+      elif arg == '-zrange':
+        pxy.zrange = args.pop(0)
+        pxy.threed = True
+
+      elif arg == '-log':
+        pxy.logscale = 'y'
+      elif arg == '-loglog':
+        pxy.logscale = 'xy'
+
+      elif arg == '-out':
+        pxy.outfn = args.pop(0)
+      elif arg == '-dumb':
+        pxy.term = 'dumb'
+      elif arg == '-ps':
+        pxy.term = 'postscript'
+      elif arg == '-png':
+        pxy.term = 'png'
+      elif arg == '-svg':
+        pxy.term = 'svg'
+      elif arg == '-notrans':
+        pxy.trans = False
+      elif arg == '-fontscale':
+        pxy.fontscale = float(args.pop(0))
+      elif arg == '-size':
+        pxy.size = args.pop(0)
+      elif arg == '-fbpost':
+        pxy.size = '470x394'
+      elif arg == '-fbcom':
+        pxy.size = '260x210'
+
+      elif arg == '-col':
+        pxy.col = args.pop(0)
+      elif arg == '-transpose':
+        pxy.transpose = True
+      elif arg == '-sort':
+        pxy.sort = args.pop(0)
+      elif arg == '-inc':
+        pxy.incre = re.compile(args.pop(0))
+      elif arg == '-exc':
+        pxy.excre = re.compile(args.pop(0))
+
+      elif arg == '-3d':
+        pxy.threed = True
+      elif arg == '-pm3d':
+        pxy.pm3d = True
+      elif arg == '-image':
+        pxy.image = True
+      elif arg == '-heatmap':
+        pxy.heatmap = True
+        pxy.threed = True
+      elif arg == '-matrix':
+        pxy.matrix = True
+        pxy.threed = True
+      elif arg == '-colorbox':
+        pxy.colorbox = True
+      elif arg == '-cbrange':
+        pxy.cbrange = args.pop(0)
+      else:
+        raise RuntimeError, 'unknown option ' + arg
+    else:
+      pos.append(arg)
+  return pos
+
+
+def main(args = None):
+  if args is None:
+    args = sys.argv[1 : ]
+
+  pxy = plotxy_t()
+
+  try:
+    pos = parseargs(pxy, args)
+    if pos:
+      pxy.input = open(pos.pop(0))
+    else:
+      pxy.input = sys.stdin
+      pxy.sleep = True
+    if pos:
+      raise RuntimeError, 'too many arguments'
+
+  except Exception, ex:
+    usage()
+    print ex
+    return 1
+
+  try:
+    pxy.run()
+  except KeyboardInterrupt:
+    raise
+  except Exception, ex:
+    print 'Error:', ex
+    raise  # for debugging
+    return 1
+
+  return 0
+
+
+if __name__ == "__main__":
+  sys.exit(main())
+
+###############################################################################
+# Local Variables:
+# mode: indented-text
+# indent-tabs-mode: nil
+# End:

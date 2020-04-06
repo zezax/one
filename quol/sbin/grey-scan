@@ -1,0 +1,81 @@
+#!/usr/bin/python3
+#
+# Scan postgrey's database to get metrics of effectiveness.  Run daily.
+#
+
+import sys
+import os
+import time
+import bsddb3
+import rrdtool
+
+class grey_t:
+
+  dir = '/var/lib/postgrey'
+  fn = 'postgrey.db'
+  rrdpath = '/var/log/greylist.rrd'
+  delay = 60
+  retry_window = 2 * 86400
+  max_age = 35 * 86400
+
+
+  def run(self):
+    now = int(time.time())
+    self.create(now)
+    self.scan(now)
+
+
+  def create(self, now):
+    try:
+      os.stat(self.rrdpath)
+      return
+    except FileNotFoundError:
+      pass
+    ago = now - (3 * 86400)
+    rrdtool.create(self.rrdpath,
+      '-b', str(ago),
+      '-s', '1d',
+      'DS:pass:GAUGE:2d:0:U',
+      'DS:block:GAUGE:2d:0:U',
+      'DS:pend:GAUGE:2d:0:U',
+      'RRA:AVERAGE:0.5:1d:20y')
+
+
+  def scan(self, now):
+    limit = now - self.retry_window
+    begin = limit - 86400
+
+    pth = self.dir + '/' + self.fn
+    db = bsddb3.btopen(pth)
+
+    passed = 0
+    blocked = 0
+    pending = 0
+
+    db = bsddb3.btopen(pth)
+    for tup in db.items():
+      times = tup[1].decode('ascii')
+      (first, last) = [int(x) for x in times.split(',')]
+      if first >= begin:
+        delta = last - first
+        if (delta > self.delay) and (delta < self.retry_window):
+          passed += 1
+        elif last < limit:
+          blocked += 1
+        else:
+          pending += 1
+
+    vals = '%d:%d:%d:%d' % (limit, passed, blocked, pending)
+    rrdtool.update(self.rrdpath, '-t', 'pass:block:pend', vals)
+
+###############################################################################
+
+def main():
+  gy = grey_t()
+  gy.run()
+  return 0
+
+
+sys.exit(main())
+
+##### EOF #####

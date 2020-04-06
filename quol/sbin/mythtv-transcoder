@@ -1,0 +1,440 @@
+#!/usr/bin/python
+#
+# Renders MythTV recordings into H.264 .mp4 files.
+#
+# Assumptions:
+# - MythTV running on Ubuntu Linux
+# - MythTV Python module
+# - HandBrakeCLI
+# - Installed in /usr/local/bin
+#
+#
+# see https://www.mythtv.org/wiki/Transcode_Mpeg2_to_H264
+#
+# TODO:
+# - verbosity
+# - fix duration
+
+import sys
+import os
+import re
+import time
+import datetime
+import subprocess
+
+import MythTV
+
+def usage():
+    m = """Usage: transcoder <options>
+  -jobid     <#>              %JOBID% within backend for automatic use
+  -chanid    <####>           specify channel id for manual use
+  -starttime <YYYYMMDDHHMMSS> specify program start time for manual use
+  -keepcomm                   keep commercials
+"""
+    sys.stdout.write(m)
+
+
+def nuke(path):
+    try:
+        os.unlink(path)
+        sys.stdout.write('deleted ' + path + '\n')
+    except OSError:
+        pass
+
+###############################################################################
+
+class Transcoder(object):
+
+    def __init__(self):
+        self.logger = Logger()
+        self.mm = MythMisc(self.logger)
+        self.hb = HandBrake(self.logger)
+        self.jobid = None
+        self.chanid = None
+        self.starttime = None
+        self.cutComm = True
+        self.mdb = None
+        self.job = None
+        self.rec = None
+        self.dir = '/tmp'  # failsafe
+        self.origPath = None
+        self.curPath = None
+        self.base = None
+        self.deletePaths = {}
+
+
+    def setStartTime(self, s):
+        utc = datetime.datetime.strptime(s, '%Y%m%d%H%M%S')
+        tz = datetime.timedelta(seconds = time.timezone)
+        self.starttime = utc - tz
+
+
+    def checkArgs(self):
+        if self.jobid and self.chanid and self.starttime:
+            raise RuntimeError('jobid incompatible with chanid & starttime')
+        if not self.jobid:
+            if not self.chanid:
+                if not self.starttime:
+                    raise RuntimeError(
+                        'must specify jobid or chanid & starttime')
+                raise RuntimeError, 'no jobid or chanid supplied'
+            if not self.starttime:
+                raise RuntimeError, 'no jobid or starttime supplied'
+
+
+    def run(self):
+        try:
+            self.initJob()
+            self.getRecorded()
+            self.cutCommercials()
+            self.makeSmaller()
+            self.replaceRecorded()
+        except BaseException as ex:
+            self.logger.error(str(ex))
+            self.cleanup()
+            raise
+        self.cleanup()
+
+
+    def initJob(self):
+        self.mdb = MythTV.MythDB()
+        if self.jobid:
+          self.job = MythTV.Job(self.jobid, db = self.mdb)
+          self.chanid = self.job.chanid
+          self.starttime = self.job.starttime
+          self.logger.setJob(self.job)
+
+
+    def getRecorded(self):
+        rec = MythTV.Recorded((self.chanid, self.starttime), db = self.mdb)
+        sg = next(self.mdb.getStorageGroup(rec.storagegroup, rec.hostname))
+        pth = os.path.join(sg.dirname, rec.basename)
+        self.rec = rec
+        self.dir = sg.dirname
+        self.origPath = pth
+        self.curPath = pth
+        self.base = rec.basename.rsplit('.', 1)[0]
+
+
+    def cutCommercials(self):
+        if not self.cutComm:
+            return
+        self.waitCommFlag()
+        outPath = os.path.join(self.dir, self.base) + '.cut'
+        self.mm.copySkipToCut(self.rec.chanid, self.rec.starttime)
+        self.nukeLater(outPath)
+        self.nukeLater(outPath + '.map')
+        try:
+            self.mm.transcribe(self.rec.chanid, self.rec.starttime, outPath)
+        finally:
+            self.mm.clearCutList(self.rec.chanid, self.rec.starttime)
+        self.curPath = outPath
+
+
+    def makeSmaller(self):
+        outPath = os.path.join(self.dir, self.base) + '.mp4'
+        try:
+            self.hb.recode(self.curPath, outPath)
+        except:
+            self.nukeNow(outPath)
+            raise
+        self.curPath = outPath
+
+
+    def replaceRecorded(self):
+        self.logger.comment('replacing stream data')
+        newSize = os.path.getsize(self.curPath)
+        pct = int(newSize * 100.0 / self.rec.filesize)
+        self.rec.basename = os.path.basename(self.curPath)
+        self.rec.filesize = newSize
+        self.rec.transcoded = 1
+        self.rec.seek.clean()
+        self.rec.markup.clean()  # FIXME: ok?
+        self.rec.update()
+        self.nukeLater(self.origPath)
+        self.nukeLaterPat(self.dir, self.base, '.png')
+        self.mm.buildSeekTable(self.rec.chanid, self.rec.starttime)
+        if self.cutComm:
+            self.mm.clearSkipList(self.rec.chanid, self.rec.starttime)
+        self.logger.finish('transcode done, %d%% the size' % pct)
+
+
+    def waitCommFlag(self):
+        if not self.rec.commflagged:
+            self.logger.comment('no commercial scanning')
+            return
+        t0 = time.time()
+        go = True
+        while go:
+            ary = self.mdb.searchJobs(chanid = self.rec.chanid,
+                                      starttime = self.rec.starttime)
+            for a in ary:
+                if (a.type == a.COMMFLAG) and (a.status == a.RUNNING):
+                    delta = int(time.time() - t0)
+                    msg = 'waited %d secs for commercial flagging' % delta
+                    self.logger.pause(msg)
+                    time.sleep(10.0)
+                    break
+            go = False
+        self.logger.comment('commercial flagging complete')
+
+
+    def nukeLater(self, path):
+        self.deletePaths[path] = True
+
+
+    def nukeLaterPat(self, dir, base, ext):
+        for ent in os.listdir(dir):
+            if ent.startswith(base) and ent.endswith(ext):
+                self.nukeLater(os.path.join(dir, ent))
+
+
+    def nukeNow(self, path):
+        nuke(path)
+        try:
+            del self.deletePaths[path]
+        except KeyError:
+            pass
+
+
+    def cleanup(self):
+        for path in self.deletePaths.keys():
+            nuke(path)
+        self.deleteList = {}
+
+###############################################################################
+
+class Logger(object):
+
+    UNKNOWN = 0
+    QUEUED = 1
+    PENDING = 2
+    RUNNING = 4
+    PAUSED = 6
+    FINISHED = 272
+    ERRORED = 304
+
+    def __init__(self):
+        self.job = None
+        self.verbose = 1  # FIXME
+
+
+    def setJob(self, job):
+        self.job = job
+
+
+    def reset(self, name):
+        self.name = name
+        self.oldVal = -1
+
+
+    def progress(self, numer, denom):
+        if denom:
+            val = int(numer * 100.0 / denom)
+            msg = self.name + ' ' + str(val) + '%'
+        else:
+            val = int(numer)
+            msg = self.name + ' ' + str(val)
+        if (val != self.oldVal):
+            self.oldVal = val
+            self.log(self.RUNNING, msg)
+
+
+    def comment(self, msg):
+        self.log(self.RUNNING, msg)
+
+
+    def pause(self, msg):
+        self.log(self.PAUSED, msg)
+
+
+    def finish(self, msg):
+        self.log(self.FINISHED, msg)
+
+
+    def error(self, msg):
+        self.log(self.ERRORED, msg)
+
+
+    def log(self, st, msg):
+        map = {'status': st, 'comment': msg}
+        self.push(map)
+
+
+    def push(self, map):
+        if self.job:
+            self.job.update(map)
+        if self.verbose > 0:
+            sys.stdout.write(map['comment'] + '\n')
+
+###############################################################################
+
+class Task(object):
+
+    def __init__(self, logger):
+        self.logger = logger
+        self.verbose = 1  # FIXME
+
+
+    def run(self, cmd, progRe, denom):
+        if self.verbose > 0:
+            sys.stdout.write(' '.join(cmd) + '\n')
+        po = subprocess.Popen(cmd, bufsize = 0,
+                              stdout = subprocess.PIPE,
+                              stderr = subprocess.STDOUT)
+        subprocess.call('renice +1 -p %d > /dev/null' % po.pid, shell = True)
+        subprocess.call('ionice -c 2 -n 5 -p %d' % po.pid, shell = True)
+        t0 = time.time()
+        while True:
+            buf = po.stdout.read(1024)
+            if not buf:
+                break
+            for lin in buf.split('\n'):
+                mat = progRe.search(lin)
+                if mat:
+                    if denom:
+                        self.logger.progress(float(mat.group(1)), denom)
+                    else:
+                        self.logger.progress(time.time() - t0, None)
+        return po.wait()
+
+
+class MythMisc(Task):
+
+    dir = '/usr/bin'
+    dummyRe = re.compile(r'(\d)')
+
+    def __init__(self, logger):
+        Task.__init__(self, logger)
+
+
+    def timeStr(self, starttime):
+        tz = datetime.timedelta(seconds = time.timezone)
+        adj = starttime + tz
+        return adj.strftime('%Y%m%d%H%M%S')
+
+
+    def preamble(self, prog, chanid, starttime):
+        cmd = [os.path.join(self.dir, prog)]
+        cmd.append('--chanid')
+        cmd.append(str(chanid))
+        cmd.append('--starttime')
+        cmd.append(self.timeStr(starttime))
+        return cmd
+
+
+    def copySkipToCut(self, chanid, starttime):
+        cmd = self.preamble('mythutil', chanid, starttime)
+        cmd.append('--gencutlist')
+        self.logger.reset('gen cutlist')
+        rc = self.run(cmd, self.dummyRe, None)
+        if rc:
+            raise RuntimeError('mythutil returned %d' % rc)
+
+
+    def clearCutList(self, chanid, starttime):
+        cmd = self.preamble('mythutil', chanid, starttime)
+        cmd.append('--clearcutlist')
+        self.logger.reset('clear cutlist')
+        rc = self.run(cmd, self.dummyRe, None)
+        if rc:
+            raise RuntimeError('mythutil returned %d' % rc)
+
+
+    def clearSkipList(self, chanid, starttime):
+        cmd = self.preamble('mythutil', chanid, starttime)
+        cmd.append('--clearskiplist')
+        self.logger.reset('clear skiplist')
+        rc = self.run(cmd, self.dummyRe, None)
+        if rc:
+            raise RuntimeError('mythutil returned %d' % rc)
+
+
+    def buildSeekTable(self, chanid, starttime):
+        cmd = self.preamble('mythcommflag', chanid, starttime)
+        cmd.append('--rebuild')
+        self.logger.reset('rebuild seektable')
+        rc = self.run(cmd, self.dummyRe, None)
+        if rc:
+            raise RuntimeError('mythcommflag returned %d' % rc)
+
+
+    def transcribe(self, chanid, starttime, outPath):
+        cmd = self.preamble('mythtranscode', chanid, starttime)
+        cmd.append('--mpeg2')
+        cmd.append('--honorcutlist')
+        cmd.append('--outfile')
+        cmd.append(outPath)
+        self.logger.reset('transcribe')
+        rc = self.run(cmd, self.dummyRe, None)
+        if rc:
+            raise RuntimeError('mythtranscode returned %d' % rc)
+
+
+class HandBrake(Task):
+
+    bin = '/usr/bin/HandBrakeCLI'
+    opts = ['--deinterlace', '--encoder', 'x264', '--quality', '22',
+            '--format', 'av_mp4', '--aencoder', 'copy']
+    pctRe = re.compile(r'Encoding:[^%]*\s(\d+[.]\d+)\s*%')
+
+    def __init__(self, logger):
+        Task.__init__(self, logger)
+
+
+    def recode(self, inPath, outPath):
+        cmd = [self.bin]
+        cmd.extend(self.opts)
+        cmd.append('--input')
+        cmd.append(inPath)
+        cmd.append('--output')
+        cmd.append(outPath)
+        self.logger.reset('encode h.264')
+        rc = self.run(cmd, self.pctRe, 100.0)
+        if rc:
+            raise RuntimeError('HandBrake returned %d' % rc)
+
+###############################################################################
+
+def main(args = None):
+    if args is None:
+        args = sys.argv[1 : ]
+
+    tc = Transcoder()
+
+    try:
+        while args and args[0].startswith('-'):
+            arg = args.pop(0)
+            if arg == '-jobid':
+                tc.jobid = int(args.pop(0))
+            elif arg == '-chanid':
+                tc.chanid = int(args.pop(0))
+            elif arg == '-starttime':
+                tc.setStartTime(args.pop(0))
+            elif arg == '-keepcomm':
+                tc.cutComm = False
+            else:
+                raise RuntimeError, 'unrecognized option: ' + arg
+        tc.checkArgs()
+    except BaseException as ex:
+        usage()
+        sys.stdout.write('\n%s\n' % ex)
+        return 1
+
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # unbuffer stdout
+
+    try:
+        tc.run()
+        return 0
+    except BaseException as ex:
+        sys.stdout.write('\n%s\n' % ex)
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
+# Local Variables:
+# mode: indented-text
+# indent-tabs-mode: nil
+# End:

@@ -1,0 +1,111 @@
+#!/usr/bin/python3
+
+import sys
+import re
+import subprocess
+import os.path
+
+title = 'Flume'
+webroot = '/var/www/vault.house'
+imgdir = 'flume'
+
+sys.argv.pop(0)
+
+times = [
+  ('daily',   '30h',  'HOUR:1:HOUR:4:HOUR:4:0:%H:00', '-S 3600'),
+  ('weekly',  '10d',  'HOUR:6:DAY:1:DAY:1:86400:%a', ''),
+  ('monthly', '40d',  'DAY:1:DAY:7:DAY:7:604800:%a %b %d', ''),
+  ('yearly',  '366d', 'MONTH:1:MONTH:1:MONTH:1:2635200:%b', '')
+]
+
+trubetskoyColors = [
+  '000000','e6194B','3cb44b','ffe119','4363d8',
+  'f58231','911eb4','42d4f4','f032e6','bfef45',
+  'fabebe','469990','e6beff','9A6324','fffac8',
+  '800000','aaffc3','808000','ffd8b1','000075','a9a9a9',
+]
+
+kellyColors = [
+  '000000','f3c300','875692','f38400','a1caf1',
+  'be0032','c2b280','848482','008856','e68fac',
+  '0067a5','f99379','604e97','f6a600','b3446c',
+  'dcd300','882d17','8db600','654522','e25822','2b3d26'
+]
+
+tatarizeColors = [
+  '000000','00ff00','0000ff','ff0000','01fffe','ffa6fe','ffdb66','006401',
+  '010067','95003a','007db5','ff00f6','ffeee8','774d00','90fb92','0076ff',
+  'd5ff00','ff937e','6a826c','ff029d','fe8900','7a4782','7e2dd2','85a900',
+  'ff0056','a42400','00ae7e','683d3b','bdc6ff','263400','bdd393','00b917',
+  '9e008e','001544','c28c9f','ff74a3','01d0ff','004754','e56ffe','788231',
+  '0e4ca1','91d0cb','be9970','968ae8','bb8800','43002c','deff74','00ffc6',
+  'ffe502','620e00','008f9c','98ff52','7544b1','b500ff','00ff78','ff6e41',
+  '005f39','6b6882','5fad4e','a75740','a5ffd2','ffb167','009bff','e85ebe'
+]
+
+allColors = [trubetskoyColors, kellyColors, tatarizeColors]
+
+dspat = re.compile(r'ds\[([0-9A-Za-z_]+)\]\.type')
+
+s = """#!/usr/bin/rrdcgi
+
+<html>
+<head>
+<title>%s</title>
+</head>
+<body>
+<h1>%s</h1>
+""" % (title, title)
+
+rrd2cols = {}
+for rrdpath in sys.argv:
+  cols = []
+  proc = subprocess.Popen(['rrdinfo', rrdpath],
+    stdout = subprocess.PIPE, encoding = 'ascii', close_fds = True)
+  for line in proc.stdout:
+    mat = dspat.match(line)
+    if mat:
+      cols.append(mat.group(1))
+  proc.wait(1.0)
+  if proc.returncode:
+    raise RuntimeError("rrdinfo failed")
+  rrd2cols[rrdpath] = cols
+
+for ttup in times:
+  tname = ttup[0]
+  tback = ttup[1]
+  taxis = ttup[2]
+  textra = ttup[3]
+  for (rrdpath, cols) in rrd2cols.items():
+    basename = os.path.splitext(os.path.basename(rrdpath))[0]
+    for colorAry in allColors:
+      if len(cols) <= len(colorAry):
+        break
+
+    s += "<p>\n"
+    s += ("<RRD::GRAPH %s/%s/%s-%s.png\n" %
+          (webroot, imgdir, tname, basename))
+    s += ("  --imginfo '<img src=/%s/%%s width=%%lu height=%%lu>'\n" %
+          imgdir)
+    s += "  -a PNG -h 200 -w 670 --lazy\n"
+    s += "  --grid-dash 1:3\n"
+    s += "  -t '%s %s'\n" % (tname, basename)
+    s += "  -x '%s'\n" % taxis
+    s += "  -l 0 -s -%s %s\n" % (tback, textra)
+
+    for dsname in cols:
+      s += "  DEF:%s=%s:%s:AVERAGE\n" % (dsname, rrdpath, dsname)
+    i = 0
+    for dsname in cols:
+      color = colorAry[i % len(colorAry)]
+      s += '  LINE1.5:%s#%s:"%s"\n' % (dsname, color, dsname)
+      i += 1
+    s = s.rstrip('\n')
+    s += ">\n</p>\n"
+
+s += """</body>
+</html>"""
+print(s)
+sys.exit(0)
+
+##### EOF #####

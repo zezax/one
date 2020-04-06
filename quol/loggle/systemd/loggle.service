@@ -1,0 +1,13 @@
+[Unit]
+Description=Log Watcher and Emailer
+After=local-fs.target network.target
+
+[Service]
+Environment=SUBJECT=LOGGLE
+EnvironmentFile=/etc/default/loggle
+ExecStart=/usr/local/sbin/loggle -fg $DAEMON_ARGS -e ${REGEX} -m ${EMAIL} -s ${SUBJECT}
+StandardOutput=file:/tmp/loggle.out
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target

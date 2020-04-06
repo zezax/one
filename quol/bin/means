@@ -1,0 +1,55 @@
+#!/usr/bin/python
+#
+# Calculate arithmetic, geometric, harmonic means, RMS, etc.
+#
+# To do:
+# - Python 3
+#
+
+import sys
+import math
+
+cnt = 0
+invsum = 0.0
+sum = 0.0
+prod = 1.0
+sqsum = 0.0
+sqrtsum = 0.0
+minval = None
+maxval = None
+
+while True:
+  line = sys.stdin.readline()
+  if not line:
+    break
+  val = float(line.strip())
+  cnt += 1
+  if val != 0.0:
+    invsum += 1.0 / val
+  sum += val
+  prod *= val
+  sqsum += val * val
+  sqrtsum += math.sqrt(val)
+  if (minval is None) or (val < minval):
+    minval = val
+  if (maxval is None) or (val > maxval):
+    maxval = val
+
+if invsum == 0.0:
+  harm = 0.0
+else:
+  harm = cnt / invsum
+arith = sum / cnt
+try:
+  geom = math.pow(prod, 1.0 / cnt)
+except:
+  geom = 0.0
+
+print "min        = %f" % minval
+print "max        = %f" % maxval
+print "sum        = %f" % sum
+print "arithmetic = %f" % arith
+print "geometric  = %f" % geom
+print "harmonic   = %f" % harm
+print "rootmeansq = %f" % math.sqrt(sqsum / cnt)
+print "sqrt       = %f" % math.pow(sqrtsum / cnt, 2.0)

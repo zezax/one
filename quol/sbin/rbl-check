@@ -1,0 +1,31 @@
+#!/bin/bash
+
+IP=12.34.56.78
+EMAIL=name@example.com
+RBLS="zen.spamhaus.org bl.spamcop.net b.barracudacentral.org \
+sbl.spamhaus.org xbl.spamhaus.org cbl.abuseat.org psbl.surriel.com \
+bl.score.senderscore.com dnsbl.sorbs.net spam.dnsbl.sorbs.net \
+bl.spameatingmonkey.net cbl.anti-spam.org.cn"
+
+rev() {
+  local IFS=.
+  xARY=($1)
+  echo ${xARY[3]}.${xARY[2]}.${xARY[1]}.${xARY[0]}
+}
+
+RIP=$(rev $IP)
+
+MSG=""
+
+for RBL in $RBLS; do
+    RES=$(host $RIP.$RBL | grep ' has address ')
+  if [ -n "$RES" ]; then
+    MSG="$MSG $RBL"  
+  fi
+done
+
+if [ -n "$MSG" ]; then
+  echo $MSG | mailx -s "RBL ALERT" $EMAIL
+fi
+
+##### EOF #####

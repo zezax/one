@@ -1,0 +1,304 @@
+#!/usr/bin/python
+#
+# Histogram utility.
+#
+# To do:
+# - Python 3
+#
+###############################################################################
+
+import sys
+import os
+import re
+import math
+
+###############################################################################
+
+def usage():
+  m = '''Usage: hist [<options>] [<file>]
+  -width <num>  width of histogram buckets
+  -col <num>    column of input to process (one-based)
+  -pat <regex>  filter for input
+  -min <num>    lowest value to consider
+  -max <num>    highest value to consider
+  -bar <int>    length of bars
+  -raw          output numbers, not bars, for plotting
+  -none         just print averages
+'''
+  print m
+
+
+def fmt(x):
+  s = '%f' % x
+  return s.rstrip('0').rstrip('.')
+
+###############################################################################
+
+class hist_t(object):
+
+  columns = 67
+
+  pattern = re.compile(r'')
+  numdotnumre = re.compile(r'(\d+([.]\d+)?)')
+  dotnumre = re.compile(r'([.]\d+)')
+
+
+  def __init__(self):
+    self.input = None
+    self.raw = False
+    self.minval = 0.0
+    self.cutoff = 1e308
+    self.datacol = None
+    self.width = 1.0
+    self.buckets = []
+    self.underflow = 0
+    self.overflow = 0
+    self.samples = 0
+    self.sum = 0.0
+    self.sumsq = 0.0
+    self.sumsqrt = 0.0
+    self.prod = 1.0
+    self.invsum = 0.0
+    self.maxval = None
+    self.maxcount = None
+    self.mode = None
+    self.colmult = None
+
+
+  def run(self):
+    self.fillbuckets()
+    if self.samples > 0:
+      self.crunchbuckets()
+      self.printbuckets()
+
+
+  def fillbuckets(self):
+    rdln = self.input.readline
+    srch = self.pattern.search
+    factor = 1.0 / self.width
+    minval = self.minval
+    cutoff = self.cutoff
+    buckets = self.buckets
+
+    samples = 0
+    sum = 0.0
+    sumsq = 0.0
+    sumsqrt = 0.0
+    prod = 1.0
+    invsum = 0.0
+    maxval = 0.0
+    underflow = 0
+    overflow = 0
+
+    if self.datacol:
+      func = self.getcol
+    else:
+      func = self.getnum
+
+    while True:
+      lin = rdln()
+      if not lin:
+        break
+      if not srch(lin):
+        continue
+      val = func(lin)
+      if val is not None:
+         samples += 1
+         sum += val
+         sumsq += val * val
+         sumsqrt += math.sqrt(val)
+         if val != 0.0:
+           prod *= val
+           invsum += 1.0 / val
+         if val > maxval:
+           maxval = val
+         if val < minval:
+           underflow += 1
+         elif val > cutoff:
+           overflow += 1
+         else:
+           bin = int((val - minval) * factor)
+           while len(buckets) <= bin:
+             buckets.append(0)
+           buckets[bin] += 1
+
+    self.samples = samples
+    self.sum = sum
+    self.sumsq = sumsq
+    self.sumsqrt = sumsqrt
+    self.prod = prod
+    self.invsum = invsum
+    self.maxval = maxval
+    self.underflow = underflow
+    self.overflow = overflow
+
+
+  def crunchbuckets(self):
+    mode = 0.0  # FIXME
+    max = self.underflow
+    if self.overflow > max:
+      max = self.overflow
+
+    for i, val in enumerate(self.buckets):
+      if val > max:
+        max = val
+        mode = i
+
+    self.maxcount = max
+    self.mode = mode * self.width
+
+
+  def printbuckets(self):
+    samples = self.samples
+
+    if self.raw:
+      func = self.printraw
+    else:
+      func = self.printbar
+
+    if self.columns > 0:
+      self.colmult = float(self.columns)
+      if self.maxcount:
+        self.colmult /= self.maxcount
+
+      if not self.raw:
+        if self.underflow:
+          func('under', self.underflow)
+
+      label = self.minval
+      inc = self.width
+      for val in self.buckets:
+        func(label, val)
+        label += inc
+
+      if not self.raw:
+        if self.overflow:
+          func('over', self.overflow)
+
+    if not self.raw:
+      arith = self.sum / samples
+      meansq = self.sumsq / samples
+      var = meansq - (arith * arith)
+      stdev = math.sqrt(var)
+      rms = math.sqrt(self.sumsq / samples)
+      sqrt = math.pow(self.sumsqrt / samples, 2.0)
+      if self.invsum == 0.0:
+        harm = 0.0
+      else:
+        harm = samples / self.invsum
+      try:
+        geom = math.pow(self.prod, 1.0 / samples)
+      except:
+        geom = 0.0
+
+      print 'Samples    = %d' % samples
+      print 'Total      = %s' % fmt(self.sum)
+      print 'Max val    = %s' % fmt(self.maxval)
+      print 'Mode       = %s' % fmt(self.mode)
+      print 'Mode count = %d' % self.maxcount
+      print 'Arith mean = %s' % fmt(arith)
+      print 'Std dev    = %s' % fmt(stdev)
+      print 'Geom mean  = %s' % fmt(geom)
+      print 'Sqrt mean  = %s' % fmt(sqrt)
+      print 'Harm mean  = %s' % fmt(harm)
+      print 'RMS        = %s' % fmt(rms)
+
+
+  def getcol(self, lin):
+    idx = self.datacol
+    exp = lin.split(None, idx)
+    try:
+      return float(exp[idx - 1])
+    except ValueError:
+      return None
+
+
+  def getnum(self, lin):
+    mat = self.numdotnumre.search(lin)
+    if not mat:
+      mat = self.dotnumre.search(lin)
+    if mat:
+      return float(mat.group(1))
+    return None
+
+
+  def printraw(self, label, num):
+    if isinstance(label, str):
+      print label + '\t' + str(num)
+    else:
+      print '%f\t%f' % (label, num)
+
+
+  def printbar(self, label, num):
+    num = num * self.colmult
+    bar = '#' * int(num)
+    if not isinstance(label, str):
+      label = fmt(label)
+    print '%10s: %s' % (label, bar)
+
+###############################################################################
+
+def main(args = None):
+  if args is None:
+    args = sys.argv[1 : ]
+
+  hist = hist_t()
+  pos = []
+
+  try:
+    while args:
+      arg = args.pop(0)
+      if arg.startswith('-'):
+        if arg == '-raw':
+          hist.raw = True
+        elif arg == '-none':
+          hist.columns = 0
+        elif arg == '-bar':
+          hist.columns = int(args.pop(0))
+        elif arg == '-width':
+          hist.width = float(args.pop(0))
+        elif arg == '-min':
+          hist.minval = float(args.pop(0))
+        elif arg == '-max':
+          hist.cutoff = float(args.pop(0))
+        elif arg == '-col':
+          hist.datacol = int(args.pop(0))
+        elif arg == '-pat':
+          hist.pattern = re.compile(args.pop(0))
+        else:
+          raise RuntimeError, 'unknown option ' + arg
+      else:
+        pos.append(arg)
+
+    if pos:
+      hist.input = open(pos.pop(0))
+    else:
+      hist.input = sys.stdin
+    if pos:
+      raise RuntimeError, 'too many arguments'
+
+  except Exception, ex:
+    usage()
+    print ex
+    return 1
+
+  try:
+    hist.run()
+  except KeyboardInterrupt:
+    raise
+  except Exception, ex:
+    print 'Error:', ex
+    raise  # for debugging
+    return 1
+
+  return 0
+
+
+if __name__ == "__main__":
+  sys.exit(main())
+
+###############################################################################
+# Local Variables:
+# mode: indented-text
+# indent-tabs-mode: nil
+# End:

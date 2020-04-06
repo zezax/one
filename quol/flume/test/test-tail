@@ -1,0 +1,30 @@
+#!/bin/bash
+
+echo foo0 >> /tmp/$$.log
+
+/bin/echo -e "set\tactor.debug\t1" > /tmp/$$.cfg
+/bin/echo -e "scan\t/tmp/$$.log\t(?i)FOO\trrd\t/tmp/$$.rrd\tbar\t1" >> /tmp/$$.cfg
+../src/flume /tmp/$$.cfg &
+PID=$!
+
+sleep 1
+
+echo foo1 >> /tmp/$$.log
+sleep 11
+echo foo2 >> /tmp/$$.log
+sleep 1
+mv /tmp/$$.log /tmp/$$.bak
+echo foo3 >> /tmp/$$.log
+echo foo4 >> /tmp/$$.log
+
+sleep 11
+
+kill -INT $PID
+wait $PID
+
+rm -f /tmp/$$.cfg
+rm -f /tmp/$$.log
+rm -f /tmp/$$.bak
+rm -f /tmp/$$.rrd
+
+# EOF

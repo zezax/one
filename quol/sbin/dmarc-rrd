@@ -1,0 +1,109 @@
+#!/usr/bin/python3
+#
+# Takes output from dmarc-recv and updates RRD database.  Run daily.
+#
+
+import sys
+import os
+import rrdtool
+
+
+def usage():
+  m = '''Usage: dmarc-rrd [-c]'''
+  print(m)
+
+###############################################################################
+
+class dmarcRrdT:
+
+  keys = ['ok', 'forge', 'dkimerr', 'spferr']
+
+  def __init__(self):
+    self.reportPath = '/tmp/dmarc.out'
+    self.rrdPath = '/var/log/dmarc.rrd'
+    self.create = False
+
+
+  def run(self):
+    if self.create:
+      self.doCreate()
+    else:
+      self.doUpdate()
+      self.doTruncate()
+    return 0
+
+
+  def doUpdate(self):
+    tbl = {}
+    for key in self.keys:
+      tbl[key] = 0
+
+    try:
+      with open(self.reportPath) as fil:
+        for lin in fil:
+          (key, cnt, ts, ip, dom) = lin.strip().split()
+          tbl[key] = tbl.get(key, 0) + int(cnt)
+    except FileNotFoundError:
+      pass
+
+    tmpl = ''
+    vals = 'N'
+    for key, val in tbl.items():
+      tmpl += key + ':'
+      vals += ':%d' % val
+    tmpl = tmpl.rstrip(':')
+    rrdtool.update(self.rrdPath, '-t', tmpl, vals)
+
+
+  def doTruncate(self):
+    try:
+      os.truncate(self.reportPath, 0)
+    except FileNotFoundError:
+      pass
+
+
+  def doCreate(self):
+    args = [self.rrdPath, '--step', '1d']
+    for key in self.keys:
+      args.append('DS:%s:GAUGE:2d:0:U' % key)
+    args.append('RRA:AVERAGE:0.5:1d:20y')
+    rrdtool.create(*args)
+
+###############################################################################
+
+def main(args = None):
+  if args is None:
+    args = sys.argv[1:]
+
+  dm = dmarcRrdT()
+
+  try:
+    while args and args[0].startswith('-'):
+      arg = args.pop(0)
+      if arg == '-c':
+        dm.create = True
+      else:
+        raise RuntimeError('unknown option ' + arg)
+
+    if args:
+      raise RuntimeError('too many arguments')
+
+  except Exception as ex:
+    usage()
+    print(ex)
+    return 1
+  
+  res = dm.run()
+  if res < 0:
+    return 1
+  return 0
+
+
+if __name__ == '__main__':
+  sys.exit(main())
+
+###############################################################################
+# Local Variables:
+# mode: indented-text
+# indent-tabs-mode: nil
+# End:

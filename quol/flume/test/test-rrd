@@ -1,0 +1,41 @@
+#!/bin/bash
+
+RRD=/tmp/$$.rrd
+RT=/usr/bin/rrdtool
+
+$RT create $RRD --start 1500000000 --step 1s \
+DS:x:GAUGE:2m:0:U \
+DS:y:GAUGE:2m:0:U \
+RRA:AVERAGE:0.9999:1m:1h
+
+$RT update $RRD 1500000001:1:U
+$RT update $RRD 1500000002:1:U
+$RT update $RRD 1500000003:U:1
+$RT update $RRD 1500000004:U:1
+$RT update $RRD 1500000005:1:U
+$RT update $RRD 1500000006:U:1
+$RT update $RRD 1500000007:1:U
+$RT update $RRD 1500000008:U:1
+$RT update $RRD 1500000009:1:U
+$RT update $RRD 1500000010:U:1
+
+$RT update $RRD 1500000061:1:U
+$RT update $RRD 1500000062:1:U
+$RT update $RRD 1500000063:U:1
+$RT update $RRD 1500000064:U:1
+$RT update $RRD 1500000065:1:U
+$RT update $RRD 1500000066:1:U
+$RT update $RRD 1500000067:1:1
+$RT update $RRD 1500000068:U:1
+$RT update $RRD 1500000069:1:U
+$RT update $RRD 1500000070:U:1
+
+$RT update $RRD 1500000121:1:1
+
+$RT dump $RRD -n
+
+$RT fetch $RRD AVERAGE -a -s 1499999999 -e 1500000119
+
+rm -f $$.rrd
+
+# EOF

@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# Back up Cyrus mail spool using LVM snapshot and brief stop-start of Cyrus.
+# Run daily.
+#
+
+set -x
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+# cyrus backup script
+
+NOW=$(date '+%Y%m%d%H%M%S')
+
+SVC=cyrus-imapd.service
+VG=vg1
+LV=cyrus
+SNAP=cyrussnap$NOW
+DSTDIR=/data/cyrusback
+
+echo -n "Stopping $SVC "
+date '+%Y%m%d%H%M%S'
+systemctl stop $SVC
+echo -n "Creating snapshot $VG/$SNAP "
+date '+%Y%m%d%H%M%S'
+lvcreate -L 1g -n $SNAP --snapshot $VG/$LV
+echo -n "Starting $SVC "
+date '+%Y%m%d%H%M%S'
+systemctl start $SVC
+
+echo Reaping old backups
+cd $DSTDIR
+ls -t | grep -E '^cyrus.*[.]tgz' | tail -n +3 | xargs -r rm
+
+mkdir -p /mnt/$SNAP
+mount /dev/$VG/$SNAP /mnt/$SNAP
+
+echo -n "Creating archive $DSTDIR/cyrus.$NOW.tgz "
+date '+%Y%m%d%H%M%S'
+tar czf $DSTDIR/cyrus.$NOW.tgz /mnt/$SNAP
+
+echo Cleaning up $SNAP
+umount /mnt/$SNAP
+rmdir /mnt/$SNAP
+lvremove -y $VG/$SNAP
+
+echo -n "Finished "
+date '+%Y%m%d%H%M%S'
+
+##### EOF #####
