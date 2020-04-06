@@ -1,0 +1,210 @@
+#!/usr/bin/python
+#
+# 9/6/2013 - Initial version
+#
+# Insert/append a column to an rrd.
+#
+# To do:
+# - Python 3
+#
+
+import sys
+import os
+import re
+
+###############################################################################
+
+def usage():
+  m = '''Usage: rrd-add-col <options>
+  -n            no modification, dry run to stdout
+  -rrd <path>   path to rrd for input and output
+  -xml <path>   optional path for intermediate xml or - for stdout
+  -idx <num>    position at which to add new column, zero based (end)
+  -name <str>   name of new column to add
+  -type <str>   type of new column to add (GAUGE)
+  -minhb <num>  minimum heartbeat of new column (300)
+  -min <num>    minimum value of new column (0)
+  -max <num>    maximum value of new column (12000)'''
+  print m
+
+class cvt_t:
+
+  dsre = re.compile(r'^[ \t]*<ds>[ \t]*$')
+  dsendre = re.compile(r'Round Robin Archives')
+  cdpendre = re.compile(r'^[ \t]*</cdp_prep>[ \t]*$')
+  rowre = re.compile(r'<row><v>(.*)</v></row>')
+  rraendre = re.compile(r'^[ \t]*</rra>[ \t]*$')
+
+
+  def __init__(self):
+    self.nop = False
+    self.rrdpath = None
+    self.xmlpath = '/tmp/arc' + str(os.getpid()) + '.xml'
+    self.idx = -1
+    self.name = None
+    self.type = 'GAUGE'
+    self.minhb = 300
+    self.min = 0
+    self.max = 12000
+
+
+  def run(self):
+    if self.xmlpath == '-':
+      self.nop = True
+    self.dumpxform()
+    if not self.nop:
+      self.restore()
+
+
+  def dumpxform(self):
+    if self.nop:
+      out = sys.stdout
+    else:
+      out = open(self.xmlpath, 'w', 65536)
+    cmd = 'rrdtool dump %s' % self.rrdpath
+    inp = os.popen(cmd)
+
+    state = 0
+    dscnt = 0
+    didds = False
+    didcdp = False
+    delim = '</v><v>'
+    nan = ['NaN']
+    idx = self.idx
+    rowre = self.rowre
+    rraendre = self.rraendre
+
+    for line in inp:
+      if state == 0:
+        if self.dsre.search(line):
+          if dscnt == idx:
+            self.insertds(out)
+            didds = True
+          dscnt += 1
+        elif self.dsendre.search(line):
+          if not didds:
+            self.insertds(out)
+            idx = dscnt
+          state = 1
+          dscnt = 0
+      elif state == 1:
+        if self.dsre.search(line):
+          if dscnt == idx:
+            self.insertcdp(out)
+            didcdp = True
+          dscnt += 1
+        elif self.cdpendre.search(line):
+          if not didcdp:
+            self.insertcdp(out)
+          state = 2
+          dscnt = 0
+      else:
+        mat = rowre.search(line)
+        if mat:
+          prefix = line[0 : mat.start()]
+          ary = mat.group(1).split(delim)
+          ary[idx : idx] = nan
+          s = delim.join(ary)
+          line = prefix + '<row><v>' + s + '</v></row>\n'
+        elif rraendre.search(line):
+          state = 1
+          dscnt = 0
+      out.write(line)
+    inp.close()
+    out.close()
+
+
+  def restore(self):
+    cmd = None
+    bak = self.rrdpath + '.bak'
+    try:
+      os.stat(bak)
+    except Exception:
+      cmd = 'cp -p %s %s' % (self.rrdpath, bak)
+    if cmd:
+      os.system(cmd)
+
+    os.unlink(self.rrdpath)
+    cmd = 'rrdtool restore %s %s' % (self.xmlpath, self.rrdpath)
+    os.system(cmd)
+    os.unlink(self.xmlpath)
+
+
+  def insertds(self, out):
+    s = '''<ds>
+  <name>%s</name>
+  <type>%s</type>
+  <minimal_heartbeat>%d</minimal_heartbeat>
+  <min>%g</min>
+  <max>%g</max>
+  <last_ds>NaN</last_ds>
+  <value>NaN</value>
+  <unknown_sec>0</unknown_sec>
+</ds>
+''' % (self.name, self.type, self.minhb, self.min, self.max)
+    out.write(s)
+
+
+  def insertcdp(self, out):
+    s = '''<ds>
+  <primary_value>NaN</primary_value>
+  <secondary_value>NaN</secondary_value>
+  <value>NaN</value>
+  <unknown_datapoints>0</unknown_datapoints>
+</ds>
+'''
+    out.write(s)
+
+###############################################################################
+
+def main(args = None):
+  if args is None:
+    args = sys.argv[1:]
+
+  cvt = cvt_t()
+
+  try:
+    while args and args[0].startswith('-'):
+      arg = args.pop(0)
+      if arg == '-n':
+        cvt.nop = True
+      elif arg == '-rrd':
+        cvt.rrdpath = args.pop(0)
+      elif arg == '-xml':
+        cvt.xmlpath = args.pop(0)
+      elif arg == '-idx':
+        cvt.idx = int(args.pop(0))
+      elif arg == '-name':
+        cvt.name = args.pop(0)
+      elif arg == '-type':
+        cvt.type = args.pop(0).upper()
+      elif arg == '-minhb':
+        cvt.minhb = int(args.pop(0))
+      elif arg == '-min':
+        cvt.min = float(args.pop(0))
+      elif arg == '-max':
+        cvt.max = float(args.pop(0))
+      else:
+        raise RuntimeError, 'unknown option ' + arg
+    if not cvt.rrdpath:
+      raise RuntimeError, 'no -rrd specified'
+    if not cvt.name:
+      raise RuntimeError, 'no -name specified'
+  except StandardError, se:
+    usage()
+    print se
+    return 1
+
+  cvt.run()
+
+  return 0
+
+
+if __name__ == '__main__':
+  sys.exit(main())
+
+###############################################################################
+# Local Variables:
+# mode: indented-text
+# indent-tabs-mode: nil
+# End:

@@ -1,0 +1,29 @@
+#!/usr/bin/python3
+#
+# Put readings from a UPS unit into an RRD.  Run every minute.
+#
+
+import os
+import rrdtool
+
+upsname = 'myups'
+rrdpath = '/var/log/myups.rrd'
+keys = ('battery.charge', 'battery.runtime', 'battery.voltage',
+        'input.voltage', 'output.voltage', 'ups.load')
+
+tbl = {}
+cmd = 'upsc %s 2> /dev/null' % upsname
+f = os.popen(cmd)
+for lin in f:
+  (key, val) = lin.split(':', 1)
+  tbl[key] = val.strip()
+f.close()
+
+s = 'N'
+for key in keys:
+  val = tbl.get(key, '0')
+  s += ':' + val
+
+rrdtool.update(rrdpath, s)
+
+##### EOF #####

@@ -1,0 +1,8 @@
+quol
+
+The name of this project directory is quol, because it needed a name.  There
+is an obscure animal called the quoll, but I decided to drop the last L
+becasuse I'm lazy.
+
+The stuff in here is biased toward Debian using systemd.  There is a lot
+of RRD.

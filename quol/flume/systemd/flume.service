@@ -1,0 +1,11 @@
+[Unit]
+Description=Fast Log Unified Monitor and Emailer
+After=local-fs.target network.target
+
+[Service]
+ExecStart=/usr/local/sbin/flume /etc/flume.tsv
+StandardOutput=file:/tmp/flume.out
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target

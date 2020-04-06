@@ -1,0 +1,41 @@
+#!/usr/bin/python
+#
+# Given some IP addresses, calculates the smallest containing CIDR netblock.
+#
+# To do:
+# - Python 3
+#
+
+import sys
+import struct
+
+prev = 0
+mask = 0xffffffff
+
+while True:
+  line = sys.stdin.readline()
+  if not line:
+    break
+  try:
+    ary = map(int, line.strip().split("."))
+    while len(ary) < 4:
+      ary.append(0)
+    ip = reduce(lambda x, y: (x << 8) | y, ary)
+    if prev:
+      mask &= ~(prev ^ ip)
+    prev = ip
+  except:
+    pass
+
+i = 0
+bit = 0x80000000
+while bit:
+  if not mask & bit:
+    break
+  i += 1
+  bit >>= 1
+mask = ((1 << i) - 1) << (32 - i)
+
+bin = struct.pack("!I", ip & mask)
+ary = struct.unpack("!4B", bin)
+print "%d.%d.%d.%d/%d" % (ary[0], ary[1], ary[2], ary[3], i)

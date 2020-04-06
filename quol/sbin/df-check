@@ -1,0 +1,155 @@
+#!/usr/bin/python3
+#
+# Sends email about disks getting full.  Run nightly.
+# Needs no special privileges.
+#
+# Assumptions: Linux, Python 3, mailx.
+#
+
+import sys
+import os
+import math
+import subprocess
+
+
+def usage():
+  m = '''Usage: df-check [-n] [-t]'''
+  print(m)
+
+###############################################################################
+
+class dfcheck_t:
+
+  addr = 'name@example.com'
+  subject = 'DISK FULL ALERT'
+  filePct = 95
+  blockPct = 95
+  passGigs = 100
+  units = 'bkMGTPEZY'
+
+  def __init__(self):
+    self.header = None
+    self.msgs = []
+    self.sendmail = True
+    self.test = False
+    un = os.uname()
+    self.host = un.nodename
+
+
+  def run(self):
+    try:
+      overs = self.findOvers()
+      if self.msgs:
+        self.notify()
+    except Exception as ex:
+      print(ex)
+      return -1
+    return 0
+
+
+  def findOvers(self):
+    for part in self.getParts():
+      self.checkPart(part)
+
+
+  def notify(self):
+    msg = 'Host: %s\n\n' % self.host
+    if self.header:
+      msg += self.header + '\n'
+    msg += '\n'.join(self.msgs) + '\n'
+    if not self.sendmail:
+      print(msg)
+      return
+    subj = self.subject + ' ' + self.host
+    args = ['/usr/bin/mailx', '-s', subj, self.addr]
+    res = subprocess.Popen(args,
+      stdin = subprocess.PIPE,
+      stdout = subprocess.DEVNULL,
+      stderr = subprocess.DEVNULL)
+    res.stdin.write(msg.encode('utf-8'))
+    res.stdin.close()
+    res.wait()
+
+
+  def getParts(self):
+    rv = []
+    fil = open('/proc/mounts')
+    for lin in fil:
+      exp = lin.split()
+      if exp[0].startswith('/'):
+        rv.append(exp[1])
+    fil.close()
+    return rv
+
+
+  def checkPart(self, pth):
+    # do not match df output, because ordinary users can't use all 100%
+    rec = os.statvfs(pth)
+    bpct = math.ceil(100.0 * (rec.f_blocks - rec.f_bavail) / rec.f_blocks)
+    fpct = math.ceil(100.0 * (rec.f_files - rec.f_favail) / rec.f_files)
+    blkPerGig = 1024.0 * 1024.0 * 1024.0 / rec.f_bsize
+    availGigs = rec.f_bavail / blkPerGig
+
+    emit = self.test
+    if fpct >= self.filePct:
+      emit = True
+    elif (bpct >= self.blockPct) and (availGigs < self.passGigs):
+      emit = True
+
+    if emit:
+      val = self.fmt(rec.f_bavail, rec.f_bsize)
+      self.header =  'Block  Inode  BkAvail  Mountpoint'
+      msg = (':%3d%%   %3d%%  %s  %s' %
+             (bpct, fpct, val, pth))
+      self.msgs.append(msg)
+
+
+  def fmt(self, blocks, bsize):
+    bytes = float(blocks) * bsize
+    cnt = 0
+    while bytes > 1024.0:
+      cnt += 1
+      bytes /= 1024.0
+    return '%6.1f%c' % (bytes, self.units[cnt])
+
+###############################################################################
+
+def main(args = None):
+  if args is None:
+    args = sys.argv[1:]
+
+  dfc = dfcheck_t()
+
+  try:
+    while args and args[0].startswith('-'):
+      arg = args.pop(0)
+      if arg == '-n':
+        dfc.sendmail = False
+      elif arg == '-t':
+        dfc.test = True
+      else:
+        raise RuntimeError('unknown option ' + arg)
+
+    if args:
+      raise RuntimeError('too many arguments')
+
+  except Exception as ex:
+    usage()
+    print(ex)
+    return 1
+
+  res = dfc.run()
+  if res < 0:
+    return 1
+  return 0
+
+
+if __name__ == "__main__":
+  sys.exit(main())
+
+###############################################################################
+# Local Variables:
+# mode: indented-text
+# indent-tabs-mode: nil
+# End:
+    

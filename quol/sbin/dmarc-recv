@@ -1,0 +1,194 @@
+#!/usr/bin/python3
+#
+# Program to receive DMARC rua reports.  See also dmarc-rrd.
+#
+
+import sys
+import os
+import re
+import io
+import gzip
+import zipfile
+import syslog
+import email.parser
+import email.policy
+import defusedxml.ElementTree
+
+
+def usage():
+  m = '''Usage: dmarc-recv [-n]'''
+  print(m)
+
+###############################################################################
+
+class dmarcRecvT:
+
+  def __init__(self):
+    self.myIps = ['12.34.56.78']
+    self.reportFn = '/tmp/dmarc.out'
+    self.savePfx = '/tmp/dmarc.'
+    self.mimeRe = re.compile(r'application/(xml|g?zip)|text/xml$')
+    self.facility = syslog.LOG_MAIL
+    self.nop = False
+
+  def run(self):
+    os.umask(0o22)
+    syslog.openlog('dmarc-recv', 0, self.facility)
+    try:
+      self.parseEmail()
+      self.findZip()
+      self.unZip()
+      self.parseXml()
+      self.procRows()
+      self.saveXml()
+    except Exception as ex:
+      syslog.syslog(syslog.LOG_ERR,
+                    "exception: %s" % str(ex))
+      return -1
+    return 0
+
+
+  def parseEmail(self):
+    p = email.parser.BytesParser(policy = email.policy.default)
+    msg = p.parse(sys.stdin.buffer)
+    if not msg:
+      raise RuntimeError('Failed to parse email')
+    syslog.syslog(syslog.LOG_INFO,
+                  "%s %s" % (msg['from'], msg['subject']))
+    self.msg = msg
+
+
+  def findZip(self):
+    z = self.recurseZip(self.msg)
+    if not z:
+      raise RuntimeError('Failed to find zip')
+    self.zip = z
+    self.msg = None
+
+
+  def recurseZip(self, obj):
+    if obj:
+      ct = obj.get_content_type()
+      # syslog.syslog(syslog.LOG_INFO, "FIXME %s %s" % (self.msg['from'], ct))
+      if self.mimeRe.match(ct):
+        self.mime = ct
+        return obj.get_payload(decode = True)
+      for part in obj.iter_parts():
+        z = self.recurseZip(part)
+        if z:
+          return z
+    return None
+
+
+  def unZip(self):
+    if self.mime.endswith('/xml'):
+      self.xml = self.zip
+    else:
+      with io.BytesIO(self.zip) as bio:
+        if self.mime.endswith('/gzip'):
+          with gzip.open(bio) as gf:
+            xml = gf.read()
+            if not xml:
+              raise RuntimeError('Failed to gunzip xml')
+            self.xml = xml
+        elif self.mime.endswith('/zip'):
+          with zipfile.ZipFile(bio) as zf:
+            names = zf.namelist()
+            xml = zf.read(names[0])  # blindly grab first one
+            if not xml:
+              raise RuntimeError('Failed to unzip xml')
+            self.xml = xml
+        else:
+          raise RuntimeError('Unrecognized type ' + self.mime)
+    self.zip = None
+
+
+  def parseXml(self):
+    root = defusedxml.ElementTree.fromstring(self.xml)
+    beg = root.find('./report_metadata/date_range/begin')
+    end = root.find('./report_metadata/date_range/end')
+    dom = root.find('./policy_published/domain')
+    rows = root.findall('./record/row')
+    if not rows:
+      raise RuntimeError('No rows found in XML')
+    self.domain = dom.text
+    self.beginTime = int(beg.text)
+    self.endTime = int(end.text)
+    self.rows = rows
+
+
+  def procRows(self):
+    if self.nop:
+      for row in self.rows:
+        self.procRow(sys.stdout, row)
+    else:
+      with open(self.reportFn, 'a') as fil:
+        for row in self.rows:
+          self.procRow(fil, row)
+
+
+  def procRow(self, fil, row):
+    msgs = []
+    cnt = row.find('count').text
+    ip = row.find('source_ip').text
+    if ip in self.myIps:
+      dkim = row.find('policy_evaluated/dkim').text
+      spf = row.find('policy_evaluated/spf').text
+      if dkim != 'pass':
+      	msgs.append('dkimerr')
+      if spf != 'pass':
+      	msgs.append('spferr')
+      if not msgs:
+        msgs.append('ok')
+    else:
+      msgs.append('forge')
+    s = ''
+    for msg in msgs:
+      s += '%s %s %d %s %s\n' % (msg, cnt, self.endTime, ip, self.domain)
+    fil.write(s)
+
+
+  def saveXml(self):
+    if self.nop:
+      sys.stdout.buffer.write(self.xml)
+    else:
+      pth = self.savePfx + self.domain + '.xml'
+      with open(pth, 'wb') as fil:
+        fil.write(self.xml)
+
+###############################################################################
+
+def main(args = None):
+  if args is None:
+    args = sys.argv[1:]
+
+  dm = dmarcRecvT()
+
+  try:
+    while args and args[0].startswith('-'):
+      arg = args.pop(0)
+      if arg == '-n':
+        dm.nop = True
+      else:
+        raise RuntimeError('unknown option ' + arg)
+
+    if args:
+      raise RuntimeError('too many arguments')
+
+  except Exception as ex:
+    usage()
+    print(ex)
+    return 1
+
+  dm.run()
+  return 0  # always return zero to avoid generating bounces
+
+
+if __name__ == '__main__':
+  sys.exit(main())
+
+###############################################################################
+# Local Variables:
+# mode: indented-text
+# indent-tabs-mode: nil
+# End:

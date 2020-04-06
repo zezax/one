@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+
+if [ $# -ne 3 ]; then
+  echo 'Usage: mksnap <src> <dst> <keep>'
+  exit 1
+fi
+
+SRC=$1
+BKDIR=$2
+let KEEP=$3-1
+
+if [ $KEEP -lt 1 ]; then
+  echo need to keep more
+  exit 1
+fi
+
+NOW=`date +%Y%m%d%H%M%S`
+
+# clean up old snapshots
+mkdir -p $BKDIR
+cd $BKDIR
+rm -f latest
+ls -f | grep -E '^[0-9]{14}' | sort | head -n -$KEEP | xargs -r rm -r
+LATEST=`ls -f | grep -E '^[0-9]{14}' | sort | tail -n 1`
+cd /
+
+RSYNC="rsync -v -r -l -p -o -g -t --delete-during --delete-excluded"
+DST=$BKDIR/$NOW
+
+OPTS=""
+[ -n "$LATEST" ] && OPTS="--link-dest=$BKDIR/$LATEST"
+
+echo $RSYNC $OPTS $SRC/ $DST/
+$RSYNC $OPTS $SRC/ $DST/
+
+##### EOF #####

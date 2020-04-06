@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# Designed to be run once per minute.  Make sure the "dropbox" is set up
+# and running rsyncd in an appropriate way.  This works on MacOS and
+# probably other platforms with some tweaks.
+#
+
+RHOST=dropbox
+DOM=example.com
+PFX=/tmp/backup
+LOG=$PFX.out
+LOCK=$PFX.lock
+LAST=$PFX.last
+BEFORE=$PFX.cmp
+
+# make sure we're on the right network
+/sbin/ping -n -c 1 -o -q $RHOST.$DOM > /dev/null 2>&1 || exit 0
+
+# make sure we didn't just do a backup
+SIXAGO=`date -j -v-6H '+%Y%m%d%H%M.%S'`
+touch -t $SIXAGO $BEFORE
+test -f $LAST && test $LAST -nt $BEFORE && exit 0
+
+# only one backup can run at a time
+lockfile -l 86400 -r1 $LOCK 2> /dev/null || exit 0
+
+HOST=`hostname -s | tr 'A-Z' 'a-z'`
+RSYNC=/usr/bin/rsync
+FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t --delete-during --delete-excluded"
+
+backdir() { # <srcpath> <dstpath> <excludes>
+  xSRC=$1/
+  xDST=${RHOST}::$2/
+  xEXCL=$3
+  xCMD="$RSYNC $FLAGS $xEXCL $xSRC $xDST"
+  $xCMD >> $LOG 2>&1
+  date >> $LOG
+}
+
+date > $LOG
+backdir $HOME backedup/$USER/${HOST}_home '--exclude=.Trash/ --exclude=Caches/'
+
+touch $LAST
+
+rm -f $LOCK
+
+##### EOF #####

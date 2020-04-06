@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+CFG=/etc/flume.tsv
+DIR=/var/log
+RT=/usr/bin/rrdtool
+
+STEP=1m
+RRA="RRA:AVERAGE:0.5:1m:36h \
+RRA:AVERAGE:0.5:1h:10d \
+RRA:AVERAGE:0.5:1d:10y"
+
+for BASE in attack spam; do
+  RRD=$DIR/$BASE.rrd
+  CMD="$RT create $RRD --step $STEP"
+  COLS=$(cut -f 5,6 $CFG | grep $RRD | cut -f 2 | sort | uniq)
+  for COL in $COLS; do
+    CMD="$CMD DS:${COL}:COUNTER:2m:0:U"
+  done
+  CMD="$CMD $RRA"
+  rm -f $RRD
+  $CMD
+done
+
+##### EOF #####

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+MKS=/usr/local/sbin/mksnap
+LOG=/tmp/snap.out
+DAYS=30
+
+$MKS /etc /snapshot/etc $DAYS > $LOG 2>&1
+
+LIST=`find /backedup -mindepth 2 -maxdepth 2 -type d`
+for ENT in $LIST; do
+  SS=${ENT/backedup/snapshot}
+  $MKS $ENT $SS $DAYS > $LOG 2>&1
+  RES=$?
+  if [ $RES -ne 0 ]; then
+    logger -p daemon.err -t allsnap -- Failure on snapshot $SS $RES
+  fi
+done
+
+##### EOF #####

@@ -1,0 +1,102 @@
+#!/bin/bash
+#
+# Gets a wildcard certificate from Let's Encrypt (letsencrypt.org).
+# Run monthly.
+#
+# This script uses itself as the authenticator.
+#
+# Assumptions:
+# - Debian buster
+# - One cert for *.[domain] and [domain].
+# - Bind9 running on localhost
+# - DNS sub-zone for acme.[domain] set up for updates
+# - Update key in /etc/bind/acme.key
+# - CNAME for _acme-challenge.[domain] points to acme.[domain]
+# - Group called ssl-cert
+#
+# Requires package 'certbot' installed.  After install, do:
+#   rm /etc/cron.d/certbot
+#   systemctl disable certbot.timer
+#   systemctl stop certbot.timer
+#
+# In theory, this could be done without a subdomain, but I don't like
+# what dynamic DNS does to my zone files. So, I decided to localize the
+# mess to a tiny zone with no other purpose. It also lets me set the TTL
+# absurdly low without affecting real zones.
+#
+
+set -o noglob
+
+DOMAIN=example.com
+EMAIL=webmaster@$DOMAIN
+ZONE=acme.$DOMAIN
+ENTRY=_acme-challenge
+TTL=10
+DNSHOST=127.0.0.1
+DNSKEY=/etc/bind/acme.key
+GROUP=ssl-cert
+
+CB=/usr/bin/certbot
+# CBTEST="--staging"
+CBOPT="-n -q --manual --preferred-challenges dns --manual-auth-hook $0 --agree-tos --email $EMAIL --manual-public-ip-logging-ok --force-renewal"
+
+LOG=/tmp/newcert.log
+
+LEDIR=/etc/letsencrypt
+
+deletetxt() {
+  xFN=/tmp/newcert.$$.nsu
+  echo server $DNSHOST > $xFN
+  echo zone $ZONE >> $xFN
+  echo del $ENTRY.$ZONE TXT >> $xFN
+  echo send >> $xFN
+  cat $xFN
+  nsupdate -k $DNSKEY $xFN
+  /bin/rm $xFN
+  sleep $TTL
+}
+
+addtxt() {
+  xFN=/tmp/newcert.$$.nsu
+  echo server $DNSHOST > $xFN
+  echo zone $ZONE >> $xFN
+  echo add $ENTRY.$ZONE $TTL TXT \"$CERTBOT_VALIDATION\" >> $xFN
+  echo send >> $xFN
+  cat $xFN
+  nsupdate -k $DNSKEY $xFN
+  /bin/rm $xFN
+  sleep $TTL
+}
+
+fixperm() {
+  chown -R root:$GROUP $LEDIR/archive $LEDIR/live
+  chmod g+r $LEDIR/archive $LEDIR/live
+  find $LEDIR/archive -name 'privkey*.pem' | xargs -r chmod 640
+}
+
+if [ -z "$CERTBOT_VALIDATION" ]; then
+  # initial run
+  echo -n "initial run " > $LOG
+  date >> $LOG
+  deletetxt >> $LOG
+  echo $CB certonly $CBTEST $CBOPT -d $DOMAIN -d *.$DOMAIN >> $LOG
+  $CB certonly $CBTEST $CBOPT -d $DOMAIN -d *.$DOMAIN >> $LOG 2>&1
+  deletetxt >> $LOG
+  fixperm
+  echo -n "finished " >> $LOG
+  date >> $LOG
+  exit 0
+fi
+
+# authenticator
+echo -n "authenticator run " >> $LOG
+date >> $LOG
+echo domain $CERTBOT_DOMAIN >> $LOG
+echo token $CERTBOT_VALIDATION >> $LOG
+
+addtxt >> $LOG
+
+echo -n "authenticator exit " >> $LOG
+date >> $LOG
+
+##### EOF #####

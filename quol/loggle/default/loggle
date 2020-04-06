@@ -1,0 +1,8 @@
+# /etc/default/logwatch
+#
+# Set arguments:
+#   -i  case insensitive
+
+DAEMON_ARGS="-i"
+REGEX="sensor alarm"
+EMAIL="name@example.com"
