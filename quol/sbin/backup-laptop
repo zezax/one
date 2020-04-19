@@ -4,6 +4,9 @@
 # and running rsyncd in an appropriate way.  This works on MacOS and
 # probably other platforms with some tweaks.
 #
+# When running this on a mac, first grant Full Disk Access to:
+# /usr/sbin/cron, /bin/bash, /usr/bin/rsync, Terminal.app, and this script
+#
 
 RHOST=dropbox
 DOM=example.com
@@ -26,7 +29,7 @@ lockfile -l 86400 -r1 $LOCK 2> /dev/null || exit 0
 
 HOST=`hostname -s | tr 'A-Z' 'a-z'`
 RSYNC=/usr/bin/rsync
-FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t --delete-during --delete-excluded"
+FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t -S --delete-during --delete-excluded --max-delete=100"
 
 backdir() { # <srcpath> <dstpath> <excludes>
   xSRC=$1/
