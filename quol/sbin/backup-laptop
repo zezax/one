@@ -1,12 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Designed to be run once per minute.  Make sure the "dropbox" is set up
 # and running rsyncd in an appropriate way.  This works on MacOS and
 # probably other platforms with some tweaks.
 #
 # When running this on a mac, first grant Full Disk Access to:
-# /usr/sbin/cron, /bin/bash, /usr/bin/rsync, Terminal.app, and this script
+# /usr/sbin/cron, /bin/bash, /usr/bin/rsync, Terminal.app, and this script.
 #
+
+set -f
 
 RHOST=dropbox
 DOM=example.com
@@ -25,22 +27,23 @@ touch -t $SIXAGO $BEFORE
 test -f $LAST && test $LAST -nt $BEFORE && exit 0
 
 # only one backup can run at a time
-lockfile -l 86400 -r1 $LOCK 2> /dev/null || exit 0
+shlock -p $$ -f $LOCK || exit 0
 
 HOST=`hostname -s | tr 'A-Z' 'a-z'`
 RSYNC=/usr/bin/rsync
 FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t -S --delete-during --delete-excluded --max-delete=100"
+date > $LOG
 
 backdir() { # <srcpath> <dstpath> <excludes>
   xSRC=$1/
   xDST=${RHOST}::$2/
   xEXCL=$3
   xCMD="$RSYNC $FLAGS $xEXCL $xSRC $xDST"
+  echo $xCMD >> $LOG
   $xCMD >> $LOG 2>&1
   date >> $LOG
 }
 
-date > $LOG
 backdir $HOME backedup/$USER/${HOST}_home '--exclude=.Trash/ --exclude=Caches/'
 
 touch $LAST

@@ -1,22 +1,31 @@
 #!/bin/bash
-
-# If you run this on a mac, first grant Full Disk Access to:
-# /usr/sbin/cron, /bin/bash, /usr/bin/rsync, Terminal.app, and this script
-
+#
+# Designed to be run daily.  Make sure the "dropbox" is set up
+# and running rsyncd in an appropriate way.  This works on MacOS and
+# probably other platforms with some tweaks.
+#
+# When running this on a mac, first grant Full Disk Access to:
+# /usr/sbin/cron, /bin/bash, /usr/bin/rsync, Terminal.app, and this script.
+#
 # TODO:
 # - system keychain and /var/db/SystemKey
+#
 
 set -f
 
+RHOST=dropbox
 EMAIL=name@example.com
+PFX=/tmp/backup
+LOG=$PFX.out
+LOCK=$PFX.lock
+
+# only one backup can run at a time
+shlock -p $$ -f $LOCK || exit 0
+
 HOST=`hostname -s | tr 'A-Z' 'a-z'`
-LOG=/tmp/backup.out
-date > $LOG
-
 RSYNC=/usr/bin/rsync
-RHOST=backupserver
 FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t -S --delete-during --delete-excluded --max-delete=100 --ignore-errors"
-
+date > $LOG
 
 backdir() { # <srcpath> <dstpath> <excludes>
   xSRC=$1/
@@ -33,9 +42,12 @@ backdir() { # <srcpath> <dstpath> <excludes>
   date >> $LOG
 }
 
-
 backdir $HOME backedup/$USER/${HOST}_home '--exclude=.Trash/ --exclude=/build/ --exclude=Caches/ --exclude=/Music/ --exclude=iTunes* --exclude=iPhoto*'
 
 backdir $HOME/Music nobackup/$USER/${HOST}_music ''
 backdir /Volumes/LargeDisk/$USER/Photos backedup/shared/${HOST}_photos ''
 backdir /Volumes/LargeDisk/ameyer/Scans backedup/shared/${HOST}_scans ''
+
+rm -f $LOCK
+
+##### EOF #####
