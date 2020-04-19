@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# If you run this on a mac, first grant Full Disk Access to:
+# /usr/sbin/cron, /bin/bash, /usr/bin/rsync, Terminal.app, and this script
+
 # TODO:
 # - system keychain and /var/db/SystemKey
 
@@ -7,12 +10,12 @@ set -f
 
 EMAIL=name@example.com
 HOST=`hostname -s | tr 'A-Z' 'a-z'`
-LOG=/tmp/backup2.out
+LOG=/tmp/backup.out
 date > $LOG
 
 RSYNC=/usr/bin/rsync
 RHOST=backupserver
-FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t --delete-during --delete-excluded --ignore-errors"
+FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t -S --delete-during --delete-excluded --max-delete=100 --ignore-errors"
 
 
 backdir() { # <srcpath> <dstpath> <excludes>
@@ -25,7 +28,7 @@ backdir() { # <srcpath> <dstpath> <excludes>
   xRES=$?
   if [ $xRES -ne 0 -a $xRES -ne 23 -a $xRES -ne 24 ]; then
     echo Failed to back up ${HOST}:$xSRC $xRES \
-    | mail -s "BACKUP2 $HOST $xSRC" $EMAIL
+    | mail -s "BACKUP $HOST $xSRC" $EMAIL
   fi
   date >> $LOG
 }
@@ -36,4 +39,3 @@ backdir $HOME backedup/$USER/${HOST}_home '--exclude=.Trash/ --exclude=/build/ -
 backdir $HOME/Music nobackup/$USER/${HOST}_music ''
 backdir /Volumes/LargeDisk/$USER/Photos backedup/shared/${HOST}_photos ''
 backdir /Volumes/LargeDisk/ameyer/Scans backedup/shared/${HOST}_scans ''
-backdir /Volumes/MacintoshHD/Movies nobackup/$USER/${HOST}_movies ''
