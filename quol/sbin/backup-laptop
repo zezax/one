@@ -34,11 +34,11 @@ RSYNC=/usr/bin/rsync
 FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t -S --delete-during --delete-excluded --max-delete=100"
 date > $LOG
 
-backdir() { # <srcpath> <dstpath> <excludes>
+backdir() { # <srcpath> <dstpath> <flags>...
   xSRC=$1/
   xDST=${RHOST}::$2/
-  xEXCL=$3
-  xCMD="$RSYNC $FLAGS $xEXCL $xSRC $xDST"
+  shift 2
+  xCMD="$RSYNC $FLAGS $* $xSRC $xDST"
   echo $xCMD >> $LOG
   $xCMD >> $LOG 2>&1
   date >> $LOG
