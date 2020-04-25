@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Designed to be run daily.  Make sure the "dropbox" is set up
+# Designed to be run daily.  Make sure the "DROPBOX" is set up
 # and running rsyncd in an appropriate way.  This works on MacOS and
 # probably other platforms with some tweaks.
 #
@@ -10,8 +10,8 @@
 
 set -f
 
-RHOST=dropbox
-EMAIL=name@example.com
+RHOST=DROPBOX
+EMAIL=NAME@EXAMPLE.com
 PFX=/tmp/backup
 LOG=$PFX.out
 LOCK=$PFX.lock
