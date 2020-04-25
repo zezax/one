@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Designed to be run once per minute.  Make sure the "dropbox" is set up
+# Designed to be run once per minute.  Make sure the "DROPBOX" is set up
 # and running rsyncd in an appropriate way.  This works on MacOS and
 # probably other platforms with some tweaks.
 #
@@ -10,8 +10,8 @@
 
 set -f
 
-RHOST=dropbox
-DOM=example.com
+RHOST=DROPBOX
+DOM=EXAMPLE.com
 PFX=/tmp/backup
 LOG=$PFX.out
 LOCK=$PFX.lock
@@ -31,7 +31,7 @@ shlock -p $$ -f $LOCK || exit 0
 
 HOST=`hostname -s | tr 'A-Z' 'a-z'`
 RSYNC=/usr/bin/rsync
-FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t -S --delete-during --delete-excluded --max-delete=100"
+FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t -S --delete-during --delete-excluded --max-delete=100 --bwlimit=12800"
 date > $LOG
 
 backdir() { # <srcpath> <dstpath> <flags>...
