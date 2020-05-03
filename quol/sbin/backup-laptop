@@ -31,7 +31,7 @@ shlock -p $$ -f $LOCK || exit 0
 
 HOST=`hostname -s | tr 'A-Z' 'a-z'`
 RSYNC=/usr/bin/rsync
-FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t -S --delete-during --delete-excluded --max-delete=100 --bwlimit=12800"
+FLAGS="-v -r -l --copy-unsafe-links -p -o -g -t -S --delete-during --delete-excluded --max-delete=100 --bwlimit=3200"
 date > $LOG
 
 backdir() { # <srcpath> <dstpath> <flags>...
