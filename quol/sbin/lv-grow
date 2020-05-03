@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# simple lv expansion for ext on lvm
+#
+
+if [ $# -ne 3 ]; then
+  echo "Usage: lv-grow <vg> <lv> <size>"
+  exit 1
+fi
+
+if [ $EUID -ne 0 ]; then
+  echo "Must be root"
+  exit 1
+fi
+
+VG=$1
+LV=$2
+SIZ=$3
+DEV=/dev/$VG/$LV
+
+umount $DEV || exit 1
+e2fsck -fy $DEV
+if [ $? -gt 1 ]; then
+  exit 1
+fi
+lvextend -L $SIZ $VG/$LV || exit 1
+resize2fs $DEV || exit 1
+mount $DEV || exit 1
+
+###### EOF ######
