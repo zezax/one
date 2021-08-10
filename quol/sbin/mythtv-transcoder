@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Renders MythTV recordings into H.264 .mp4 files.
 #
@@ -24,6 +24,17 @@ import subprocess
 
 import MythTV
 
+stdout = None
+dbgout = None
+
+def outwrite(s):
+    if isinstance(s, str):
+        s = s.encode('utf-8')
+    stdout.write(s)
+    if dbgout:
+        dbgout.write(s)
+
+
 def usage():
     m = """Usage: transcoder <options>
   -jobid     <#>              %JOBID% within backend for automatic use
@@ -31,15 +42,46 @@ def usage():
   -starttime <YYYYMMDDHHMMSS> specify program start time for manual use
   -keepcomm                   keep commercials
 """
-    sys.stdout.write(m)
+    outwrite(m)
 
 
 def nuke(path):
     try:
         os.unlink(path)
-        sys.stdout.write('deleted ' + path + '\n')
+        outwrite('deleted ' + path + '\n')
     except OSError:
         pass
+
+
+def openLogFile(dir, base, ext):
+    now = int(time.time())
+
+    matches = []
+    for ent in os.listdir(dir):
+        if ent.startswith(base) and ent.endswith(ext):
+            matches.append(ent)
+
+    matches.sort()
+    while len(matches) >= 20:
+        old = dir + '/' + matches.pop(0)
+        try:
+            os.unlink(old)  # best effort
+        except OSError:
+            pass
+
+    for i in range(20):  # 20 attempts
+        target = datetime.datetime.fromtimestamp(now + i)
+        ts = target.strftime('%Y%m%d%H%M%S')
+        path = dir + '/' + base + ts + ext
+        try:
+            fh = open(path, 'xb', 0)  # exclusive, unbuffered
+            return fh
+        except FileExistsError:
+            pass
+
+    # if all else fails, share the file
+    path = dir + '/' + base + ext
+    return open(path, 'wb', 0)  # unbuffered
 
 ###############################################################################
 
@@ -64,9 +106,9 @@ class Transcoder(object):
 
 
     def setStartTime(self, s):
-        utc = datetime.datetime.strptime(s, '%Y%m%d%H%M%S')
-        tz = datetime.timedelta(seconds = time.timezone)
-        self.starttime = utc - tz
+        raw = datetime.datetime.strptime(s, '%Y%m%d%H%M%S')
+        utc = raw.replace(tzinfo = datetime.timezone.utc)
+        self.starttime = utc.astimezone()  # local time zone
 
 
     def checkArgs(self):
@@ -77,9 +119,9 @@ class Transcoder(object):
                 if not self.starttime:
                     raise RuntimeError(
                         'must specify jobid or chanid & starttime')
-                raise RuntimeError, 'no jobid or chanid supplied'
+                raise RuntimeError('no jobid or chanid supplied')
             if not self.starttime:
-                raise RuntimeError, 'no jobid or starttime supplied'
+                raise RuntimeError('no jobid or starttime supplied')
 
 
     def run(self):
@@ -97,12 +139,16 @@ class Transcoder(object):
 
 
     def initJob(self):
+        msg = 'begin transcode'
         self.mdb = MythTV.MythDB()
         if self.jobid:
           self.job = MythTV.Job(self.jobid, db = self.mdb)
           self.chanid = self.job.chanid
           self.starttime = self.job.starttime
           self.logger.setJob(self.job)
+          msg += ' jobid=%d' % self.jobid
+        msg += ' chanid=%d starttime=%s' % (self.chanid, self.starttime)
+        self.logger.comment(msg)
 
 
     def getRecorded(self):
@@ -114,6 +160,8 @@ class Transcoder(object):
         self.origPath = pth
         self.curPath = pth
         self.base = rec.basename.rsplit('.', 1)[0]
+        self.logger.comment('title=<%s> size=%d' % (rec.title, rec.filesize))
+        self.logger.toFile('description=<%s>' % rec.description)
 
 
     def cutCommercials(self):
@@ -264,8 +312,12 @@ class Logger(object):
     def push(self, map):
         if self.job:
             self.job.update(map)
+        self.toFile(map['comment'])
+
+
+    def toFile(self, msg):
         if self.verbose > 0:
-            sys.stdout.write(map['comment'] + '\n')
+            outwrite(msg + '\n')
 
 ###############################################################################
 
@@ -278,7 +330,7 @@ class Task(object):
 
     def run(self, cmd, progRe, denom):
         if self.verbose > 0:
-            sys.stdout.write(' '.join(cmd) + '\n')
+            outwrite(' '.join(cmd) + '\n')
         po = subprocess.Popen(cmd, bufsize = 0,
                               stdout = subprocess.PIPE,
                               stderr = subprocess.STDOUT)
@@ -289,7 +341,9 @@ class Task(object):
             buf = po.stdout.read(1024)
             if not buf:
                 break
-            for lin in buf.split('\n'):
+            if dbgout:
+                dbgout.write(buf)
+            for lin in buf.split(b'\n'):
                 mat = progRe.search(lin)
                 if mat:
                     if denom:
@@ -302,16 +356,15 @@ class Task(object):
 class MythMisc(Task):
 
     dir = '/usr/bin'
-    dummyRe = re.compile(r'(\d)')
+    dummyRe = re.compile(rb'(\d)')
 
     def __init__(self, logger):
         Task.__init__(self, logger)
 
 
     def timeStr(self, starttime):
-        tz = datetime.timedelta(seconds = time.timezone)
-        adj = starttime + tz
-        return adj.strftime('%Y%m%d%H%M%S')
+        utc = starttime.astimezone(datetime.timezone.utc)
+        return utc.strftime('%Y%m%d%H%M%S')
 
 
     def preamble(self, prog, chanid, starttime):
@@ -376,7 +429,7 @@ class HandBrake(Task):
     bin = '/usr/bin/HandBrakeCLI'
     opts = ['--deinterlace', '--encoder', 'x264', '--quality', '22',
             '--format', 'av_mp4', '--aencoder', 'copy']
-    pctRe = re.compile(r'Encoding:[^%]*\s(\d+[.]\d+)\s*%')
+    pctRe = re.compile(rb'Encoding:[^%]*\s(\d+[.]\d+)\s*%')
 
     def __init__(self, logger):
         Task.__init__(self, logger)
@@ -397,6 +450,12 @@ class HandBrake(Task):
 ###############################################################################
 
 def main(args = None):
+    global stdout
+    global dbgout
+    num = os.getpid() % 20
+    stdout = os.fdopen(sys.stdout.fileno(), 'wb', 0)  # unbuffered
+    dbgout = openLogFile('/tmp', 'transcoder', '.out')
+
     if args is None:
         args = sys.argv[1 : ]
 
@@ -414,20 +473,18 @@ def main(args = None):
             elif arg == '-keepcomm':
                 tc.cutComm = False
             else:
-                raise RuntimeError, 'unrecognized option: ' + arg
+                raise RuntimeError('unrecognized option: ' + arg)
         tc.checkArgs()
     except BaseException as ex:
         usage()
-        sys.stdout.write('\n%s\n' % ex)
+        outwrite('\n%s\n' % ex)
         return 1
-
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # unbuffer stdout
 
     try:
         tc.run()
         return 0
     except BaseException as ex:
-        sys.stdout.write('\n%s\n' % ex)
+        outwrite('\n%s\n' % ex)
         return 1
 
 
