@@ -1,0 +1,207 @@
+// bit set implementation
+
+#include "BitSet.h"
+
+#include "Fnv.h"
+
+namespace zezax::red {
+
+namespace {
+
+BitSetWord calcMask(BitSetIdx nbits) {
+  if (nbits >= BitSet::wordBits_) {
+    BitSetWord x = 0;
+    return x - 1;
+  }
+  return (1u << nbits) - 1;
+}
+
+} // anonymous
+
+BitSetIter &BitSetIter::operator++() {
+  while (++bit_ < limit_) {
+    BitSetIdx word = bit_ / wordBits_;
+    BitSetIdx shift = bit_ % wordBits_;
+    BitSetWord val = ptr_[word];
+    if ((shift == 0) && (val == 0))
+      bit_ += wordBits_ - 1;
+    else if ((val & (1u << shift)) != 0)
+      return *this;
+  }
+  bit_ = gBitSetMax;
+  return *this;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const BitSetIter BitSet::endIter_(nullptr);
+
+
+bool BitSet::operator<(const BitSet& rhs) const {
+  BitSetIdx mySize = rawSize();
+  BitSetIdx rhsSize = rhs.rawSize();
+  BitSetIdx limit = std::min(mySize, rhsSize);
+  BitSetIdx ii;
+  for (ii = 0; ii < limit; ++ii) {
+    BitSetWord my = vec_[ii];
+    BitSetWord rh = rhs.vec_[ii];
+    if (my < rh)
+      return true;
+    if (my > rh)
+      return false;
+  }
+  if (mySize > rhsSize) {
+    for (; ii < mySize; ++ii)
+      if (vec_[ii])
+        return false;
+  }
+  else
+    for (; ii < rhsSize; ++ii)
+      if (rhs.vec_[ii])
+        return true;
+  return false;
+}
+
+
+bool BitSet::operator==(const BitSet& rhs) const {
+  BitSetIdx mySize = rawSize();
+  BitSetIdx rhsSize = rhs.rawSize();
+  BitSetIdx limit = std::min(mySize, rhsSize);
+  BitSetIdx ii;
+  for (ii = 0; ii < limit; ++ii)
+    if (vec_[ii] != rhs.vec_[ii])
+      return false;
+  if (mySize > rhsSize) {
+    for (; ii < mySize; ++ii)
+      if (vec_[ii])
+        return false;
+  }
+  else
+    for (; ii < rhsSize; ++ii)
+      if (rhs.vec_[ii])
+        return false;
+  return true;
+}
+
+
+void BitSet::resize(BitSetIdx bits) {
+  BitSetIdx old = rawSize();
+  BitSetIdx words = (bits + wordBits_ - 1) / wordBits_;
+  vec_.resize(words);
+  if (words < old) {
+    BitSetIdx roundBits = wordBits_ * words;
+    if (roundBits > bits) {
+      BitSetIdx extra = roundBits - bits;
+      BitSetWord mask = calcMask(extra);
+      mask <<= wordBits_ - extra;
+      vec_[words - 1] &= ~mask;
+    }
+  }
+}
+
+
+void BitSet::setSpan(BitSetIdx first, BitSetIdx last) {
+  ensure(last);
+  BitSetIdx firstWord = first / wordBits_;
+  BitSetIdx lastWord = last / wordBits_;
+  BitSetIdx firstBit = first % wordBits_;
+  if (firstWord == lastWord) {
+    BitSetIdx nbits = last - first + 1;
+    BitSetWord mask = calcMask(nbits);
+    mask <<= firstBit;
+    vec_[firstWord] |= mask;
+  }
+  else if (firstWord < lastWord) {
+    BitSetIdx nbits = wordBits_ - firstBit;
+    BitSetWord mask = calcMask(nbits);
+    mask <<= firstBit;
+    vec_[firstWord] |= mask;
+    for (BitSetIdx ii = firstWord + 1; ii < lastWord; ++ii)
+      vec_[ii] = gBitSetMax;
+    BitSetIdx lastBit = last % wordBits_;
+    mask = calcMask(lastBit + 1);
+    vec_[lastWord] |= mask;
+  }
+}
+
+
+void BitSet::intersectWith(const BitSet &other) {
+  BitSetIdx mySize = rawSize();
+  BitSetIdx otherSize = other.rawSize();
+  if (mySize > otherSize) {
+    mySize = otherSize;
+    vec_.resize(mySize);
+  }
+  for (BitSetIdx ii = 0; ii < mySize; ++ii)
+    vec_[ii] &= other.vec_[ii];
+}
+
+
+void BitSet::unionWith(const BitSet &other) {
+  BitSetIdx mySize = rawSize();
+  BitSetIdx otherSize = other.rawSize();
+  if (mySize < otherSize)
+    vec_.resize(otherSize);
+  for (BitSetIdx ii = 0; ii < otherSize; ++ii)
+    vec_[ii] |= other.vec_[ii];
+}
+
+
+void BitSet::xorWith(const BitSet &other) {
+  BitSetIdx mySize = rawSize();
+  BitSetIdx otherSize = other.rawSize();
+  if (mySize < otherSize)
+    vec_.resize(otherSize);
+  for (BitSetIdx ii = 0; ii < otherSize; ++ii)
+    vec_[ii] ^= other.vec_[ii];
+}
+
+
+void BitSet::subtract(const BitSet &other) {
+  BitSetIdx mySize = rawSize();
+  BitSetIdx otherSize = other.rawSize();
+  BitSetIdx limit = std::min(mySize, otherSize);
+  for (BitSetIdx ii = 0; ii < limit; ++ii)
+    vec_[ii] &= ~other.vec_[ii];
+}
+
+
+bool BitSet::hasIntersection(const BitSet &other) const {
+  BitSetIdx mySize = rawSize();
+  BitSetIdx otherSize = other.rawSize();
+  BitSetIdx limit = std::min(mySize, otherSize);
+  for (BitSetIdx ii = 0; ii < limit; ++ii)
+    if (vec_[ii] & other.vec_[ii])
+      return true;
+  return false;
+}
+
+
+bool BitSet::contains(const BitSet &other) const {
+  BitSetIdx mySize = rawSize();
+  BitSetIdx otherSize = other.rawSize();
+  BitSetIdx limit = std::min(mySize, otherSize);
+  BitSetIdx ii;
+  for (ii = 0; ii < limit; ++ii)
+    if (~vec_[ii] & other.vec_[ii])
+      return false;
+  for (; ii < otherSize; ++ii)
+    if (other.vec_[ii])
+      return false;
+  return true;
+}
+
+
+BitSetIdx BitSet::population() const {
+  BitSetIdx rv = 0;
+  for (BitSetWord x : vec_)
+    rv += __builtin_popcountll(x);
+  return rv;
+}
+
+
+size_t BitSet::hash() const {
+  return fnv1a<size_t>(vec_.data(), vec_.size() * sizeof(BitSetWord));
+}
+
+} // namespace zezax::red

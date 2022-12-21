@@ -1,0 +1,11 @@
+- caret to anchor front???
+- parse that automatically adds .* at front and end if appropriate
+- error or document ^ and $ behave differently, ignore?
+- document empty string matches: ()* etc.
+- compressed transition map
+- high-locality final dfa
+- try filtering out empty sets in disjoint/unique
+- reduce equivalent chars earlier, in nfa, not dfa, or pre-minimize
+- ?store nfa states in state array indexed by state id (resize invalidation)
+- vertically align identifiers in .h and .cpp
+- add test suite items from re2

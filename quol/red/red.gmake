@@ -1,0 +1,38 @@
+# red common definitions for gmake
+
+.SUFFIXES:
+
+ifeq ($(MODE), opt)
+  OPT := -O3 -march=native
+else
+  OPT := -g -fsanitize=address
+  LDLIBS += -lasan
+endif
+
+WARN := -Wall -Wextra -Wshadow -Wpointer-arith -Wwrite-strings -Wsign-promo \
+-Wuninitialized -Wconversion -Wfloat-equal -Wrestrict \
+-Wdisabled-optimization -Wduplicated-branches -Wduplicated-cond -Wformat=2 \
+-Wlogical-op -Wnull-dereference -Woverloaded-virtual -Wuseless-cast \
+-Wimplicit-fallthrough=2 -Wmissing-include-dirs -Werror
+CPPFLAGS := -iquote ../include
+
+CXX := g++
+CXXFLAGS := -std=c++20 $(OPT) $(WARN)
+CXXDEPEND = -MMD -MT $*.o -MT $*.d
+CXXDEPENDONLY = -MM -MT $*.o -MT $*.d
+
+DEPLIBS := ../lib/libred.a
+
+.PHONY: all sure clean
+.PRECIOUS: %.o
+
+%.o: %.cpp
+	$(CXX) -c $(CXXDEPEND) $(CXXFLAGS) $(CPPFLAGS) $< -o $@
+
+%.d: %.cpp
+	$(CXX) $(CXXDEPENDONLY) $(CPPFLAGS) $< > $@
+
+%: %.cpp
+
+%: %.o $(DEPLIBS)
+	$(CXX) $(LDFLAGS) $< $(DEPLIBS) $(LDLIBS) -o $@

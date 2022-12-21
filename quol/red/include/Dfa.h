@@ -1,0 +1,69 @@
+// deterministic finite automaton header
+
+#pragma once
+
+#include <string_view>
+#include <unordered_map>
+#include <vector>
+
+#include "Defs.h"
+#include "Container.h"
+#include "BitSet.h"
+
+namespace zezax::red {
+
+constexpr StateId gDfaErrorId   = 0;
+constexpr StateId gDfaInitialId = 1;
+
+typedef DefaultMap<CharIdx, StateId> CharToStateMap;
+typedef std::unordered_map<StateId, StateId> StateToStateMap;
+
+struct DfaState {
+  Result         result_;
+  bool           deadEnd_;
+  CharToStateMap trans_;
+};
+
+
+class DfaObj {
+public:
+  DfaObj() = default;
+  ~DfaObj() = default;
+  DfaObj(const DfaObj &rhs) = delete;
+  DfaObj(DfaObj &&rhs) = default;
+  DfaObj &operator=(const DfaObj &rhs) = delete;
+  DfaObj &operator=(DfaObj &&rhs) = default;
+
+  const DfaState &operator[](StateId id) const { return states_[id]; }
+  DfaState &operator[](StateId id) { return states_[id]; }
+
+  void clear();
+  void reserve(size_t n) { states_.reserve(n); }
+  void swap(DfaObj &other);
+
+  StateId newState();
+
+  StateIdSet allStateIds() const;
+
+  void useEquivalenceMap();
+
+  const std::vector<DfaState> &getStates() const { return states_; }
+  std::vector<DfaState> &getMutStates() { return states_; }
+
+  Result match(std::string_view s); // for unit tests
+
+private:
+  std::vector<DfaState> states_;
+};
+
+
+// useful functions
+StateIdSet allStates(const std::vector<DfaState> &states,
+                     StateId                     initState,
+                     StateId                     errState);
+
+DfaObj transcribeDfa(const DfaObj &src);
+void flagDeadEnds(std::vector<DfaState> &states);
+std::vector<CharIdx> makeEquivalenceMap(const std::vector<DfaState> &states);
+
+} // namespace zezax::red
