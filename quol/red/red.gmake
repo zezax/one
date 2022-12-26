@@ -4,6 +4,12 @@
 
 ifeq ($(MODE), opt)
   OPT := -O3 -march=native
+else ifeq ($(MODE), dbg)
+  OPT := -g
+else ifeq ($(MODE), jemalloc)
+  OPT := -g
+  LDLIBS += -ljemalloc
+  CPPFLAGS += -I/usr/include/jemalloc -DUSE_JEMALLOC
 else
   OPT := -g -fsanitize=address
   LDLIBS += -lasan
@@ -14,7 +20,7 @@ WARN := -Wall -Wextra -Wshadow -Wpointer-arith -Wwrite-strings -Wsign-promo \
 -Wdisabled-optimization -Wduplicated-branches -Wduplicated-cond -Wformat=2 \
 -Wlogical-op -Wnull-dereference -Woverloaded-virtual -Wuseless-cast \
 -Wimplicit-fallthrough=2 -Wmissing-include-dirs -Werror
-CPPFLAGS := -iquote ../include
+CPPFLAGS += -iquote ../include
 
 CXX := g++
 CXXFLAGS := -std=c++20 $(OPT) $(WARN)

@@ -1,11 +1,14 @@
 // nfa to dfa converter implementation
 
+#include <limits>
+
 #include "Except.h"
 #include "Util.h"
 #include "NfaToDfa.h"
 
 namespace zezax::red {
 
+using std::numeric_limits;
 using std::unordered_set;
 using std::vector;
 
@@ -13,7 +16,6 @@ using std::vector;
 
 DfaObj convertNfaToDfa(const NfaObj &nfa) {
   NfaState *initial = nfa.getNfaInitial();
-  NfaStateSet states = allStates(initial);
 
   vector<MultiChar> multiChars;
   {
@@ -32,16 +34,16 @@ DfaObj convertNfaToDfa(const NfaObj &nfa) {
   if (id != gDfaErrorId)
     throw RedExcept("dfa error state must be zero");
 
-  NfaStateSet initialStates;
-  initialStates.insert(initial);
+  NfaStateSet states;
+  states.insert(initial);
   NfaStatesToId nfaToDfa;
-  auto it = table.find(initialStates);
+  auto it = table.find(states);
   if (it == table.end())
     throw RedExcept("cannot find initial nfa states");
-  id = dfaFromNfa(multiChars, table, counts,
-                  initialStates, nfaToDfa, dfa);
+  id = dfaFromNfa(multiChars, table, counts, states, nfaToDfa, dfa);
   if (id != gDfaInitialId)
     throw RedExcept("dfa initial state must be one");
+  dfa.chopEndMarks(); // end marks have done their job
   return dfa;
 }
 
@@ -72,15 +74,15 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
     for (const MultiChar &mc : sets[ii]) {
       MultiChar copy = mc;
       copy.subtract(unions[ii]);
-      // FIXME: if (copy.population() > 0)
-      rv.emplace(std::move(copy));
+      if (copy.population() > 0)
+        rv.emplace(std::move(copy));
     }
 
   return rv;
 }
 
 
-NfaStatesToTransitions makeTable(NfaState *initial,
+NfaStatesToTransitions makeTable(NfaState          *initial,
                                  vector<MultiChar> &allMultiChars) {
   NfaStatesToTransitions table;
 
@@ -128,13 +130,13 @@ NfaStateToCount countAcceptingStates(const NfaStatesToTransitions &table) {
 
 Result getResult(const NfaStateSet &ss, const NfaStateToCount &counts) {
   Result rv = -1;
-  size_t min = ~0UL;
+  size_t min = numeric_limits<size_t>::max();
 
   for (const NfaState *state : ss) {
     auto it = counts.find(state);
     if (it != counts.end()) {
       size_t num = it->second;
-      if (num < min) {
+      if (num < min) { // lowest number of accepting wins
         min = num;
         rv = state->result_;
       }
@@ -145,12 +147,12 @@ Result getResult(const NfaStateSet &ss, const NfaStateToCount &counts) {
 }
 
 
-StateId dfaFromNfa(const vector<MultiChar> &multiChars,
+StateId dfaFromNfa(const vector<MultiChar>      &multiChars,
                    const NfaStatesToTransitions &table,
-                   const NfaStateToCount &counts,
-                   const NfaStateSet &states,
-                   NfaStatesToId &map,
-                   DfaObj &dfa) {
+                   const NfaStateToCount        &counts,
+                   const NfaStateSet            &states,
+                   NfaStatesToId                &map,
+                   DfaObj                       &dfa) {
   std::pair<NfaStateSet, StateId> mapNode;
   mapNode.first = states;
   auto [mapIter, novel] = map.emplace(std::move(mapNode));
@@ -162,7 +164,7 @@ StateId dfaFromNfa(const vector<MultiChar> &multiChars,
 
   auto tableIter = table.find(states);
   if (tableIter == table.end())
-    return dfaId; // FIXME ???
+    return dfaId; // FIXME can this happen? is it right?
 
   StateId ii = 0;
   for (const NfaStateSet &ss : tableIter->second) {

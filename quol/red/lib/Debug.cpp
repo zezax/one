@@ -104,7 +104,7 @@ string toString(const MultiChar &mc) {
 
 
 string toString(const MultiCharSet &mcs) {
-  std::string rv;
+  string rv;
   for (const MultiChar &mc : mcs)
     rv += toString(mc) + '\n';
   return rv;
@@ -289,6 +289,40 @@ string toString(const BlockRecSet &brs) {
   for (const BlockRec &br : brs)
     rv += "  " + toString(br) + '\n';
   return rv + "}\n";
+}
+
+
+string toString(const vector<CharIdx> &vec) {
+  string rv = "equiv[\n";
+  CharIdx start = 0;
+  CharIdx prev = ~0U;
+  CharIdx n = static_cast<CharIdx>(vec.size());
+  CharIdx idx;
+  for (idx = 0; idx < n; ++idx) {
+    CharIdx ch = vec[idx];
+    if (ch != prev) {
+      if (prev != ~0U) {
+        rv += "  " + to_string(prev) + " <- " + to_string(start);
+        if ((idx - 1) > start) {
+          rv += '-';
+          rv += to_string(idx - 1);
+        }
+        rv += '\n';
+      }
+      start = idx;
+    }
+    prev = ch;
+  }
+  if (prev != ~0U) {
+    --idx;
+    rv += "  " + to_string(prev) + " <- " + to_string(start);
+    if (idx > start) {
+      rv += '-';
+      rv += to_string(idx);
+    }
+    rv += '\n';
+  }
+  return rv + "]\n";
 }
 
 

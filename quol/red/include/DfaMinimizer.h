@@ -23,11 +23,11 @@ struct BlockRec {
   CharIdx char_;
 };
 
-typedef std::unordered_set<DfaEdge> DfaEdgeSet;
+typedef std::unordered_set<DfaEdge>             DfaEdgeSet;
 typedef std::unordered_map<DfaEdge, StateIdSet> DfaEdgeToIds;
-typedef std::unordered_set<BlockRec> BlockRecSet;
-typedef std::pair<BlockId, BlockId> Patch;
-typedef std::unordered_set<Patch> PatchSet;
+typedef std::unordered_set<BlockRec>            BlockRecSet;
+typedef std::pair<BlockId, BlockId>             Patch;
+typedef std::unordered_set<Patch>               PatchSet;
 
 } // namespace zezax::red
 
@@ -73,6 +73,7 @@ template<> struct std::hash<zezax::red::Patch> {
 
 namespace zezax::red {
 
+// This is what you're looking for
 class DfaMinimizer {
 public:
   DfaMinimizer(DfaObj &dfa) : src_(dfa) {} // dfa will be modified
@@ -93,12 +94,6 @@ private:
 
 
 // building blocks
-CharIdx findMaxChar(const std::vector<DfaState> &stateVec);
-
-void pullBackEndMarks(std::vector<DfaState> &states);
-
-void chopEndMarks(std::vector<DfaState> &states);
-
 DfaEdgeToIds invert(const StateIdSet            &stateSet,
                     const std::vector<DfaState> &stateVec,
                     CharIdx                      maxChar);
@@ -146,9 +141,9 @@ void patchPair(BlockId                        ii,
                CharIdx                        maxChar,
                const std::vector<StateIdSet> &blocks);
 
-void finalize(const DfaObj &srcDfa,
-              DfaObj &outDfa,
-              const std::vector<StateIdSet> &blocks);
+void makeDfaFromBlocks(const DfaObj                  &srcDfa,
+                       DfaObj                        &outDfa,
+                       const std::vector<StateIdSet> &blocks);
 
 void improveDfa(DfaObj &dfa);
 

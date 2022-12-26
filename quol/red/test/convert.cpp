@@ -46,7 +46,7 @@ TEST(Convert, unique) {
   mcs.insert(ee);
   EXPECT_EQ(5, mcs.size());
   MultiCharSet basis = basisMultiChars(mcs);
-  EXPECT_EQ(5, basis.size());
+  EXPECT_EQ(4, basis.size());
   EXPECT_TRUE(basis.contains(aa));
   EXPECT_TRUE(basis.contains(bb));
   EXPECT_FALSE(basis.contains(cc));

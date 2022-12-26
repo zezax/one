@@ -32,6 +32,8 @@ ReParser::ReParser()
 
 
 void ReParser::add(string_view regex, Result result, FlagsT flags) {
+  flags |= fLooseStart | fLooseEnd; // generally expected default
+
   if (regex.starts_with("\\i")) {
     regex.remove_prefix(2);
     flags |= fIgnoreCase;
@@ -39,20 +41,20 @@ void ReParser::add(string_view regex, Result result, FlagsT flags) {
 
   if (regex.starts_with('^')) {
     regex.remove_prefix(1);
-    flags |= fAnchorStart;
+    flags &= ~fLooseStart;
   }
   else if (regex.starts_with(".*")) {
     regex.remove_prefix(2);
-    flags &= ~fAnchorStart;
+    flags |= fLooseStart;
   }
 
   if (regex.ends_with('$')) {
     regex.remove_suffix(1);
-    flags |= fAnchorEnd;
+    flags &= ~fLooseEnd;
   }
   else if (regex.ends_with(".*")) {
     regex.remove_suffix(2);
-    flags &= ~fAnchorEnd;
+    flags |= fLooseEnd;
   }
 
   addRaw(regex, result, flags);
@@ -68,7 +70,7 @@ void ReParser::addRaw(string_view regex, Result result, FlagsT flags) {
   level_ = 0;
 
   NfaState *startWild = nullptr;
-  if ((flags_ & fAnchorStart) == 0)
+  if (flags_ & fLooseStart)
     startWild = obj_.stateWildcard(); // do early for proper numbering
 
   scanner_.init(regex);
@@ -85,7 +87,7 @@ void ReParser::addRaw(string_view regex, Result result, FlagsT flags) {
 
   if (startWild)
     state = obj_.stateConcat(startWild, state);
-  if ((flags_ & fAnchorEnd) == 0)
+  if (flags_ & fLooseEnd)
     state = obj_.stateConcat(state, obj_.stateWildcard());
 
   state = obj_.stateConcat(state, obj_.stateEndMark(result));

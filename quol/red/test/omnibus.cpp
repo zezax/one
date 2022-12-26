@@ -12,7 +12,29 @@
 using namespace testing;
 using namespace zezax::red;
 
+using std::ostream;
 using std::string;
+
+
+// FIXME: move this to a matching test
+TEST(Omnibus, multi) {
+  ReParser p;
+  p.addRaw("a", 1, 0);
+  p.addRaw("aa", 2, 0);
+  p.addRaw("aaa", 3, 0);
+  DfaObj dfa = convertNfaToDfa(p.getNfa());
+  {
+    DfaMinimizer dm(dfa);
+    dm.minimize();
+  }
+  EXPECT_EQ(0, dfa.match(""));
+  EXPECT_EQ(0, dfa.match("0"));
+  EXPECT_EQ(1, dfa.match("a"));
+  EXPECT_EQ(2, dfa.match("aa"));
+  EXPECT_EQ(3, dfa.match("aaa"));
+  EXPECT_EQ(0, dfa.match("aaaa"));
+}
+
 
 struct Rec {
   const char *regex_;
@@ -20,7 +42,7 @@ struct Rec {
   bool match_;
 };
 
-std::ostream &operator<<(std::ostream &os, const Rec &r) {
+ostream &operator<<(ostream &os, const Rec &r) {
   os << r.regex_ << ' ' << r.text_ << ' ' << r.match_;
   return os;
 }
@@ -254,5 +276,6 @@ Rec{"^(\\w+)(:(([^;\\\\]|\\\\.)*))?;?",
 Rec{"^a.b$", "a\nb", true},
 Rec{"^(((((llx((-3)|(4)))(;(llx((-3)|(4))))*))))$", "llx-3;llx4", true},
 Rec{"(|a)*", "aaaaa", true},
-Rec{"(|a)+", "aaaaa", true}
+Rec{"(|a)+", "aaaaa", true},
+Rec{"^[abc]+$", "def", false}
 ));

@@ -15,11 +15,12 @@ public:
   ~ReParser() = default;
 
   // This method implements a heuristic for caret and dollar.  Basically
-  // leading ^ is removed and fAnchorStart is added to flags.  Similarly,
-  // trailing $ is removed and fAnchorEnd is added to flags.  Leading and
-  // trailing .* are removed.  When fAnchorStart is not set, the resulting
-  // NFA acts like it started with .*.  Similarly for fAnchorEnd.
+  // leading .* is removed and fLooseStart is added to flags.  Similarly,
+  // trailing .* is removed and fLooseEnd is added to flags.  Leading ^ and
+  // trailing $ are removed.  When fLooseStart is set, the resulting
+  // NFA acts like it started with .*.  Similarly for fLooseEnd.
   // Note that this is not correct for something like ^a|b$
+  // Also note that ^ and $ are not sepcial characters anywhere else.
   void add(std::string_view regex, Result result, FlagsT flags);
 
   // As above with no heuristics.

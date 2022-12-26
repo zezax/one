@@ -37,6 +37,8 @@ std::string toString(const DfaEdgeToIds &rev);
 std::string toString(const BlockRec &br);
 std::string toString(const BlockRecSet &brs);
 
+std::string toString(const std::vector<CharIdx> &vec);
+
 char toHexDigit(Byte x);
 
 template <class T>

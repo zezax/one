@@ -9,11 +9,8 @@
 #include "Except.h"
 #include "Dfa.h"
 
-#include "Debug.h" // FIXME
-
 namespace zezax::red {
 
-using std::unordered_map;
 using std::vector;
 
 namespace {
@@ -40,43 +37,6 @@ BlockId findInBlock(StateId id, const vector<StateIdSet> &blocks) {
 
 } // anonymous
 
-CharIdx findMaxChar(const vector<DfaState> &stateVec) {
-  // FIXME: do we need to BFS from init state?
-  CharIdx maxChar = 0;
-  for (const DfaState &ds : stateVec)
-    for (auto [ch, _] : ds.trans_.getMap()) // only non-default chars
-      if (ch > maxChar)
-        maxChar = ch;
-  return maxChar;
-}
-
-
-void pullBackEndMarks(vector<DfaState> &states) {
-  for (DfaState &ds : states)
-    for (auto [ch, id] : ds.trans_.getMap())
-      if ((ch >= gAlphabetSize) && (id != gDfaErrorId))
-        ds.result_ = ch - gAlphabetSize;
-}
-
-
-void chopEndMarks(vector<DfaState> &states) {
-  for (DfaState &ds : states) {
-    bool first = true;
-    unordered_map<CharIdx, StateId>  &tmap = ds.trans_.getMap();
-    for (auto it = tmap.begin(); it != tmap.end(); )
-      if ((it->first >= gAlphabetSize) && (it->second != gDfaErrorId)) {
-        if (first) {
-          ds.result_ = it->first - gAlphabetSize;
-          first = false;
-        }
-        it = tmap.erase(it);
-      }
-      else
-        ++it;
-  }
-}
-
-
 DfaEdgeToIds invert(const StateIdSet       &stateSet,
                     const vector<DfaState> &stateVec,
                     CharIdx                 maxChar) {
@@ -84,8 +44,7 @@ DfaEdgeToIds invert(const StateIdSet       &stateSet,
 
   for (StateId sid : stateSet) {
     const DfaState &ds = stateVec[sid];
-    // FIXME: does it work if we ignore edges to zero???
-    for (CharIdx ch = 0; ch <= maxChar; ++ch) {
+    for (CharIdx ch = 0; ch <= maxChar; ++ch) { // need to enumerate all
       std::pair<DfaEdge, StateIdSet> node;
       node.first.id_ = ds.trans_[ch];
       node.first.char_ = ch;
@@ -235,7 +194,7 @@ void patchPair(BlockId ii,
 }
 
 
-void finalizeDfa(const DfaObj &srcDfa,
+void makeDfaFromBlocks(const DfaObj &srcDfa,
                  DfaObj &outDfa,
                  const vector<StateIdSet> &blocks) {
   // make new states, one per block, and map old ids to new ids
@@ -280,15 +239,12 @@ void finalizeDfa(const DfaObj &srcDfa,
 
 void improveDfa(DfaObj &dfa) {
   flagDeadEnds(dfa.getMutStates());
-  chopEndMarks(dfa.getMutStates());
-  // std::cout << "FIXME post chop " << toString(dfa) << std::endl;
 
   {
     DfaObj small = transcribeDfa(dfa);
     dfa.swap(small);
   }
 
-  //groupInputs();
   //compressDfa(); // FIXME: move to "final compilation"
 }
 
@@ -306,9 +262,8 @@ void DfaMinimizer::minimize() {
 
 
 void DfaMinimizer::setup() {
-  maxChar_ = findMaxChar(src_.getStates());
-
-  pullBackEndMarks(src_.getMutStates());
+  src_.installEquivalenceMap(); // smaller alphabet means less work
+  maxChar_ = src_.findMaxChar();
 
   {
     StateIdSet stateSet = src_.allStateIds();
@@ -330,17 +285,13 @@ void DfaMinimizer::iterate() {
   vector<BlockId> twins;
   PatchSet patches;
 
-  // std::cout << "FIXME blocks " << toString(blocks_) << std::endl;
   while (!list_.empty()) {
     auto node = list_.extract(list_.begin());
     BlockRec &br = node.value();
     StateIdSet splits = locateSplits(br, blocks_, inverse_);
     if (splits.population() > 0) {
-      // std::cout << "FIXME rec " << toString(br) << std::endl;
-      // std::cout << "FIXME splits " << toString(splits) << std::endl;
       performSplits(br, splits, twins, patches, src_.getStates(), blocks_);
       patchBlocks(patches, list_, maxChar_, blocks_);
-      // std::cout << "FIXME blocks " << toString(blocks_) << std::endl;
     }
   }
 
@@ -349,9 +300,10 @@ void DfaMinimizer::iterate() {
 
 
 void DfaMinimizer::cleanup(DfaObj &work) {
-  finalizeDfa(src_, work, blocks_);
+  makeDfaFromBlocks(src_, work, blocks_);
   blocks_.clear();
   blocks_.shrink_to_fit();
+  work.copyEquivMap(src_);
   improveDfa(work);
   maxChar_ = 0;
 }

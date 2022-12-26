@@ -1,11 +1,16 @@
-- caret to anchor front???
-- parse that automatically adds .* at front and end if appropriate
-- error or document ^ and $ behave differently, ignore?
+- document ^ and $ behave differently
 - document empty string matches: ()* etc.
 - compressed transition map
 - high-locality final dfa
-- try filtering out empty sets in disjoint/unique
-- reduce equivalent chars earlier, in nfa, not dfa, or pre-minimize
-- ?store nfa states in state array indexed by state id (resize invalidation)
 - vertically align identifiers in .h and .cpp
-- add test suite items from re2
+- add test suite items from re2, pcre
+- exception subclasses: parse, internal, execute
+- .depend directory
+- make dfa.cpp unit test.  move stuff from minimize.cpp
+- move stuff into classes if clearer
+- benchmark large build (/usr/share/dict/words)
+- detail namespace
+- perf (dbg asan):
+  - bitset hasIntersection (from makeTable)
+- Make NfaStateSet a bitvec of ids
+- Prune NFA states that are trivial dead ends

@@ -40,30 +40,28 @@ TEST(Minimize, invert) {
   addTrans(dfa, s2, s3, 'b');
   addTrans(dfa, s3, s4, gAlphabetSize + 1); // end mark
   // FIXME: the actual powerset conversion creates extra states from s3
-  EXPECT_EQ(gDfaErrorId, s0);
-  EXPECT_EQ(gDfaInitialId, s1);
   std::cout << toString(dfa) << std::endl;
   //      +---+     +---+
   //      | b |     | a |
   //      v   | a   v   | b
   // S0   S1 -+---> S2 -+---> S3 -+---> S4 accept
 
-  vector<DfaState> &vec = dfa.getMutStates();
-  ASSERT_EQ(5, vec.size());
-  CharIdx maxChar = findMaxChar(vec);
-  EXPECT_EQ(gAlphabetSize + 1, maxChar);
+  CharIdx maxChar = dfa.findMaxChar();
 
+  const vector<DfaState> &vec = dfa.getStates();
   EXPECT_EQ(0, vec[s3].result_);
   EXPECT_EQ(1, vec[s4].result_);
-  pullBackEndMarks(vec);
+  dfa.chopEndMarks();
   EXPECT_EQ(1, vec[s3].result_);
-  EXPECT_EQ(1, vec[s4].result_);
+
+  dfa.installEquivalenceMap();
+  maxChar = dfa.findMaxChar();
   std::cout << toString(dfa) << std::endl;
 
   StateIdSet states = dfa.allStateIds();
-  EXPECT_EQ(5, states.population());
+  EXPECT_EQ(4, states.population());
   DfaEdgeToIds rev = invert(states, vec, maxChar);
-  EXPECT_EQ(262, rev.size()); // FIXME: 5
+  EXPECT_EQ(6, rev.size());
   std::cout << toString(rev) << std::endl;
 
   vector<StateIdSet> blocks;
@@ -75,9 +73,8 @@ TEST(Minimize, invert) {
   EXPECT_TRUE(normal.get(s0));
   EXPECT_TRUE(normal.get(s1));
   EXPECT_TRUE(normal.get(s2));
-  ASSERT_EQ(2, accept.population());
+  ASSERT_EQ(1, accept.population());
   EXPECT_TRUE(accept.get(s3));
-  EXPECT_TRUE(accept.get(s4));
 
   BlockRecSet list = makeList(maxChar, normal, accept);
   std::cout << toString(list) << std::endl;
@@ -110,6 +107,7 @@ TEST(Minimize, obj) {
   EXPECT_EQ(gDfaErrorId, s0);
   EXPECT_EQ(gDfaInitialId, s1);
 
+  dfa.chopEndMarks();
   DfaMinimizer dm(dfa);
   dm.minimize();
 

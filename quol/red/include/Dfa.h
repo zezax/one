@@ -15,8 +15,9 @@ namespace zezax::red {
 constexpr StateId gDfaErrorId   = 0;
 constexpr StateId gDfaInitialId = 1;
 
-typedef DefaultMap<CharIdx, StateId> CharToStateMap;
+typedef DefaultMap<CharIdx, StateId>         CharToStateMap;
 typedef std::unordered_map<StateId, StateId> StateToStateMap;
+
 
 struct DfaState {
   Result         result_;
@@ -44,8 +45,12 @@ public:
   StateId newState();
 
   StateIdSet allStateIds() const;
+  CharIdx findMaxChar() const;
 
-  void useEquivalenceMap();
+  void chopEndMarks();
+
+  void installEquivalenceMap();
+  void copyEquivMap(const DfaObj &src) { equivMap_ = src.equivMap_; }
 
   const std::vector<DfaState> &getStates() const { return states_; }
   std::vector<DfaState> &getMutStates() { return states_; }
@@ -54,16 +59,19 @@ public:
 
 private:
   std::vector<DfaState> states_;
+  std::vector<CharIdx>  equivMap_;
 };
 
 
 // useful functions
-StateIdSet allStates(const std::vector<DfaState> &states,
-                     StateId                     initState,
-                     StateId                     errState);
-
+CharIdx findMaxChar(const std::vector<DfaState> &states);
 DfaObj transcribeDfa(const DfaObj &src);
 void flagDeadEnds(std::vector<DfaState> &states);
-std::vector<CharIdx> makeEquivalenceMap(const std::vector<DfaState> &states);
+
+std::vector<CharIdx> makeEquivalenceMap(const std::vector<DfaState> &states,
+                                        CharIdx                      maxChar);
+
+void remapStates(std::vector<DfaState>      &states,
+                 const std::vector<CharIdx> &map);
 
 } // namespace zezax::red

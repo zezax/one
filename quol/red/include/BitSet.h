@@ -366,9 +366,10 @@ bool BitSet<Index, Word>::contains(const BitSet<Index, Word> &other) const {
 
 template <class Index, class Word>
 Index BitSet<Index, Word>::population() const {
+  static_assert(sizeof(Word) == sizeof(int)); // or use popcountl below
   Index rv = 0;
   for (Word x : vec_)
-    rv += __builtin_popcountll(x);
+    rv += __builtin_popcount(x);
   return rv;
 }
 

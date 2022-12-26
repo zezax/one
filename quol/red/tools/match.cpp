@@ -11,23 +11,32 @@
 using namespace zezax::red;
 
 using std::string;
+using std::string_view;
 
 int main(int argc, char **argv) {
+  bool raw = false;
   try {
     ReParser p;
-    for (int ii = 1; ii < argc; ++ii)
-      p.add(argv[ii], ii, 0);
+    int cur = 0;
+    for (int ii = 1; ii < argc; ++ii) {
+      string_view sv = argv[ii];
+      if (sv == "-r")
+        raw = true;
+      else if (raw)
+        p.addRaw(sv, ++cur, 0);
+      else
+        p.add(sv, ++cur, 0);
+    }
     DfaObj dfa = convertNfaToDfa(p.getNfa());
     {
       DfaMinimizer dm(dfa);
       dm.minimize();
     }
-    //dfa.useEquivalenceMap();
     std::cout << toString(dfa) << std::flush;
 
     string line;
     while (std::getline(std::cin, line))
-      std::cout << "=>" << dfa.match(line) << std::endl;
+      std::cout << dfa.match(line) << std::endl;
 
     return 0;
   }

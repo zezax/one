@@ -17,14 +17,12 @@ using std::vector;
 namespace {
 
 void allStatesRecurse(NfaStateSet &out, NfaState *ns) {
-  if (!ns)
-    return;
-  auto [_, novel] = out.insert(ns);
-  if (!novel)
-    return;
-
-  for (const NfaTransition &tr : ns->transitions_)
-    allStatesRecurse(out, tr.next_);
+  for (const NfaTransition &tr : ns->transitions_) {
+    NfaState *next = tr.next_;
+    auto [_, novel] = out.insert(next);
+    if (novel)
+      allStatesRecurse(out, next);
+  }
 }
 
 
@@ -86,7 +84,10 @@ size_t hashState(const NfaState *ns) {
 
 NfaStateSet allStates(NfaState *ns) {
   NfaStateSet rv;
-  allStatesRecurse(rv, ns);
+  if (ns) {
+    rv.insert(ns);
+    allStatesRecurse(rv, ns);
+  }
   return rv;
 }
 

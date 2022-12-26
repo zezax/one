@@ -11,17 +11,34 @@ namespace zezax::red {
 
 using std::numeric_limits;
 using std::string_view;
+using std::unordered_map;
 using std::vector;
 
 namespace {
 
-void allStatesRecurse(StateIdSet &seen,
-                      const std::vector<DfaState> &states,
-                      StateId sid) {
-  const DfaState &ds = states[sid];
-  for (auto [_, id] : ds.trans_.getMap())
+void allStatesRecurse(StateIdSet             &seen,
+                      const vector<DfaState> &states,
+                      StateId                 sid) {
+  for (auto [_, id] : states[sid].trans_.getMap())
     if (!seen.testAndSet(id))
       allStatesRecurse(seen, states, id);
+}
+
+
+CharIdx maxCharRecurse(StateIdSet             &seen,
+                       const vector<DfaState> &states,
+                       StateId                 sid) {
+  CharIdx maxChar = 0;
+  for (auto [ch, id] : states[sid].trans_.getMap()) {
+    if (ch > maxChar)
+      maxChar = ch;
+    if (!seen.testAndSet(id)) {
+      CharIdx sub = maxCharRecurse(seen, states, id);
+      if (sub > maxChar)
+        maxChar = sub;
+    }
+  }
+  return maxChar;
 }
 
 
@@ -51,18 +68,9 @@ bool shareFate(const vector<DfaState> &states, CharIdx aa, CharIdx bb) {
 
 } // anonymous
 
-StateIdSet allStates(const std::vector<DfaState> &states) {
-  StateIdSet seen;
-  seen.set(gDfaErrorId);
-  seen.set(gDfaInitialId);
-  allStatesRecurse(seen, states, gDfaInitialId);
-  return seen;
-}
-
-
 DfaObj transcribeDfa(const DfaObj &src) {
   DfaObj rv;
-  StateIdSet states = allStates(src.getStates());
+  StateIdSet states = src.allStateIds();
   rv.reserve(states.population());
 
   StateToStateMap oldToNew;
@@ -92,6 +100,9 @@ DfaObj transcribeDfa(const DfaObj &src) {
     newState.deadEnd_ = srcState.deadEnd_;
   }
 
+  // copy equivalence map
+  rv.copyEquivMap(src);
+
   return rv;
 }
 
@@ -105,21 +116,24 @@ void flagDeadEnds(vector<DfaState> &states) {
 }
 
 
-// FIXME: put in minimizer/ executable???
-vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states) {
+vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
+                                   CharIdx                 maxChar) {
+  CharIdx limit = maxChar + 1;
+  if (limit < gAlphabetSize)
+    limit = gAlphabetSize;
   vector<CharIdx> map;
-  map.reserve(gAlphabetSize);
+  map.reserve(limit);
   CharIdx cur = 0;
 
-  for (CharIdx ii = 0; ii < gAlphabetSize; ++ii) {
+  for (CharIdx ii = 0; ii < limit; ++ii) {
     CharIdx jj;
     for (jj = 0; jj < ii; ++jj)
       if (shareFate(states, ii, jj)) {
-        safeRef(map, ii) = safeRef(map, jj);
+        map.push_back(map[jj]);
         break;
       }
     if (jj >= ii)
-      safeRef(map, ii) = cur++;
+      map.push_back(cur++);
   }
 
   return map;
@@ -128,7 +142,7 @@ vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states) {
 
 void remapStates(vector<DfaState> &states, const vector<CharIdx> &map) {
   if (map.empty())
-    return;
+    throw RedExcept("empty equivalence map");
   for (DfaState &ds : states) {
     CharToStateMap work;
     for (auto [ch, id] : ds.trans_.getMap())
@@ -141,11 +155,13 @@ void remapStates(vector<DfaState> &states, const vector<CharIdx> &map) {
 
 void DfaObj::clear() {
   states_.clear();
+  equivMap_.clear();
 }
 
 
 void DfaObj::swap(DfaObj &other) {
   states_.swap(other.states_);
+  equivMap_.swap(other.equivMap_);
 }
 
 
@@ -157,22 +173,52 @@ StateId DfaObj::newState() {
 
 
 StateIdSet DfaObj::allStateIds() const {
-  return allStates(states_);
+  StateIdSet seen;
+  seen.set(gDfaErrorId);
+  seen.set(gDfaInitialId);
+  allStatesRecurse(seen, states_, gDfaInitialId);
+  return seen;
 }
 
 
-void DfaObj::useEquivalenceMap() {
-  //FIXME: store map in obj
-  vector<CharIdx> map = makeEquivalenceMap(states_);
+CharIdx DfaObj::findMaxChar() const {
+  StateIdSet seen;
+  seen.set(gDfaInitialId);
+  return maxCharRecurse(seen, states_, gDfaInitialId);
+}
+
+
+void DfaObj::chopEndMarks() {
+  for (DfaState &ds : states_) {
+    bool first = true;
+    CharToStateMap::Map &tmap = ds.trans_.getMap();
+    for (auto it = tmap.begin(); it != tmap.end(); )
+      if ((it->first >= gAlphabetSize) && (it->second != gDfaErrorId)) {
+        if (first) {
+          ds.result_ = it->first - gAlphabetSize;
+          first = false;
+        }
+        it = tmap.erase(it);
+      }
+      else
+        ++it;
+  }
+}
+
+
+void DfaObj::installEquivalenceMap() {
+  vector<CharIdx> map = makeEquivalenceMap(states_, findMaxChar());
   remapStates(states_, map);
+  equivMap_.swap(map);
 }
 
 
 Result DfaObj::match(string_view s) {
-  // FIXME: char groups???
   DfaState *cur = &states_[gDfaInitialId];
   for (char c : s) {
     CharIdx ch = static_cast<CharIdx>(c);
+    if (ch < equivMap_.size())
+      ch = equivMap_[ch];
     cur = &states_[cur->trans_[ch]];
     if (cur->deadEnd_)
       break;
