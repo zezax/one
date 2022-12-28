@@ -14,20 +14,11 @@ using std::vector;
 
 namespace {
 
-NfaState mkState(StateId id, Result result) {
-  NfaState rv;
-  rv.id_ = id;
-  rv.result_ = result;
-  rv.allocNext_ = nullptr;
-  return rv;
-}
-
-
-void addTrans(NfaState *from, NfaState *to, CharIdx ch) {
+void addTrans(NfaObj &nfa, NfaId from, NfaId to, CharIdx ch) {
   NfaTransition x;
   x.next_ = to;
   x.multiChar_.set(ch);
-  from->transitions_.emplace_back(std::move(x));
+  nfa[from].transitions_.emplace_back(std::move(x));
 }
 
 } // anonymous
@@ -65,58 +56,60 @@ TEST(Convert, stepwise) {
   // |a,b|
   // v   | a       b
   // S1 -+---> S2 ---> S3 accept
-  NfaState s1 = mkState(1, 0);
-  NfaState s2 = mkState(2, 0);
-  NfaState s3 = mkState(3, 1);
-  addTrans(&s1, &s1, 'a');
-  addTrans(&s1, &s1, 'b');
-  addTrans(&s1, &s2, 'a');
-  addTrans(&s2, &s3, 'b');
-  MultiCharSet all = allMultiChars(&s1);
+  NfaObj nfa;
+  NfaId s1 = nfa.newState(0);
+  NfaId s2 = nfa.newState(0);
+  NfaId s3 = nfa.newState(1);
+  addTrans(nfa, s1, s1, 'a');
+  addTrans(nfa, s1, s1, 'b');
+  addTrans(nfa, s1, s2, 'a');
+  addTrans(nfa, s2, s3, 'b');
+  nfa.setNfaInitial(s1);
+  MultiCharSet all = nfa.allMultiChars(s1);
   MultiCharSet basis = basisMultiChars(all);
   vector<MultiChar> chars;
   for (auto it = basis.begin(); it != basis.end(); ++it)
     chars.emplace_back(std::move(*it));
-  NfaStatesToTransitions tbl = makeTable(&s1, chars);
+  NfaStatesToTransitions tbl = makeTable(s1, nfa, chars);
   EXPECT_EQ(3, tbl.size());
 
-  NfaStateSet ss1;
-  ss1.insert(&s1);
-  NfaStateSet ss12;
-  ss12.insert(&s1);
-  ss12.insert(&s2);
-  NfaStateSet ss13;
-  ss13.insert(&s1);
-  ss13.insert(&s3);
+  NfaIdSet nis1;
+  nis1.set(s1);
+  NfaIdSet nis12;
+  nis12.set(s1);
+  nis12.set(s2);
+  NfaIdSet nis13;
+  nis13.set(s1);
+  nis13.set(s3);
 
-  ASSERT_TRUE(tbl.contains(ss1));
-  vector<NfaStateSet> &v = tbl[ss1];
+  ASSERT_TRUE(tbl.contains(nis1));
+  vector<NfaIdSet> &v = tbl[nis1];
   EXPECT_EQ(2, v.size());
-  EXPECT_TRUE(contains(v, ss1));
-  EXPECT_TRUE(contains(v, ss12));
+  EXPECT_TRUE(contains(v, nis1));
+  EXPECT_TRUE(contains(v, nis12));
 
-  ASSERT_TRUE(tbl.contains(ss12));
-  v = tbl[ss12];
+  ASSERT_TRUE(tbl.contains(nis12));
+  v = tbl[nis12];
   EXPECT_EQ(2, v.size());
-  EXPECT_TRUE(contains(v, ss12));
-  EXPECT_TRUE(contains(v, ss13));
+  EXPECT_TRUE(contains(v, nis12));
+  EXPECT_TRUE(contains(v, nis13));
 
-  ASSERT_TRUE(tbl.contains(ss13));
-  v = tbl[ss13];
+  ASSERT_TRUE(tbl.contains(nis13));
+  v = tbl[nis13];
   EXPECT_EQ(2, v.size());
-  EXPECT_TRUE(contains(v, ss1));
-  EXPECT_TRUE(contains(v, ss12));
+  EXPECT_TRUE(contains(v, nis1));
+  EXPECT_TRUE(contains(v, nis12));
 
-  NfaStateToCount counts = countAcceptingStates(tbl);
+  NfaStateToCount counts = countAcceptingStates(tbl, nfa);
   EXPECT_EQ(1, counts.size());
-  ASSERT_TRUE(counts.contains(&s3));
-  EXPECT_EQ(1, counts[&s3]);
+  ASSERT_TRUE(counts.contains(s3));
+  EXPECT_EQ(1, counts[s3]);
 
   NfaStatesToId map;
   DfaObj dfa;
   StateId id = dfa.newState();
   EXPECT_EQ(gDfaErrorId, id);
-  id = dfaFromNfa(chars, tbl, counts, ss1, map, dfa);
+  id = dfaFromNfa(chars, tbl, counts, nis1, map, nfa, dfa);
   EXPECT_EQ(gDfaInitialId, id);
   EXPECT_EQ(4, dfa.getStates().size());
   //      +---+     +---+
@@ -131,17 +124,17 @@ TEST(Convert, convert) {
   // |a,b|
   // v   | a       b      [1]
   // S1 -+---> S2 ---> S3 ---> S4 accept
-  NfaState s1 = mkState(1, 0);
-  NfaState s2 = mkState(2, 0);
-  NfaState s3 = mkState(3, 0);
-  NfaState s4 = mkState(4, 1); // end mark
-  addTrans(&s1, &s1, 'a');
-  addTrans(&s1, &s1, 'b');
-  addTrans(&s1, &s2, 'a');
-  addTrans(&s2, &s3, 'b');
-  addTrans(&s3, &s4, gAlphabetSize + 1); // end mark
   NfaObj nfa;
-  nfa.setNfaInitial(&s1);
+  NfaId s1 = nfa.newState(0);
+  NfaId s2 = nfa.newState(0);
+  NfaId s3 = nfa.newState(0);
+  NfaId s4 = nfa.newState(1); // end mark
+  addTrans(nfa, s1, s1, 'a');
+  addTrans(nfa, s1, s1, 'b');
+  addTrans(nfa, s1, s2, 'a');
+  addTrans(nfa, s2, s3, 'b');
+  addTrans(nfa, s3, s4, gAlphabetSize + 1); // end mark
+  nfa.setNfaInitial(s1);
 
   DfaObj dfa = convertNfaToDfa(nfa);
   const vector<DfaState> &states = dfa.getStates();

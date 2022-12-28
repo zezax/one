@@ -15,32 +15,32 @@ using std::vector;
 ///////////////////////////////////////////////////////////////////////////////
 
 DfaObj convertNfaToDfa(const NfaObj &nfa) {
-  NfaState *initial = nfa.getNfaInitial();
+  NfaId initial = nfa.getNfaInitial();
 
   vector<MultiChar> multiChars;
   {
-    MultiCharSet allMcs = allMultiChars(initial);
+    MultiCharSet allMcs = nfa.allMultiChars(initial);
     MultiCharSet basisMcs = basisMultiChars(allMcs);
     allMcs.clear(); // save memory
     for (auto it = basisMcs.begin(); it != basisMcs.end(); ++it)
       multiChars.emplace_back(std::move(*it));
   }
 
-  NfaStatesToTransitions table = makeTable(initial, multiChars);
-  NfaStateToCount counts = countAcceptingStates(table);
+  NfaStatesToTransitions table = makeTable(initial, nfa, multiChars);
+  NfaStateToCount counts = countAcceptingStates(table, nfa);
 
   DfaObj dfa;
   StateId id = dfa.newState();
   if (id != gDfaErrorId)
     throw RedExcept("dfa error state must be zero");
 
-  NfaStateSet states;
-  states.insert(initial);
+  NfaIdSet states;
+  states.set(initial);
   NfaStatesToId nfaToDfa;
   auto it = table.find(states);
   if (it == table.end())
     throw RedExcept("cannot find initial nfa states");
-  id = dfaFromNfa(multiChars, table, counts, states, nfaToDfa, dfa);
+  id = dfaFromNfa(multiChars, table, counts, states, nfaToDfa, nfa, dfa);
   if (id != gDfaInitialId)
     throw RedExcept("dfa initial state must be one");
   dfa.chopEndMarks(); // end marks have done their job
@@ -82,33 +82,35 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
 }
 
 
-NfaStatesToTransitions makeTable(NfaState          *initial,
-                                 vector<MultiChar> &allMultiChars) {
+NfaStatesToTransitions makeTable(NfaId                    initial,
+                                 const NfaObj            &nfa,
+                                 const vector<MultiChar> &allMultiChars) {
   NfaStatesToTransitions table;
 
-  NfaStateSet initialStates;
-  initialStates.insert(initial);
-  unordered_set<NfaStateSet> todoSet;
+  NfaIdSet initialStates;
+  initialStates.set(initial);
+  unordered_set<NfaIdSet> todoSet;
   todoSet.emplace(std::move(initialStates));
 
   while (!todoSet.empty()) {
     auto todoNode = todoSet.extract(todoSet.begin());
-    NfaStateSet &todo = todoNode.value();
+    NfaIdSet &todo = todoNode.value();
 
-    std::pair<NfaStateSet, vector<NfaStateSet>> tableNode;
-    tableNode.first = todo;
+    std::pair<NfaIdSet, vector<NfaIdSet>> tableNode;
+    tableNode.first = std::move(todo);
     auto [tableIt, novel] = table.emplace(std::move(tableNode));
     if (novel) {
-      size_t idx = 0;
-      for (MultiChar &mc : allMultiChars) {
-        for (NfaState *state : todo)
-          for (NfaTransition &trans : state->transitions_)
+      size_t n = allMultiChars.size();
+      tableIt->second.reserve(n);
+      for (size_t idx = 0; idx < n; ++idx) {
+        const MultiChar &mc = allMultiChars[idx];
+        for (NfaId id : tableIt->first)
+          for (const NfaTransition &trans : nfa[id].transitions_)
             if (mc.hasIntersection(trans.multiChar_))
-              safeRef(tableIt->second, idx).insert(trans.next_);
-        ++idx;
+              safeRef(tableIt->second, idx).set(trans.next_);
       }
-      for (NfaStateSet &ss : tableIt->second)
-        todoSet.insert(ss);
+      for (NfaIdSet &nis : tableIt->second)
+        todoSet.insert(nis);
     }
   }
 
@@ -116,29 +118,32 @@ NfaStatesToTransitions makeTable(NfaState          *initial,
 }
 
 
-NfaStateToCount countAcceptingStates(const NfaStatesToTransitions &table) {
+NfaStateToCount countAcceptingStates(const NfaStatesToTransitions &table,
+                                     const NfaObj                 &nfa) {
   NfaStateToCount rv;
-  for (auto tableIt = table.begin(); tableIt != table.end(); ++tableIt)
-    for (const NfaState *ns : tableIt->first)
-      if (accepts(ns)) {
-        auto [it, _] = rv.emplace(ns, 0);
+  for (const auto &[states, _] : table)
+    for (NfaId id : states)
+      if (nfa.accepts(id)) {
+        auto [it, dummy] = rv.emplace(id, 0);
         ++it->second;
       }
   return rv;
 }
 
 
-Result getResult(const NfaStateSet &ss, const NfaStateToCount &counts) {
+Result getResult(const NfaIdSet        &nis,
+                 const NfaStateToCount &counts,
+                 const NfaObj          &nfa) {
   Result rv = -1;
   size_t min = numeric_limits<size_t>::max();
 
-  for (const NfaState *state : ss) {
-    auto it = counts.find(state);
+  for (NfaId id : nis) {
+    auto it = counts.find(id);
     if (it != counts.end()) {
       size_t num = it->second;
       if (num < min) { // lowest number of accepting wins
         min = num;
-        rv = state->result_;
+        rv = nfa[id].result_;
       }
     }
   }
@@ -150,11 +155,12 @@ Result getResult(const NfaStateSet &ss, const NfaStateToCount &counts) {
 StateId dfaFromNfa(const vector<MultiChar>      &multiChars,
                    const NfaStatesToTransitions &table,
                    const NfaStateToCount        &counts,
-                   const NfaStateSet            &states,
+                   const NfaIdSet               &stateSet,
                    NfaStatesToId                &map,
+                   const NfaObj                 &nfa,
                    DfaObj                       &dfa) {
-  std::pair<NfaStateSet, StateId> mapNode;
-  mapNode.first = states;
+  std::pair<NfaIdSet, StateId> mapNode;
+  mapNode.first = stateSet;
   auto [mapIter, novel] = map.emplace(std::move(mapNode));
   if (!novel)
     return mapIter->second;
@@ -162,22 +168,22 @@ StateId dfaFromNfa(const vector<MultiChar>      &multiChars,
   StateId dfaId = dfa.newState();
   mapIter->second = dfaId;
 
-  auto tableIter = table.find(states);
+  auto tableIter = table.find(stateSet);
   if (tableIter == table.end())
     return dfaId; // FIXME can this happen? is it right?
 
   StateId ii = 0;
-  for (const NfaStateSet &ss : tableIter->second) {
-    if (!ss.empty()) {
-      StateId subId = dfaFromNfa(multiChars, table, counts, ss, map, dfa);
+  for (const NfaIdSet &nis : tableIter->second) {
+    if (nis.population() > 0) {
+      StateId subId = dfaFromNfa(multiChars, table, counts, nis, map, nfa, dfa);
       for (CharIdx ch : multiChars[ii]) // FIXME why is mc[ii] valid???
         dfa[dfaId].trans_.set(ch, subId);
     }
     ++ii;
   }
 
-  if (hasAccept(states))
-    dfa[dfaId].result_ = getResult(states, counts);
+  if (nfa.hasAccept(stateSet))
+    dfa[dfaId].result_ = getResult(stateSet, counts, nfa);
 
   return dfaId;
 }

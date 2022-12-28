@@ -42,6 +42,18 @@ string visibleChar(CharIdx ch) {
 }
 
 
+void toStringAppend(string &out, const NfaIdSet &nis) {
+  bool first = true;
+  for (NfaIdSetIter it = nis.begin(); it != nis.end(); ++it) {
+    if (first)
+      first = false;
+    else
+      out += ',';
+    out += to_string(*it);
+  }
+}
+
+
 void toStringAppend(string &out, const StateIdSet &sis) {
   bool first = true;
   for (StateIdSetIter it = sis.begin(); it != sis.end(); ++it) {
@@ -54,11 +66,11 @@ void toStringAppend(string &out, const StateIdSet &sis) {
 }
 
 
-void toStringAppend(string &out, const NfaState *ns) {
-  out += "NfaState " + to_string(ns->id_) +
-    " -> " + to_string(ns->result_) + '\n';
-  for (const NfaTransition &tr : ns->transitions_)
-    out += "  " + to_string(tr.next_->id_) + " <- " +
+void toStringAppend(string &out, const NfaState &ns) {
+  out += "NfaState " + to_string(ns.id_) +
+    " -> " + to_string(ns.result_) + '\n';
+  for (const NfaTransition &tr : ns.transitions_)
+    out += "  " + to_string(tr.next_) + " <- " +
       toString(tr.multiChar_) + '\n';
 }
 
@@ -111,6 +123,13 @@ string toString(const MultiCharSet &mcs) {
 }
 
 
+string toString(const NfaIdSet &nis) {
+  string rv;
+  toStringAppend(rv, nis);
+  return rv;
+}
+
+
 string toString(const StateIdSet &sis) {
   string rv;
   toStringAppend(rv, sis);
@@ -146,33 +165,38 @@ string toString(const Token &t) {
 }
 
 
-string toString(const NfaState *ns) {
+string toString(const NfaState &ns) {
   string rv;
   toStringAppend(rv, ns);
   return rv;
 }
 
 
-string toStringDeep(const NfaState *ns) {
-  NfaStateSet all = allStates(const_cast<NfaState *>(ns));
-  vector<std::pair<StateId, const NfaState *>> vec;
-  for (const NfaState *state : all)
-    vec.emplace_back(state->id_, state);
+string toStringDeep(const NfaObj &nfa) {
+  return toStringDeep(nfa, nfa.getNfaInitial());
+}
+
+
+string toStringDeep(const NfaObj &nfa, NfaId id) {
+  NfaIdSet all = nfa.allStates(id);
+  vector<NfaId> vec;
+  for (NfaId nid : all)
+    vec.emplace_back(nid);
   std::sort(vec.begin(), vec.end());
 
   string rv;
-  for (auto [id, state] : vec) {
-    toStringAppend(rv, state);
+  for (NfaId nid : vec) {
+    toStringAppend(rv, nfa[nid]);
     rv += '\n';
   }
   return rv;
 }
 
 
-string toString(const NfaStateSet &ss) {
+string toString(const NfaIdSet &nis, const NfaObj &nfa) {
   string rv = "set{\n";
-  for (const NfaState *ns : ss)
-    rv += toString(ns) + '\n';
+  for (NfaId id : nis)
+    rv += toString(nfa[id]) + '\n';
   return rv + "}\n";
 }
 
@@ -181,8 +205,8 @@ string toString(const NfaStatesToTransitions &tbl) {
   string rv = "map(\n";
   for (auto &[key, val] : tbl) {
     rv += "key:" + toString(key) + "val:[";
-    for (const NfaStateSet &ss : val)
-      rv += toString(ss);
+    for (const NfaIdSet &nis : val)
+      rv += toString(nis);
     rv += "]\n";
   }
   return rv + ")\n";
@@ -192,7 +216,7 @@ string toString(const NfaStatesToTransitions &tbl) {
 string toString(const NfaStateToCount &c) {
   string rv = "counts(\n";
   for (auto [key, val] : c)
-    rv += "key:" + toString(key) + "val:" + to_string(val);
+    rv += "key:" + to_string(key) + "val:" + to_string(val);
   return rv + ")\n";
 }
 

@@ -376,7 +376,12 @@ Index BitSet<Index, Word>::population() const {
 
 template <class Index, class Word>
 size_t BitSet<Index, Word>::hash() const {
-  return fnv1a<size_t>(vec_.data(), vec_.size() * sizeof(Word));
+  size_t limit = 0;
+  size_t n = vec_.size();
+  for (size_t ii = 0; ii < n; ++ii)
+    if (vec_[ii])
+      limit = ii + 1;
+  return fnv1a<size_t>(vec_.data(), limit * sizeof(Word));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -384,6 +389,8 @@ size_t BitSet<Index, Word>::hash() const {
 // names more clear for specific purpose...
 typedef BitSet<CharIdx> MultiChar;
 typedef BitSet<CharIdx>::Iter MultiCharIter;
+typedef BitSet<NfaId> NfaIdSet;
+typedef BitSet<NfaId>::Iter NfaIdSetIter;
 typedef BitSet<StateId> StateIdSet;
 typedef BitSet<StateId>::Iter StateIdSetIter;
 
@@ -392,6 +399,12 @@ typedef BitSet<StateId>::Iter StateIdSetIter;
 // for use in std::unordered_map
 template<> struct std::hash<zezax::red::MultiChar> {
   size_t operator()(const zezax::red::MultiChar &mc) const { return mc.hash(); }
+};
+
+template<> struct std::hash<zezax::red::NfaIdSet> {
+  size_t operator()(const zezax::red::NfaIdSet &nis) const {
+    return nis.hash();
+  }
 };
 
 template<> struct std::hash<zezax::red::StateIdSet> {

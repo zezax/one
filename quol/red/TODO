@@ -1,5 +1,6 @@
 - document ^ and $ behave differently
 - document empty string matches: ()* etc.
+- document lots of .*foo.* .*bar.* patterns cause memory explosion
 - compressed transition map
 - high-locality final dfa
 - vertically align identifiers in .h and .cpp
@@ -8,9 +9,15 @@
 - .depend directory
 - make dfa.cpp unit test.  move stuff from minimize.cpp
 - move stuff into classes if clearer
-- benchmark large build (/usr/share/dict/words)
 - detail namespace
-- perf (dbg asan):
-  - bitset hasIntersection (from makeTable)
-- Make NfaStateSet a bitvec of ids
+- mem hog: makeTable
+- cpu hog: makeTable
+- cpu hog: invert
+- cpu hog: equivalenceMap
 - Prune NFA states that are trivial dead ends
+- Word -> 64 bit?
+- template tag for bitsets NfaTag DfaTag
+- use range-for where possible
+- consider orderd set/map
+- trim dead-end nfa states
+- remove id from NfaState (if hash is ok)

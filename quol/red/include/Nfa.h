@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -10,20 +11,30 @@
 
 namespace zezax::red {
 
+constexpr StateId gNfaNullId   = 0;
+
 struct NfaState;
 
 struct NfaTransition {
-  NfaState *next_;
+  NfaId     next_;
   MultiChar multiChar_;
 };
 
 
 struct NfaState {
-  StateId id_;
+  NfaId  id_; // FIXME remove (will it affect hash?)
   Result result_;
-  NfaState *allocNext_;
   std::vector<NfaTransition> transitions_;
 };
+
+
+struct NfaStateTransition {
+  NfaId         state_;
+  NfaTransition transition_;
+};
+
+
+typedef std::unordered_set<MultiChar> MultiCharSet;
 
 
 class NfaObj {
@@ -35,66 +46,50 @@ public:
   NfaObj &operator=(const NfaObj &rhs) = delete;
   NfaObj &operator=(NfaObj &&rhs);
 
+  const NfaState &operator[](NfaId id) const { return states_[id]; }
+  NfaState &operator[](NfaId id) { return states_[id]; }
+
+  size_t size() const { return states_.size(); }
+
   void freeAll();
 
-  void setNfaInitial(NfaState *ns) { nfa_ = ns; }
-  NfaState *getNfaInitial() const { return nfa_; }
+  void setNfaInitial(NfaId id) { initId_ = id; }
+  NfaId getNfaInitial() const { return initId_; }
 
   void setGoal(Result g) { goal_ = g; }
   Result getGoal() const { return goal_; }
 
-  NfaState *newState(Result result);
-  NfaState *newGoalState() { return newState(goal_); }
-  NfaState *deepCopyState(NfaState *ns);
+  NfaId newState(Result result);
+  NfaId newGoalState() { return newState(goal_); }
+  NfaId deepCopyState(NfaId id);
 
-  NfaState *stateUnion(NfaState *xx, NfaState *yy);
-  NfaState *stateConcat(NfaState *xx, NfaState *yy);
-  NfaState *stateOptional(NfaState *ns);
-  NfaState *stateKleenStar(NfaState *ns);
-  NfaState *stateOneOrMore(NfaState *ns);
-  NfaState *stateCount(NfaState *ns, int min, int max);
-  NfaState *stateIgnoreCase(NfaState *ns);
-  NfaState *stateWildcard(); // .*
-  NfaState *stateEndMark(CharIdx r);
+  bool accepts(NfaId id) const;
+  bool hasAccept(const NfaIdSet &nis) const;
 
-  void selfUnion(NfaState *ns);
+  NfaIdSet allStates(NfaId id) const;
+  std::vector<NfaId> allAcceptingStates(NfaId id) const;
+  std::vector<NfaStateTransition> allAcceptingTransitions(NfaId id) const;
+  MultiCharSet allMultiChars(NfaId id) const;
+
+  NfaId stateUnion(NfaId xx, NfaId yy);
+  NfaId stateConcat(NfaId xx, NfaId yy);
+  NfaId stateOptional(NfaId id);
+  NfaId stateKleenStar(NfaId id);
+  NfaId stateOneOrMore(NfaId id);
+  NfaId stateCount(NfaId id, int min, int max);
+  NfaId stateIgnoreCase(NfaId id);
+  NfaId stateWildcard(); // dot-star
+  NfaId stateEndMark(CharIdx r);
+
+  void selfUnion(NfaId id);
 
 private:
   void reset();
+  NfaId copyRecurse(std::unordered_map<NfaId, NfaId> &map, NfaId id);
 
-  NfaState *nfa_;
-  NfaState *alloc_; // linked list for freeing
-  StateId   curId_;
-  Result    goal_; // for current regex being added
+  std::vector<NfaState> states_;
+  NfaId                 initId_;
+  Result                goal_; // for current regex being added
 };
-
-
-struct NfaStateTransition {
-  NfaState *state_;
-  NfaTransition transition_;
-};
-
-
-typedef std::unordered_set<NfaState *> NfaStateSet;
-typedef std::unordered_set<MultiChar> MultiCharSet;
-
-// useful functions...
-bool accepts(const NfaState *ns);
-bool hasAccept(const NfaStateSet &ss);
-size_t hashState(const NfaState *ns);
-NfaStateSet allStates(NfaState *ns);
-std::vector<NfaState *> allAcceptingStates(NfaState *ns);
-std::vector<NfaStateTransition> allAcceptingTransitions(NfaState *ns);
-MultiCharSet allMultiChars(NfaState *ns);
 
 } // namespace zezax::red
-
-// for use in std::unordered_map
-template<> struct std::hash<zezax::red::NfaStateSet> {
-  size_t operator()(const zezax::red::NfaStateSet &ss) const {
-    size_t rv = 0;
-    for (zezax::red::NfaState *ns : ss)
-      rv ^= zezax::red::hashState(ns); // order-independent
-    return rv;
-  }
-};

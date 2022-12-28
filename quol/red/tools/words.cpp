@@ -21,7 +21,7 @@ using std::string_view;
 using std::vector;
 
 #ifdef USE_JEMALLOC
-const char *malloc_conf = "prof:true,lg_prof_sample:20,lg_prof_interval:20,prof_prefix:/tmp/jeprof";
+const char *malloc_conf = "prof:true,lg_prof_sample:20,lg_prof_interval:25,prof_prefix:/tmp/jeprof";
 
 namespace {
 
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
   string line;
   int ii = 0;
   while (std::getline(file, line))
-    if ((++ii % 10000) == 0)
+    if ((++ii % 20000) == 0)
       words.push_back(line);
   std::cout << "Total words " << words.size() << std::endl;
 
@@ -71,8 +71,10 @@ int main(int argc, char **argv) {
       p.addRaw(word, ++res, fIgnoreCase | fLooseStart | fLooseEnd);
     }
     NfaObj &nfa = p.getNfa();
+    std::cout << "NFA size " << nfa.size() << std::endl;
     DfaObj dfa = convertNfaToDfa(nfa);
     nfa.freeAll();
+    std::cout << "Converted size " << dfa.getStates().size() << std::endl;
     {
       DfaMinimizer dm(dfa);
       dm.minimize();

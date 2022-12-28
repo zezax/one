@@ -27,14 +27,14 @@ public:
   void addRaw(std::string_view regex, Result result, FlagsT flags);
 
   NfaObj &getNfa() { return obj_; }
-  NfaState *getNfaInitial() { return obj_.getNfaInitial(); }
+  NfaId getNfaInitial() { return obj_.getNfaInitial(); }
 
 private:
-  NfaState *parseExpr();
-  NfaState *parseTerm();
-  NfaState *parseFactor();
-  NfaState *parseAtom();
-  NfaState *parseCharBits();
+  NfaId parseExpr();
+  NfaId parseTerm();
+  NfaId parseFactor();
+  NfaId parseAtom();
+  NfaId parseCharBits();
 
   void advance() { tok_ = scanner_.scanOne(); }
 

@@ -213,6 +213,9 @@ TEST(BitSet, hash) {
   mc.set(13);
   mc.set(69);
   EXPECT_EQ(0x6c3e6ed37ba113d5, mc.hash());
+  mc.set(1000);
+  mc.clear(1000);
+  EXPECT_EQ(0x6c3e6ed37ba113d5, mc.hash());
 }
 
 

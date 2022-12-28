@@ -12,8 +12,8 @@ TEST(Parser, smoke) {
   ReParser p;
   p.add("^a(l|e)[X-x]{,3}$", 1, 0);
   p.add("(meyer\\i)+", 2, 0);
-  NfaState *nfa = p.getNfaInitial();;
-  EXPECT_NE(nullptr, nfa);
+  NfaObj &nfa = p.getNfa();
+  EXPECT_NE(gNfaNullId, nfa.getNfaInitial());
   EXPECT_EQ(toStringDeep(nfa),
             R"raw(NfaState 1 -> 0
   2 <- a

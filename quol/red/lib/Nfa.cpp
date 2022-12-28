@@ -16,85 +16,100 @@ using std::vector;
 
 namespace {
 
-void allStatesRecurse(NfaStateSet &out, NfaState *ns) {
-  for (const NfaTransition &tr : ns->transitions_) {
-    NfaState *next = tr.next_;
-    auto [_, novel] = out.insert(next);
-    if (novel)
-      allStatesRecurse(out, next);
-  }
+bool stateAccepts(const NfaState &ns) {
+  return (ns.result_ > 0);
 }
 
 
-void allMultiCharsRecurse(MultiCharSet &out,
-                          NfaStateSet &seen,
-                          NfaState *ns) {
-  if (!ns)
-    return;
-  auto [_, novel] = seen.insert(ns);
-  if (!novel)
-    return;
+void allStatesRecurse(NfaIdSet &out, NfaId id, const vector<NfaState> &states) {
+  for (const NfaTransition &tr : states[id].transitions_)
+    if (!out.testAndSet(tr.next_))
+      allStatesRecurse(out, tr.next_, states);
+}
 
-  for (const NfaTransition &tr : ns->transitions_) {
+
+void allMultiCharsRecurse(MultiCharSet           &out,
+                          NfaIdSet               &seen,
+                          NfaId                   id,
+                          const vector<NfaState> &states) {
+  for (const NfaTransition &tr : states[id].transitions_) {
     out.emplace(tr.multiChar_);
-    allMultiCharsRecurse(out, seen, tr.next_);
+    if (!seen.testAndSet(tr.next_))
+      allMultiCharsRecurse(out, seen, tr.next_, states);
   }
-}
-
-
-NfaState *copyRecurse(NfaObj &obj,
-                      unordered_map<NfaState *, NfaState *> &map,
-                      NfaState *ns) {
-  if (!ns)
-    return nullptr;
-
-  auto [it, novel] = map.insert({ns, nullptr}); // FIXME ugly
-  if (novel) {
-    NfaState *state = obj.newState(ns->result_);
-    it->second = state;
-    for (NfaTransition &tr : ns->transitions_) {
-      state->transitions_.push_back(tr);
-      state->transitions_.back().next_ = copyRecurse(obj, map, tr.next_);
-    }
-    return state;
-  }
-  else
-    return it->second;
 }
 
 } // anonymous
 
-bool accepts(const NfaState *ns) {
-  return (ns->result_ > 0);
+NfaObj::NfaObj(NfaObj &&rhs)
+  : states_(std::move(rhs.states_)),
+    initId_(rhs.initId_),
+    goal_(rhs.goal_) {
+  rhs.reset();
 }
 
 
-bool hasAccept(const NfaStateSet &ss) {
-  for (const NfaState *ns : ss)
-    if (accepts(ns))
+NfaObj &NfaObj::operator=(NfaObj &&rhs) {
+  states_ = std::move(rhs.states_);
+  initId_ = rhs.initId_;
+  goal_ = rhs.goal_;
+  rhs.reset();
+  return *this;
+}
+
+
+void NfaObj::freeAll() {
+  states_.clear();
+  states_.shrink_to_fit();
+}
+
+
+NfaId NfaObj::newState(Result result) {
+  size_t len = states_.size();
+  if (len == 0)
+    len = 1; // zero is invalid state id
+  states_.resize(len + 1);
+  NfaState &ns = states_[len];
+  ns.id_ = static_cast<NfaId>(len); // FIXME need?
+  ns.result_ = result;
+  return ns.id_;
+}
+
+
+NfaId NfaObj::deepCopyState(NfaId id) {
+  if (!id)
+    return id;
+  unordered_map<NfaId, NfaId> map;
+  return copyRecurse(map, id);
+}
+
+
+bool NfaObj::accepts(NfaId id) const {
+  return stateAccepts(states_[id]);
+}
+
+
+bool NfaObj::hasAccept(const NfaIdSet &nis) const {
+  for (NfaId id : nis)
+    if (accepts(id))
       return true;
   return false;
 }
 
 
-size_t hashState(const NfaState *ns) {
-  return fnv1a<size_t>(&ns->id_, sizeof(ns->id_)); // should uniquely identify
-}
-
-
-NfaStateSet allStates(NfaState *ns) {
-  NfaStateSet rv;
-  if (ns) {
-    rv.insert(ns);
-    allStatesRecurse(rv, ns);
+NfaIdSet NfaObj::allStates(NfaId id) const {
+  NfaIdSet rv;
+  if (id) {
+    rv.set(id);
+    allStatesRecurse(rv, id, states_);
   }
   return rv;
 }
 
 
-vector<NfaState *> allAcceptingStates(NfaState *ns) {
-  vector<NfaState *> rv;
-  for (NfaState *state : allStates(ns)) {
+vector<NfaId> NfaObj::allAcceptingStates(NfaId id) const {
+  vector<NfaId> rv;
+  for (NfaId state : allStates(id)) {
     if (accepts(state))
       rv.push_back(state);
   }
@@ -102,10 +117,10 @@ vector<NfaState *> allAcceptingStates(NfaState *ns) {
 }
 
 
-vector<NfaStateTransition> allAcceptingTransitions(NfaState *ns) {
+vector<NfaStateTransition> NfaObj::allAcceptingTransitions(NfaId id) const {
   vector<NfaStateTransition> rv;
-  for (NfaState *state : allStates(ns))
-    for (NfaTransition &trans : state->transitions_)
+  for (NfaId state : allStates(id))
+    for (const NfaTransition &trans : states_[state].transitions_)
       if (accepts(trans.next_)) {
         NfaStateTransition nst{state, trans};
         rv.emplace_back(std::move(nst));
@@ -114,153 +129,119 @@ vector<NfaStateTransition> allAcceptingTransitions(NfaState *ns) {
 }
 
 
-MultiCharSet allMultiChars(NfaState *ns) {
+MultiCharSet NfaObj::allMultiChars(NfaId id) const {
   MultiCharSet rv;
-  NfaStateSet seen;
-  allMultiCharsRecurse(rv, seen, ns);
-  return rv;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-NfaObj::NfaObj(NfaObj &&rhs)
-: nfa_(rhs.nfa_), alloc_(rhs.alloc_), curId_(rhs.curId_), goal_(rhs.goal_) {
-  rhs.reset();
-}
-
-
-NfaObj &NfaObj::operator=(NfaObj &&rhs) {
-  nfa_ = rhs.nfa_;
-  alloc_ = rhs.alloc_;
-  curId_ = rhs.curId_;
-  goal_ = rhs.goal_;
-  rhs.reset();
-  return *this;
-}
-
-
-void NfaObj::freeAll() {
-  NfaState *ptr = alloc_;
-  while (ptr) {
-    NfaState *next = ptr->allocNext_;
-    delete ptr;
-    ptr = next;
+  NfaIdSet seen;
+  if (id) {
+    seen.set(id);
+    allMultiCharsRecurse(rv, seen, id, states_);
   }
-}
-
-
-NfaState *NfaObj::newState(Result result) {
-  NfaState *rv = new NfaState();
-  rv->id_ = ++curId_;
-  rv->result_ = result;
-  rv->allocNext_ = alloc_;
-  alloc_ = rv;
   return rv;
 }
 
 
-NfaState *NfaObj::deepCopyState(NfaState *ns) {
-  unordered_map<NfaState *, NfaState *> map;
-  return copyRecurse(*this, map, ns);
-}
-
-
-NfaState *NfaObj::stateUnion(NfaState *xx, NfaState *yy) {
-  if (!accepts(xx) && accepts(yy))
-    xx->result_ = yy->result_;
-  xx->transitions_.insert(xx->transitions_.end(),
-                          yy->transitions_.begin(),
-                          yy->transitions_.end());
+NfaId NfaObj::stateUnion(NfaId xx, NfaId yy) {
+  NfaState &sxx = states_[xx];
+  const NfaState &syy = states_[yy];
+  if (!stateAccepts(sxx) && stateAccepts(syy))
+    sxx.result_ = syy.result_;
+  sxx.transitions_.insert(sxx.transitions_.end(),
+                          syy.transitions_.begin(),
+                          syy.transitions_.end());
   return xx;
 }
 
 
-NfaState *NfaObj::stateConcat(NfaState *xx, NfaState *yy) {
+NfaId NfaObj::stateConcat(NfaId xx, NfaId yy) {
   if (!xx)
     return yy;
   if (!yy)
     return xx;
 
+  // FIXME: calls allStates() twice
   vector<NfaStateTransition> accTrans = allAcceptingTransitions(xx);
-  vector<NfaState *> accStates = allAcceptingStates(xx);
+  vector<NfaId> accStates = allAcceptingStates(xx);
 
   for (NfaStateTransition &strans : accTrans) {
     NfaTransition tr{yy, strans.transition_.multiChar_}; // FIXME
-    strans.state_->transitions_.emplace_back(std::move(tr));
+    states_[strans.state_].transitions_.emplace_back(std::move(tr));
   }
 
-  if (accepts(xx))
-    xx->transitions_.insert(xx->transitions_.end(),
-                            yy->transitions_.begin(),
-                            yy->transitions_.end());
+  NfaState &sxx = states_[xx];
+  const NfaState &syy = states_[yy];
+
+  if (stateAccepts(sxx))
+    sxx.transitions_.insert(sxx.transitions_.end(),
+                            syy.transitions_.begin(),
+                            syy.transitions_.end());
 
   Result keepResult = 0;
-  if (accepts(xx) && accepts(yy))
-    keepResult = xx->result_;
+  if (stateAccepts(sxx) && stateAccepts(syy))
+    keepResult = sxx.result_;
 
-  for (NfaState *state : accStates)
-    state->result_ = 0; // no longer accepting
+  for (NfaId id : accStates)
+    states_[id].result_ = 0; // no longer accepting
 
   if (keepResult > 0)
-    xx->result_ = keepResult;
+    sxx.result_ = keepResult;
 
   return xx;
 }
 
 
-NfaState *NfaObj::stateOptional(NfaState *ns) {
-  ns->result_ = goal_;
-  return ns;
+NfaId NfaObj::stateOptional(NfaId id) {
+  states_[id].result_ = goal_;
+  return id;
 }
 
 
-NfaState *NfaObj::stateKleenStar(NfaState *ns) {
-  vector<NfaStateTransition> accTrans = allAcceptingTransitions(ns);
+NfaId NfaObj::stateKleenStar(NfaId id) {
+  vector<NfaStateTransition> accTrans = allAcceptingTransitions(id);
   for (NfaStateTransition &strans : accTrans) {
-    NfaTransition tr{ns, strans.transition_.multiChar_}; //FIXME
-    strans.state_->transitions_.emplace_back(std::move(tr));
+    NfaTransition tr{id, strans.transition_.multiChar_}; //FIXME
+    states_[strans.state_].transitions_.emplace_back(std::move(tr));
   }
-  return stateOptional(ns);
+  return stateOptional(id);
 }
 
 
-NfaState *NfaObj::stateOneOrMore(NfaState *ns) {
-  return stateConcat(ns, stateKleenStar(deepCopyState(ns)));
+NfaId NfaObj::stateOneOrMore(NfaId id) {
+  return stateConcat(id, stateKleenStar(deepCopyState(id)));
 }
 
 
-NfaState *NfaObj::stateCount(NfaState *ns, int min, int max) {
+NfaId NfaObj::stateCount(NfaId id, int min, int max) {
   if (min == 0) {
     if (max < 0)
-      return stateKleenStar(ns);
-    NfaState *option = nullptr;
+      return stateKleenStar(id);
+    NfaId option = gNfaNullId;
     for (int ii = 1; ii < max; ++ii)
-      option = stateConcat(option, stateOptional(deepCopyState(ns)));
-    return stateConcat(stateOptional(ns), option);
+      option = stateConcat(option, stateOptional(deepCopyState(id)));
+    return stateConcat(stateOptional(id), option);
   }
 
   if (min < 0)
     min = max;
-  NfaState *caboose = nullptr;
+  NfaId caboose = gNfaNullId;
   if (max < 0)
-    caboose = stateKleenStar(deepCopyState(ns));
+    caboose = stateKleenStar(deepCopyState(id));
   else {
     int num = max - min;
     for (int ii = 0; ii < num; ++ii)
-      caboose = stateConcat(caboose, stateOptional(deepCopyState(ns)));
+      caboose = stateConcat(caboose, stateOptional(deepCopyState(id)));
   }
 
-  NfaState *front = nullptr;
+  NfaId front = gNfaNullId;
   for (int ii = 1; ii < min; ++ii)
-    front = stateConcat(front, deepCopyState(ns));
-  front = stateConcat(ns, front);
+    front = stateConcat(front, deepCopyState(id));
+  front = stateConcat(id, front);
   return stateConcat(front, caboose);
 }
 
 
-NfaState *NfaObj::stateIgnoreCase(NfaState *ns) {
-  for (NfaState *state : allStates(ns)) {
-    for (NfaTransition &trans : state->transitions_) {
+NfaId NfaObj::stateIgnoreCase(NfaId id) {
+  for (NfaId state : allStates(id)) {
+    for (NfaTransition &trans : states_[state].transitions_) {
       for (Byte uc = 'A'; uc <= 'Z'; ++uc)
         if (trans.multiChar_.get(uc))
           trans.multiChar_.set(uc + 32); // lower-case in ascii
@@ -269,49 +250,67 @@ NfaState *NfaObj::stateIgnoreCase(NfaState *ns) {
           trans.multiChar_.set(uc - 32); // upper-case in ascii
     }
   }
-  return ns;
+  return id;
 }
 
 
-NfaState *NfaObj::stateWildcard() { // basically .*
+NfaId NfaObj::stateWildcard() { // basically dot-star
   MultiChar mc;
   mc.resize(gAlphabetSize);
   mc.setAll();
-  NfaState *init = newState(0);
-  NfaState *goal = newGoalState();
+  NfaId init = newState(0);
+  NfaId goal = newGoalState();
   NfaTransition tr{goal, mc}; // FIXME constructor
-  init->transitions_.emplace_back(std::move(tr));
+  states_[init].transitions_.emplace_back(std::move(tr));
   return stateKleenStar(init);
 }
 
 
-NfaState *NfaObj::stateEndMark(CharIdx res) {
+NfaId NfaObj::stateEndMark(CharIdx res) {
   CharIdx x = res + gAlphabetSize;
   if ((x < res) || (x < gAlphabetSize))
     throw RedExcept("end-mark overflow");
   MultiChar mc;
   mc.set(x);
-  NfaState *init = newState(0);
-  NfaState *goal = newGoalState();
+  NfaId init = newState(0);
+  NfaId goal = newGoalState();
   NfaTransition tr{goal, mc}; // FIXME constructor
-  init->transitions_.emplace_back(std::move(tr));
+  states_[init].transitions_.emplace_back(std::move(tr));
   return init;
 }
 
 
-void NfaObj::selfUnion(NfaState *ns) {
-  if (nfa_)
-    nfa_ = stateUnion(nfa_, ns);
+void NfaObj::selfUnion(NfaId id) {
+  if (initId_)
+    initId_ = stateUnion(initId_, id);
   else
-    nfa_ = ns;
+    initId_ = id;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void NfaObj::reset() {
+  freeAll();
+  initId_ = gNfaNullId;
+  goal_ = 0;
 }
 
 
-void NfaObj::reset() {
-  nfa_ = nullptr;
-  alloc_ = nullptr;
-  curId_ = 0;
-  goal_ = 0;
+NfaId NfaObj::copyRecurse(unordered_map<NfaId, NfaId> &map, NfaId id) {
+  auto [it, novel] = map.insert({id, 0}); // FIXME ugly
+  if (novel) {
+    NfaId newId = newState(states_[id].result_);
+    it->second = newId;
+    for (const NfaTransition &tr : states_[id].transitions_) {
+      NfaId subId = copyRecurse(map, tr.next_);
+      auto &newTrs = states_[newId].transitions_;
+      newTrs.push_back(tr);
+      newTrs.back().next_ = subId;
+    }
+    return newId;
+  }
+  else
+    return it->second;
 }
 
 } // namespace zezax::red

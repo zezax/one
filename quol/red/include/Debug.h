@@ -19,12 +19,14 @@ namespace zezax::red {
 // FIXME: optional line prefix arg
 std::string toString(const MultiChar &mc);
 std::string toString(const MultiCharSet &mcs);
+std::string toString(const NfaIdSet &nis);
 std::string toString(const StateIdSet &sis);
 std::string toString(const std::vector<StateIdSet> &blocks);
 std::string toString(const Token &t);
-std::string toString(const NfaState *s);
-std::string toStringDeep(const NfaState *s);
-std::string toString(const NfaStateSet &ss);
+std::string toString(const NfaState &ns);
+std::string toStringDeep(const NfaObj &nfa);
+std::string toStringDeep(const NfaObj &nfa, NfaId id);
+std::string toString(const NfaIdSet &nis, const NfaObj &nfa);
 std::string toString(const NfaStatesToTransitions &tbl);
 std::string toString(const NfaStateToCount &c);
 

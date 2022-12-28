@@ -69,13 +69,13 @@ void ReParser::addRaw(string_view regex, Result result, FlagsT flags) {
   flags_ = flags;
   level_ = 0;
 
-  NfaState *startWild = nullptr;
+  NfaId startWild = gNfaNullId;
   if (flags_ & fLooseStart)
     startWild = obj_.stateWildcard(); // do early for proper numbering
 
   scanner_.init(regex);
   advance();
-  NfaState *state = parseExpr();
+  NfaId state = parseExpr();
 
   if (!state)
     throw RedExcept("uncategorized parsing error");
@@ -95,42 +95,42 @@ void ReParser::addRaw(string_view regex, Result result, FlagsT flags) {
 }
 
 
-NfaState *ReParser::parseExpr() {
-  NfaState *state = parseTerm();
+NfaId ReParser::parseExpr() {
+  NfaId state = parseTerm();
   if (!state)
-    return nullptr;
+    return gNfaNullId;
 
   while (tok_.type_ == tBar) {
     advance();
-    NfaState *alt = parseTerm();
+    NfaId alt = parseTerm();
     if (!alt)
-      return nullptr;
+      return gNfaNullId;
     state = obj_.stateUnion(state, alt);
   }
   return state;
 }
 
 
-NfaState *ReParser::parseTerm() {
+NfaId ReParser::parseTerm() {
   validated_ = false;
-  NfaState *state = parseFactor();
+  NfaId state = parseFactor();
   if (!state)
-    return nullptr;
+    return gNfaNullId;
 
   while ((tok_.type_ == tChars) || (tok_.type_ == tLeft)) {
-    NfaState *more = parseFactor();
+    NfaId more = parseFactor();
     if (!more)
-      return nullptr;
+      return gNfaNullId;
     state = obj_.stateConcat(state, more);
   }
   return state;
 }
 
 
-NfaState *ReParser::parseFactor() {
-  NfaState *state = parseAtom();
+NfaId ReParser::parseFactor() {
+  NfaId state = parseAtom();
   if (!state)
-    return nullptr;
+    return gNfaNullId;
 
   switch (tok_.type_) {
   case tClosure:
@@ -153,13 +153,13 @@ NfaState *ReParser::parseFactor() {
 }
 
 
-NfaState *ReParser::parseAtom() {
+NfaId ReParser::parseAtom() {
   while (tok_.type_ == tFlags) {
     flags_ |= tok_.flags_;
     advance();
   }
 
-  NfaState *state = nullptr;
+  NfaId state = gNfaNullId;
 
   switch (tok_.type_) {
   case tEnd:
@@ -196,11 +196,11 @@ NfaState *ReParser::parseAtom() {
 }
 
 
-NfaState *ReParser::parseCharBits() {
-  NfaState *init = obj_.newState(0);
-  NfaState *goal = obj_.newGoalState();
+NfaId ReParser::parseCharBits() {
+  NfaId init = obj_.newState(0);
+  NfaId goal = obj_.newGoalState();
   NfaTransition tr{goal, tok_.multiChar_}; // FIXME: constructor
-  init->transitions_.emplace_back(std::move(tr));
+  obj_[init].transitions_.emplace_back(std::move(tr));
   return init;
 }
 
