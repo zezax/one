@@ -70,9 +70,8 @@ NfaId NfaObj::newState(Result result) {
     len = 1; // zero is invalid state id
   states_.resize(len + 1);
   NfaState &ns = states_[len];
-  ns.id_ = static_cast<NfaId>(len); // FIXME need?
   ns.result_ = result;
-  return ns.id_;
+  return static_cast<NfaId>(len);
 }
 
 

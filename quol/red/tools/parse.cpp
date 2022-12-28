@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
     ReParser p;
     for (int ii = 1; ii < argc; ++ii)
       p.add(argv[ii], ii, 0);
-    std::cout << toStringDeep(p.getNfa()) << std::flush;
+    std::cout << toString(p.getNfa()) << std::flush;
     return 0;
   }
   catch (const RedExcept &ex) {

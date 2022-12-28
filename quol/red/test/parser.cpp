@@ -14,8 +14,10 @@ TEST(Parser, smoke) {
   p.add("(meyer\\i)+", 2, 0);
   NfaObj &nfa = p.getNfa();
   EXPECT_NE(gNfaNullId, nfa.getNfaInitial());
-  EXPECT_EQ(toStringDeep(nfa),
-            R"raw(NfaState 1 -> 0
+  EXPECT_EQ(toString(nfa),
+            R"raw(0 NfaState -> 0
+
+1 NfaState -> 0
   2 <- a
   3 <- a
   16 <- ^@-$ff
@@ -25,9 +27,9 @@ TEST(Parser, smoke) {
   18 <- Mm
   19 <- Mm
 
-NfaState 2 -> 0
+2 NfaState -> 0
 
-NfaState 3 -> 0
+3 NfaState -> 0
   4 <- l
   6 <- e
   7 <- l
@@ -35,11 +37,14 @@ NfaState 3 -> 0
   13 <- l
   13 <- e
 
-NfaState 4 -> 0
+4 NfaState -> 0
 
-NfaState 6 -> 0
+5 NfaState -> 0
+  6 <- e
 
-NfaState 7 -> 0
+6 NfaState -> 0
+
+7 NfaState -> 0
   8 <- X-x
   9 <- X-x
   10 <- X-x
@@ -49,29 +54,29 @@ NfaState 7 -> 0
   13 <- X-x
   13 <- X-x
 
-NfaState 8 -> 0
+8 NfaState -> 0
 
-NfaState 9 -> 0
+9 NfaState -> 0
   10 <- X-x
   11 <- X-x
   12 <- X-x
   13 <- X-x
   13 <- X-x
 
-NfaState 10 -> 0
+10 NfaState -> 0
 
-NfaState 11 -> 0
+11 NfaState -> 0
   12 <- X-x
   13 <- X-x
 
-NfaState 12 -> 0
+12 NfaState -> 0
 
-NfaState 13 -> 0
+13 NfaState -> 0
   14 <- [1]
 
-NfaState 14 -> 1
+14 NfaState -> 1
 
-NfaState 15 -> 0
+15 NfaState -> 0
   16 <- ^@-$ff
   15 <- ^@-$ff
   17 <- ^@-$ff
@@ -79,65 +84,65 @@ NfaState 15 -> 0
   18 <- Mm
   19 <- Mm
 
-NfaState 16 -> 0
+16 NfaState -> 0
 
-NfaState 17 -> 0
+17 NfaState -> 0
   18 <- Mm
   19 <- Mm
 
-NfaState 18 -> 0
+18 NfaState -> 0
 
-NfaState 19 -> 0
+19 NfaState -> 0
   20 <- Ee
   21 <- Ee
 
-NfaState 20 -> 0
+20 NfaState -> 0
 
-NfaState 21 -> 0
+21 NfaState -> 0
   22 <- Yy
   23 <- Yy
 
-NfaState 22 -> 0
+22 NfaState -> 0
 
-NfaState 23 -> 0
+23 NfaState -> 0
   24 <- Ee
   25 <- Ee
 
-NfaState 24 -> 0
+24 NfaState -> 0
 
-NfaState 25 -> 0
+25 NfaState -> 0
   26 <- Rr
   27 <- Rr
   37 <- Rr
   39 <- Rr
 
-NfaState 26 -> 0
+26 NfaState -> 0
 
-NfaState 27 -> 0
+27 NfaState -> 0
   28 <- Mm
   29 <- Mm
 
-NfaState 28 -> 0
+28 NfaState -> 0
 
-NfaState 29 -> 0
+29 NfaState -> 0
   30 <- Ee
   31 <- Ee
 
-NfaState 30 -> 0
+30 NfaState -> 0
 
-NfaState 31 -> 0
+31 NfaState -> 0
   32 <- Yy
   33 <- Yy
 
-NfaState 32 -> 0
+32 NfaState -> 0
 
-NfaState 33 -> 0
+33 NfaState -> 0
   34 <- Ee
   35 <- Ee
 
-NfaState 34 -> 0
+34 NfaState -> 0
 
-NfaState 35 -> 0
+35 NfaState -> 0
   36 <- Rr
   27 <- Rr
   37 <- Rr
@@ -145,20 +150,20 @@ NfaState 35 -> 0
   39 <- Rr
   39 <- Rr
 
-NfaState 36 -> 0
+36 NfaState -> 0
 
-NfaState 37 -> 0
+37 NfaState -> 0
   38 <- ^@-$ff
   37 <- ^@-$ff
   39 <- ^@-$ff
   39 <- ^@-$ff
 
-NfaState 38 -> 0
+38 NfaState -> 0
 
-NfaState 39 -> 0
+39 NfaState -> 0
   40 <- [2]
 
-NfaState 40 -> 2
+40 NfaState -> 2
 
 )raw");
 }

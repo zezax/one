@@ -22,7 +22,6 @@ struct NfaTransition {
 
 
 struct NfaState {
-  NfaId  id_; // FIXME remove (will it affect hash?)
   Result result_;
   std::vector<NfaTransition> transitions_;
 };
