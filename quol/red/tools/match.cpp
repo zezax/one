@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
       else
         p.add(sv, ++cur, 0);
     }
+    p.finish();
     DfaObj dfa = convertNfaToDfa(p.getNfa());
     {
       DfaMinimizer dm(dfa);

@@ -16,6 +16,27 @@ using std::vector;
 
 namespace {
 
+bool containsTr(const vector<NfaTransition> &vec, const NfaTransition &tr) {
+  for (const NfaTransition &elem : vec)
+    if ((elem.next_ == tr.next_) && (elem.multiChar_ == tr.multiChar_))
+      return true;
+  return false;
+}
+
+
+void addTransition(NfaState &ns, const NfaTransition &tr) {
+  if (!containsTr(ns.transitions_, tr))
+    ns.transitions_.push_back(tr);
+}
+
+
+
+void addTransition(NfaState &ns, NfaTransition &&tr) {
+  if (!containsTr(ns.transitions_, tr))
+    ns.transitions_.emplace_back(std::move(tr));
+}
+
+
 bool stateAccepts(const NfaState &ns) {
   return (ns.result_ > 0);
 }
@@ -55,6 +76,12 @@ NfaObj &NfaObj::operator=(NfaObj &&rhs) {
   goal_ = rhs.goal_;
   rhs.reset();
   return *this;
+}
+
+
+size_t NfaObj::activeSize() const {
+  NfaIdSet all = allStates(initId_);
+  return all.population();
 }
 
 
@@ -144,9 +171,8 @@ NfaId NfaObj::stateUnion(NfaId xx, NfaId yy) {
   const NfaState &syy = states_[yy];
   if (!stateAccepts(sxx) && stateAccepts(syy))
     sxx.result_ = syy.result_;
-  sxx.transitions_.insert(sxx.transitions_.end(),
-                          syy.transitions_.begin(),
-                          syy.transitions_.end());
+  for (const NfaTransition &syyTr : syy.transitions_)
+    addTransition(sxx, syyTr);
   return xx;
 }
 
@@ -163,16 +189,15 @@ NfaId NfaObj::stateConcat(NfaId xx, NfaId yy) {
 
   for (NfaStateTransition &strans : accTrans) {
     NfaTransition tr{yy, strans.transition_.multiChar_}; // FIXME
-    states_[strans.state_].transitions_.emplace_back(std::move(tr));
+    addTransition(states_[strans.state_], std::move(tr));
   }
 
   NfaState &sxx = states_[xx];
   const NfaState &syy = states_[yy];
 
   if (stateAccepts(sxx))
-    sxx.transitions_.insert(sxx.transitions_.end(),
-                            syy.transitions_.begin(),
-                            syy.transitions_.end());
+    for (const NfaTransition &syyTr : syy.transitions_)
+      addTransition(sxx, syyTr);
 
   Result keepResult = 0;
   if (stateAccepts(sxx) && stateAccepts(syy))
@@ -198,7 +223,7 @@ NfaId NfaObj::stateKleenStar(NfaId id) {
   vector<NfaStateTransition> accTrans = allAcceptingTransitions(id);
   for (NfaStateTransition &strans : accTrans) {
     NfaTransition tr{id, strans.transition_.multiChar_}; //FIXME
-    states_[strans.state_].transitions_.emplace_back(std::move(tr));
+    addTransition(states_[strans.state_], std::move(tr));
   }
   return stateOptional(id);
 }
@@ -284,6 +309,26 @@ void NfaObj::selfUnion(NfaId id) {
     initId_ = stateUnion(initId_, id);
   else
     initId_ = id;
+}
+
+
+void NfaObj::dropUselessTransitions() { // also de-dup transitions
+  NfaIdSet useless;
+  NfaId num = static_cast<NfaId>(states_.size());
+  for (NfaId id = 1; id < num; ++id) {
+    NfaState &ns = states_[id];
+    if ((ns.result_ <= 0) && ns.transitions_.empty())
+      useless.set(id);
+  }
+
+  // rewrite transitions without useless ones
+  for (NfaState &ns : states_) {
+    vector<NfaTransition> newTrs;
+    for (NfaTransition &tr : ns.transitions_)
+      if (!useless.get(tr.next_) && !containsTr(newTrs, tr))
+        newTrs.emplace_back(std::move(tr));
+    ns.transitions_.swap(newTrs);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

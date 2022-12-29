@@ -49,6 +49,7 @@ public:
   NfaState &operator[](NfaId id) { return states_[id]; }
 
   size_t size() const { return states_.size(); }
+  size_t activeSize() const;
 
   void freeAll();
 
@@ -81,6 +82,8 @@ public:
   NfaId stateEndMark(CharIdx r);
 
   void selfUnion(NfaId id);
+
+  void dropUselessTransitions();
 
 private:
   void reset();

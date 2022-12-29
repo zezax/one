@@ -95,6 +95,12 @@ void ReParser::addRaw(string_view regex, Result result, FlagsT flags) {
 }
 
 
+void ReParser::finish() {
+  obj_.dropUselessTransitions();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 NfaId ReParser::parseExpr() {
   NfaId state = parseTerm();
   if (!state)

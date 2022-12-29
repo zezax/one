@@ -26,6 +26,8 @@ public:
   // As above with no heuristics.
   void addRaw(std::string_view regex, Result result, FlagsT flags);
 
+  void finish();
+
   NfaObj &getNfa() { return obj_; }
   NfaId getNfaInitial() { return obj_.getNfaInitial(); }
 

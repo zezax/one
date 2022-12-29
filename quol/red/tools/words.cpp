@@ -71,7 +71,9 @@ int main(int argc, char **argv) {
       p.addRaw(word, ++res, fIgnoreCase | fLooseStart | fLooseEnd);
     }
     NfaObj &nfa = p.getNfa();
-    std::cout << "NFA size " << nfa.size() << std::endl;
+    std::cout << "NFA orig size " << nfa.activeSize() << std::endl;
+    p.finish();
+    std::cout << "NFA live size " << nfa.activeSize() << std::endl;
     DfaObj dfa = convertNfaToDfa(nfa);
     nfa.freeAll();
     std::cout << "Converted size " << dfa.getStates().size() << std::endl;

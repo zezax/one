@@ -165,9 +165,14 @@ string toString(const Token &t) {
 
 
 string toString(const NfaObj &nfa) {
+  NfaIdSet all = nfa.allStates(nfa.getNfaInitial());
+  vector<NfaId> vec;
+  for (NfaId id : all)
+    vec.push_back(id);
+  std::sort(vec.begin(), vec.end());
+
   string rv;
-  NfaId n = static_cast<NfaId>(nfa.size());
-  for (NfaId id = 0; id < n; ++id) {
+  for (NfaId id : vec) {
     rv += to_string(id) + ' ';
     toStringAppend(rv, nfa[id]);
     rv += '\n';
