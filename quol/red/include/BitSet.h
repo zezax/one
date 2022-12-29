@@ -31,12 +31,12 @@ public:
 
   BitSetIter() {}
   BitSetIter(const BitSetIter &other)
-  : ptr_(other.ptr_), bit_(other.bit_), limit_(other.limit_) {}
+  : ptr_(other.ptr_), limit_(other.limit_), bit_(other.bit_) {}
 
   BitSetIter &operator=(const BitSetIter &rhs) {
     ptr_ = rhs.ptr_;
-    bit_ = rhs.bit_;
     limit_ = rhs.limit_;
+    bit_ = rhs.bit_;
     return *this;
   }
 
@@ -53,17 +53,18 @@ public:
   BitSetIter &operator++();
 
 private:
-  BitSetIter(std::nullptr_t) : ptr_(nullptr), bit_(indexFFFF_), limit_(0) {}
+  BitSetIter(std::nullptr_t)
+  : ptr_(nullptr), limit_(nullptr), bit_(indexFFFF_) {}
 
-  BitSetIter(const Word *ptr, Index bits)
-  : ptr_(ptr), bit_(0), limit_(bits) {
+  BitSetIter(const Word *ptr, Index words)
+  : ptr_(ptr), limit_(ptr + words), bit_(0) {
     --bit_;
     ++*this;
   }
 
   const Word *ptr_;
+  const Word *limit_;
   Index       bit_;
-  Index       limit_;
 
   friend class BitSet<Index, Word>;
 };
@@ -145,7 +146,7 @@ public:
   Index population() const;
   size_t hash() const;
 
-  Iter begin() const { return BitSetIter(vec_.data(), size()); }
+  Iter begin() const { return BitSetIter(vec_.data(), rawSize()); }
   Iter end() const { return endIter_; }
 
 private:
@@ -199,21 +200,32 @@ template <> inline int popCount(unsigned long long x) {
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+// this is a performance-critical function
 template <class Index, class Word>
 BitSetIter<Index, Word> &BitSetIter<Index, Word>::operator++() {
-  while (++bit_ < limit_) {
-    Index word = bit_ / wordBits_;
-    Index shift = bit_ % wordBits_;
-    Word val = ptr_[word];
+  ++bit_;
+  Index word = bit_ / wordBits_;
+  Index shift = bit_ % wordBits_;
+  const Word *p = ptr_ + word;
+  while (p < limit_) {
+    Word val = *p;
     if (shift == 0)
       if (val == 0)
-        bit_ += wordBits_ - 1;
+        ++p;
       else {
-        bit_ += trailZeros(val);
+        bit_ = (static_cast<Index>(p - ptr_) * wordBits_) + trailZeros(val);
         return *this;
       }
-    else if ((val & (one_ << shift)) != 0)
+    else if ((val & (one_ << shift)) == 0) {
+      if (++shift >= wordBits_) {
+        shift = 0;
+        ++p;
+      }
+    }
+    else {
+      bit_ = (static_cast<Index>(p - ptr_) * wordBits_) + shift;
       return *this;
+    }
   }
   ptr_ = nullptr;
   bit_ = indexFFFF_;
