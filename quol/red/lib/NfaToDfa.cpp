@@ -102,7 +102,6 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
     auto [tableIt, novel] = table.emplace(std::move(tableNode));
     if (novel) {
       size_t n = allMultiChars.size();
-      tableIt->second.reserve(n);
       for (size_t idx = 0; idx < n; ++idx) {
         const MultiChar &mc = allMultiChars[idx];
         for (NfaId id : tableIt->first)
