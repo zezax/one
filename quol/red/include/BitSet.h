@@ -173,6 +173,27 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template <class T> inline int trailZeros(T x) { return __builtin_ctz(x); }
+
+template <> inline int trailZeros(unsigned long x) { return __builtin_ctzl(x); }
+
+template <> inline int trailZeros(unsigned long long x) {
+  return __builtin_ctzll(x);
+}
+
+
+template <class T> inline int popCount(T x) { return __builtin_popcount(x); }
+
+template <> inline int popCount(unsigned long x) {
+  return __builtin_popcountl(x);
+}
+
+template <> inline int popCount(unsigned long long x) {
+  return __builtin_popcountll(x);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 //
 // MEMBER IMPLEMENTATIONS
 //
@@ -184,26 +205,19 @@ BitSetIter<Index, Word> &BitSetIter<Index, Word>::operator++() {
     Index word = bit_ / wordBits_;
     Index shift = bit_ % wordBits_;
     Word val = ptr_[word];
-    if ((shift == 0) && (val == 0))
-      bit_ += wordBits_ - 1;
+    if (shift == 0)
+      if (val == 0)
+        bit_ += wordBits_ - 1;
+      else {
+        bit_ += trailZeros(val);
+        return *this;
+      }
     else if ((val & (one_ << shift)) != 0)
       return *this;
   }
   ptr_ = nullptr;
   bit_ = indexFFFF_;
   return *this;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <class T> inline int popCount(T x) { return __builtin_popcount(x); }
-
-template <> inline int popCount(unsigned long x) {
-  return __builtin_popcountl(x);
-}
-
-template <> inline int popCount(unsigned long long x) {
-  return __builtin_popcountll(x);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

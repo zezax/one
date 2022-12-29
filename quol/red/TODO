@@ -18,6 +18,7 @@
 - cpu hog: containedIn
 - perf: words %50 4698 5:06u opt 2.6g peak rss 32-bit bitset
 - perf: words %50 4698 2:33u opt 2.6g peak rss 64-bit bitset
+- perf: words %50 4698 2:16u bit iter ctz
 - template tag for bitsets NfaTag DfaTag
 - use range-for where possible
 - consider ordered set/map
