@@ -14,10 +14,10 @@
 - cpu hog: makeTable
 - cpu hog: invert
 - cpu hog: equivalenceMap
-- Prune NFA states that are trivial dead ends
-- Word -> 64 bit?
+- cpu hog: preformSplits
+- cpu hog: containedIn
+- perf: words %50 4698 5:06u opt 2.6g peak rss 32-bit bitset
+- perf: words %50 4698 2:33u opt 2.6g peak rss 64-bit bitset
 - template tag for bitsets NfaTag DfaTag
 - use range-for where possible
-- consider orderd set/map
-- trim dead-end nfa states
-- remove id from NfaState (if hash is ok)
+- consider ordered set/map

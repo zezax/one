@@ -82,6 +82,7 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
 }
 
 
+// this is a performace-critical function
 NfaStatesToTransitions makeTable(NfaId                    initial,
                                  const NfaObj            &nfa,
                                  const vector<MultiChar> &allMultiChars) {

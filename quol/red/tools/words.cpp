@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
   string line;
   int ii = 0;
   while (std::getline(file, line))
-    if ((++ii % 20000) == 0)
+    if ((++ii % 50) == 0)
       words.push_back(line);
   std::cout << "Total words " << words.size() << std::endl;
 
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     ReParser p;
     Result res = 0;
     for (string &word : words) {
-      p.addRaw(word, ++res, fIgnoreCase | fLooseStart | fLooseEnd);
+      p.addRaw(word, ++res, fIgnoreCase);
     }
     NfaObj &nfa = p.getNfa();
     std::cout << "NFA orig size " << nfa.activeSize() << std::endl;

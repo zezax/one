@@ -27,6 +27,7 @@ class BitSetIter {
 public:
   static constexpr Index wordBits_  = std::numeric_limits<Word>::digits;
   static constexpr Index indexFFFF_ = static_cast<Index>(0) - 1;
+  static constexpr Word  one_       = static_cast<Word>(1);
 
   BitSetIter() {}
   BitSetIter(const BitSetIter &other)
@@ -69,8 +70,8 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// depending on application uint16_t or uint64_t may be more efficient
-template <class Index, class Word = uint32_t>
+// depending on application uint16_t or uint32_t may be more efficient
+template <class Index, class Word = uint64_t>
 class BitSet {
 public:
   static_assert(std::is_integral_v<Index>);
@@ -78,6 +79,7 @@ public:
 
   static constexpr Index wordBits_  = std::numeric_limits<Word>::digits;
   static constexpr Word  wordFFFF_  = static_cast<Word>(0) - 1;
+  static constexpr Word  one_       = static_cast<Word>(1);
 
   typedef BitSetIter<Index, Word> Iter;
 
@@ -95,26 +97,26 @@ public:
 
   void set(Index idx) {
     ensure(idx);
-    vec_[idx / wordBits_] |= 1u << (idx % wordBits_);
+    vec_[idx / wordBits_] |= one_ << (idx % wordBits_);
   }
 
   void setSpan(Index first, Index last);
 
   void clear(Index idx) {
     ensure(idx);
-    vec_[idx / wordBits_] &= ~(1u << (idx % wordBits_));
+    vec_[idx / wordBits_] &= ~(one_ << (idx % wordBits_));
   }
 
   bool get(Index idx) const {
     if (size() > idx)
-      return ((vec_[idx / wordBits_] & (1u << (idx % wordBits_))) != 0);
+      return ((vec_[idx / wordBits_] & (one_ << (idx % wordBits_))) != 0);
     return false;
   }
 
   bool testAndSet(Index idx) {
     ensure(idx);
     Word &word = vec_[idx / wordBits_];
-    Word mask = 1u << (idx % wordBits_);
+    Word mask = one_ << (idx % wordBits_);
     bool rv = ((word & mask) != 0);
     word |= mask;
     return rv;
@@ -158,7 +160,7 @@ private:
       Word x = 0;
       return x - 1;
     }
-    return (1u << nbits) - 1;
+    return (one_ << nbits) - 1;
   }
 
   Index rawSize() const { return static_cast<Index>(vec_.size()); }
@@ -184,12 +186,24 @@ BitSetIter<Index, Word> &BitSetIter<Index, Word>::operator++() {
     Word val = ptr_[word];
     if ((shift == 0) && (val == 0))
       bit_ += wordBits_ - 1;
-    else if ((val & (1u << shift)) != 0)
+    else if ((val & (one_ << shift)) != 0)
       return *this;
   }
   ptr_ = nullptr;
   bit_ = indexFFFF_;
   return *this;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <class T> inline int popCount(T x) { return __builtin_popcount(x); }
+
+template <> inline int popCount(unsigned long x) {
+  return __builtin_popcountl(x);
+}
+
+template <> inline int popCount(unsigned long long x) {
+  return __builtin_popcountll(x);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -327,20 +341,17 @@ void BitSet<Index, Word>::xorWith(const BitSet<Index, Word> &other) {
 
 template <class Index, class Word>
 void BitSet<Index, Word>::subtract(const BitSet<Index, Word> &other) {
-  Index mySize = rawSize();
-  Index otherSize = other.rawSize();
-  Index limit = std::min(mySize, otherSize);
+  Index limit = std::min(rawSize(), other.rawSize());
   for (Index ii = 0; ii < limit; ++ii)
     vec_[ii] &= ~other.vec_[ii];
 }
 
 
+// this is a performance-critical function
 template <class Index, class Word>
 bool BitSet<Index, Word>::hasIntersection(const BitSet<Index,
-                                          Word> &other) const {
-  Index mySize = rawSize();
-  Index otherSize = other.rawSize();
-  Index limit = std::min(mySize, otherSize);
+                                                       Word> &other) const {
+  Index limit = std::min(rawSize(), other.rawSize());
   for (Index ii = 0; ii < limit; ++ii)
     if (vec_[ii] & other.vec_[ii])
       return true;
@@ -366,10 +377,9 @@ bool BitSet<Index, Word>::contains(const BitSet<Index, Word> &other) const {
 
 template <class Index, class Word>
 Index BitSet<Index, Word>::population() const {
-  static_assert(sizeof(Word) == sizeof(int)); // or use popcountl below
   Index rv = 0;
   for (Word x : vec_)
-    rv += __builtin_popcount(x);
+    rv += popCount(x);
   return rv;
 }
 
