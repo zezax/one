@@ -108,8 +108,10 @@ TEST(Minimize, obj) {
   EXPECT_EQ(gDfaInitialId, s1);
 
   dfa.chopEndMarks();
-  DfaMinimizer dm(dfa);
-  dm.minimize();
+  {
+    DfaMinimizer dm(dfa);
+    dm.minimize();
+  }
 
   std::cout << "FIXME final " << toString(dfa) << std::endl;
 
@@ -117,4 +119,66 @@ TEST(Minimize, obj) {
   EXPECT_EQ(1, dfa.match("ab"));
   EXPECT_EQ(0, dfa.match("aba"));
   EXPECT_EQ(1, dfa.match("baab"));
+}
+
+
+TEST(Minimize, results) {
+  DfaObj dfa;
+  StateId s0 = mkState(dfa, 0);
+  StateId s1 = mkState(dfa, 0);
+  StateId s2 = mkState(dfa, 0);
+  StateId s3 = mkState(dfa, 2);
+  StateId s4 = mkState(dfa, 2);
+  StateId s5 = mkState(dfa, 0);
+  StateId s6 = mkState(dfa, 1);
+  StateId s7 = mkState(dfa, 1);
+  addTrans(dfa, s1, s2, 'c');
+  addTrans(dfa, s1, s5, 'a');
+  addTrans(dfa, s2, s3, 'b');
+  addTrans(dfa, s5, s6, 'c');
+  (void) s0;
+  (void) s4;
+  (void) s7;
+  dfa.chopEndMarks();
+  EXPECT_EQ(0, dfa.match("ab"));
+  EXPECT_EQ(1, dfa.match("ac"));
+  EXPECT_EQ(2, dfa.match("cb"));
+  {
+    DfaMinimizer dm(dfa);
+    dm.minimize();
+  }
+  EXPECT_EQ(0, dfa.match("ab"));
+  EXPECT_EQ(1, dfa.match("ac"));
+  EXPECT_EQ(2, dfa.match("cb"));
+}
+
+
+TEST(Minimize, deadEnds) {
+  DfaObj dfa;
+  StateId s0 = mkState(dfa, 0);
+  StateId s1 = mkState(dfa, 0);
+  StateId s2 = mkState(dfa, 0);
+  StateId s3 = mkState(dfa, 1);
+  addTrans(dfa, s1, s1, 0);
+  addTrans(dfa, s1, s1, 2);
+  addTrans(dfa, s1, s1, 3);
+  addTrans(dfa, s1, s2, 1);
+  addTrans(dfa, s2, s1, 0);
+  addTrans(dfa, s2, s2, 1);
+  addTrans(dfa, s2, s2, 2);
+  addTrans(dfa, s2, s3, 3);
+  addTrans(dfa, s3, s3, 0);
+  addTrans(dfa, s3, s3, 1);
+  addTrans(dfa, s3, s3, 2);
+  addTrans(dfa, s3, s3, 3);
+  dfa.chopEndMarks();
+  {
+    DfaMinimizer dm(dfa);
+    dm.minimize();
+  }
+  ASSERT_EQ(4, dfa.getStates().size());
+  EXPECT_TRUE(dfa[s0].deadEnd_);
+  EXPECT_FALSE(dfa[s1].deadEnd_);
+  EXPECT_TRUE(dfa[s2].deadEnd_);
+  EXPECT_FALSE(dfa[s3].deadEnd_);
 }
