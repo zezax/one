@@ -42,7 +42,7 @@ CharIdx maxCharRecurse(StateIdSet             &seen,
 }
 
 
-void oneDeadEnd(DfaState &ds, StateId id) {
+void oneDeadEnd(DfaState &ds, StateId id, CharIdx maxChar) {
   // (likely) try sparse first...
   for (const auto [ch, tid] : ds.trans_.getMap())
     if ((ch < gAlphabetSize) && (tid != id)) {
@@ -50,7 +50,7 @@ void oneDeadEnd(DfaState &ds, StateId id) {
       return;
     }
   // (rare) then try exhaustive...
-  for (CharIdx ch = 0; ch < gAlphabetSize; ++ch)
+  for (CharIdx ch = 0; ch <= maxChar; ++ch)
     if (ds.trans_[ch] != id) {
       ds.deadEnd_ = false;
       return;
@@ -107,10 +107,10 @@ DfaObj transcribeDfa(const DfaObj &src) {
 }
 
 
-void flagDeadEnds(vector<DfaState> &states) {
+void flagDeadEnds(vector<DfaState> &states, CharIdx maxChar) {
   StateId id = 0;
   for (DfaState &ds : states) {
-    oneDeadEnd(ds, id);
+    oneDeadEnd(ds, id, maxChar);
     ++id;
   }
 }

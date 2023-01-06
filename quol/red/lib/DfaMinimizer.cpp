@@ -237,15 +237,13 @@ void makeDfaFromBlocks(const DfaObj &srcDfa,
 }
 
 
-void improveDfa(DfaObj &dfa) {
-  flagDeadEnds(dfa.getMutStates());
+void improveDfa(DfaObj &dfa, CharIdx maxChar) {
+  flagDeadEnds(dfa.getMutStates(), maxChar);
 
   {
     DfaObj small = transcribeDfa(dfa);
     dfa.swap(small);
   }
-
-  //compressDfa(); // FIXME: move to "final compilation"
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -304,7 +302,7 @@ void DfaMinimizer::cleanup(DfaObj &work) {
   blocks_.clear();
   blocks_.shrink_to_fit();
   work.copyEquivMap(src_);
-  improveDfa(work);
+  improveDfa(work, maxChar_);
   maxChar_ = 0;
 }
 

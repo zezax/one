@@ -66,7 +66,7 @@ private:
 // useful functions
 CharIdx findMaxChar(const std::vector<DfaState> &states);
 DfaObj transcribeDfa(const DfaObj &src);
-void flagDeadEnds(std::vector<DfaState> &states);
+void flagDeadEnds(std::vector<DfaState> &states, CharIdx maxChar);
 
 std::vector<CharIdx> makeEquivalenceMap(const std::vector<DfaState> &states,
                                         CharIdx                      maxChar);
