@@ -65,10 +65,10 @@ TEST(Minimize, invert) {
   std::cout << toString(rev) << std::endl;
 
   vector<StateIdSet> blocks;
-  blocks.resize(2);
+  partition(states, vec, blocks);
+  ASSERT_EQ(2, blocks.size());
   StateIdSet &normal = blocks[0];
   StateIdSet &accept = blocks[1];
-  partition(states, vec, normal, accept);
   ASSERT_EQ(3, normal.population());
   EXPECT_TRUE(normal.get(s0));
   EXPECT_TRUE(normal.get(s1));
@@ -76,7 +76,7 @@ TEST(Minimize, invert) {
   ASSERT_EQ(1, accept.population());
   EXPECT_TRUE(accept.get(s3));
 
-  BlockRecSet list = makeList(maxChar, normal, accept);
+  BlockRecSet list = makeList(maxChar, blocks);
   std::cout << toString(list) << std::endl;
 
   BlockRec br;

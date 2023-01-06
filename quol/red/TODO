@@ -19,6 +19,8 @@
 - perf: words %50 4698 5:06u opt 2.6g peak rss 32-bit bitset
 - perf: words %50 4698 2:33u opt 2.6g peak rss 64-bit bitset
 - perf: words %50 4698 2:16u bit iter ctz
+- perf: words %50 4698 0:54u 2.2g fix makeList and dead end flagging
+- perf: words %25 9397 5:57u 8.2g as above
 - template tag for bitsets NfaTag DfaTag
 - use range-for where possible
 - consider ordered set/map

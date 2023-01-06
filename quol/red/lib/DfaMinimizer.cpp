@@ -5,8 +5,10 @@
 #include "DfaMinimizer.h"
 
 #include <cassert>
+#include <map>
 
 #include "Except.h"
+#include "Util.h"
 #include "Dfa.h"
 
 namespace zezax::red {
@@ -14,12 +16,6 @@ namespace zezax::red {
 using std::vector;
 
 namespace {
-
-constexpr BlockId gNormalBlock = 0;
-constexpr BlockId gAcceptBlock = 1;
-
-bool accepts(const DfaState &ds) { return (ds.result_ > 0); }
-
 
 StateId &twinRef(vector<StateId> &vec, size_t idx) {
   while (vec.size() <= idx)
@@ -59,30 +55,49 @@ DfaEdgeToIds invert(const StateIdSet       &stateSet,
 
 void partition(const StateIdSet       &stateSet,
                const vector<DfaState> &stateVec,
-               StateIdSet             &normal,
-               StateIdSet             &accept) {
+               vector<StateIdSet>     &blocks) {
+  BitSet<Result> resultSet;
+  resultSet.set(0); // make sure non-accepting result is present
+  for (StateId sid : stateSet)
+    resultSet.set(stateVec[sid].result_);
+
+  // states with different results must be differentiated into different blocks
+  std::map<Result, BlockId> result2block;
+  BlockId block = 0;
+  for (Result res : resultSet)
+    result2block[res] = block++;
+
   for (StateId sid : stateSet) {
-    const DfaState &ds = stateVec[sid];
-    if (accepts(ds))
-      accept.set(sid);
-    else
-      normal.set(sid);
+    block = result2block[stateVec[sid].result_];
+    safeRef(blocks, block).set(sid);
   }
 }
 
 
-BlockRecSet makeList(CharIdx           maxChar,
-                     const StateIdSet &normal,
-                     const StateIdSet &accept) {
-  BlockRecSet list;
-  BlockRec br;
-  br.block_ = gNormalBlock;
+BlockRecSet makeList(CharIdx                   maxChar,
+                     const vector<StateIdSet> &blocks) {
+  StateId zeroPop = blocks[0].population();
+  StateId restPop = 0;
 
-  if (accept.population() < normal.population())
-    br.block_ = gAcceptBlock;
-  for (CharIdx ch = 0; ch <= maxChar; ++ch) {
-    br.char_ = ch;
-    list.insert(br);
+  BlockId num = static_cast<BlockId>(blocks.size());
+  for (BlockId bid = 1; bid < num; ++bid)
+    restPop += blocks[bid].population();
+
+  BlockId start = 0;
+  BlockId end = 1;
+  if ((restPop > 0) && (restPop < zeroPop)) {
+    start = 1;
+    end = num;
+  }
+
+  BlockRecSet list;
+  for (BlockId bid = start; bid < end; ++bid) {
+    BlockRec br;
+    br.block_ = bid;
+    for (CharIdx ch = 0; ch <= maxChar; ++ch) {
+      br.char_ = ch;
+      list.insert(br);
+    }
   }
 
   return list;
@@ -269,13 +284,10 @@ void DfaMinimizer::setup() {
     inverse_ = std::move(invert(stateSet, src_.getStates(), maxChar_));
 
     blocks_.clear();
-    blocks_.resize(2);
-    partition(stateSet, src_.getStates(),
-              blocks_[gNormalBlock], blocks_[gAcceptBlock]);
+    partition(stateSet, src_.getStates(), blocks_);
   }
 
-  list_ = std::move(makeList(maxChar_,
-                             blocks_[gNormalBlock], blocks_[gAcceptBlock]));
+  list_ = std::move(makeList(maxChar_, blocks_));
 }
 
 

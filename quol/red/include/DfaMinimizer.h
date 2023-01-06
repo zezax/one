@@ -100,12 +100,10 @@ DfaEdgeToIds invert(const StateIdSet            &stateSet,
 
 void partition(const StateIdSet            &stateSet,
                const std::vector<DfaState> &stateVec,
-               StateIdSet                  &normal,
-               StateIdSet                  &accept);
+               std::vector<StateIdSet>     &blocks);
 
-BlockRecSet makeList(CharIdx           maxChar,
-                     const StateIdSet &normal,
-                     const StateIdSet &accept);
+BlockRecSet makeList(CharIdx                        maxChar,
+                     const std::vector<StateIdSet> &blocks);
 
 StateIdSet locateSplits(const BlockRec                &blockRec,
                         const std::vector<StateIdSet> &blocks,
