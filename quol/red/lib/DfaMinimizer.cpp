@@ -78,7 +78,7 @@ BlockRecSet makeList(CharIdx           maxChar,
   BlockRec br;
   br.block_ = gNormalBlock;
 
-  if (accept.size() < normal.size())
+  if (accept.population() < normal.population())
     br.block_ = gAcceptBlock;
   for (CharIdx ch = 0; ch <= maxChar; ++ch) {
     br.char_ = ch;
