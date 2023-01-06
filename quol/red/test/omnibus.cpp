@@ -24,6 +24,7 @@ TEST(Omnibus, multi) {
   p.addRaw("aaa", 3, 0);
   p.finish();
   DfaObj dfa = convertNfaToDfa(p.getNfa());
+  p.freeAll();
   {
     DfaMinimizer dm(dfa);
     dm.minimize();
@@ -58,6 +59,7 @@ TEST_P(Omnibus, parse) {
     ReParser p;
     p.add(r.regex_, 1, 0);
     p.finish();
+    p.freeAll();
     EXPECT_FALSE(r.text_ == nullptr);
   }
   catch (const RedExcept &ex) {
@@ -74,6 +76,7 @@ TEST_P(Omnibus, convert) {
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
     DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
   }
   catch (const RedExcept &ex) {
     EXPECT_TRUE(r.text_ == nullptr);
@@ -89,6 +92,7 @@ TEST_P(Omnibus, minimize) {
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
     DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
     {
       DfaMinimizer dm(dfa);
       dm.minimize();
@@ -109,6 +113,7 @@ TEST_P(Omnibus, match) {
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
     DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
     {
       DfaMinimizer dm(dfa);
       dm.minimize();

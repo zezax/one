@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
     p.finish();
     std::cout << "NFA live size " << nfa.activeSize() << std::endl;
     DfaObj dfa = convertNfaToDfa(nfa);
-    nfa.freeAll();
+    p.freeAll();
     std::cout << "Converted size " << dfa.getStates().size() << std::endl;
     {
       DfaMinimizer dm(dfa);

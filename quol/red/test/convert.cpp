@@ -137,6 +137,7 @@ TEST(Convert, convert) {
   nfa.setNfaInitial(s1);
 
   DfaObj dfa = convertNfaToDfa(nfa);
+  nfa.freeAll();
   const vector<DfaState> &states = dfa.getStates();
   EXPECT_EQ(5, states.size());
   std::cout << toString(dfa) << std::endl;

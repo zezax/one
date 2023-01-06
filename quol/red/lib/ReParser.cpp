@@ -99,6 +99,11 @@ void ReParser::finish() {
   obj_.dropUselessTransitions();
 }
 
+
+void ReParser::freeAll() {
+  obj_.freeAll();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 NfaId ReParser::parseExpr() {

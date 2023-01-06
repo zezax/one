@@ -28,6 +28,8 @@ public:
 
   void finish();
 
+  void freeAll();
+
   NfaObj &getNfa() { return obj_; }
   NfaId getNfaInitial() { return obj_.getNfaInitial(); }
 
