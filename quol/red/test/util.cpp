@@ -2,12 +2,15 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
 #include <vector>
 
 #include "Util.h"
 
 using namespace zezax::red;
 
+using std::string;
+using std::to_string;
 using std::vector;
 
 
@@ -35,4 +38,19 @@ TEST(Util, safeRef) {
   EXPECT_EQ(5, v[5]);
   EXPECT_EQ(0, v[6]);
   EXPECT_EQ(7, v[7]);
+}
+
+
+TEST(Util, file) {
+  string fn = "/tmp/reda" + to_string(getpid());
+  string one;
+  uint64_t acc = 0x0123456789abcdef;
+  for (int ii = 0; ii < 60000; ++ii) {
+    acc *= 211;
+    one.append(reinterpret_cast<char *>(&acc), sizeof(acc));
+  }
+  writeStringToFile(one, fn.c_str());
+  string two = readFileToString(fn.c_str());
+  unlink(fn.c_str());
+  EXPECT_EQ(one, two);
 }

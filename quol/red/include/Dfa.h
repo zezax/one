@@ -51,6 +51,7 @@ public:
 
   void installEquivalenceMap();
   void copyEquivMap(const DfaObj &src) { equivMap_ = src.equivMap_; }
+  const std::vector<CharIdx> &getEquivMap() const { return equivMap_; }
 
   const std::vector<DfaState> &getStates() const { return states_; }
   std::vector<DfaState> &getMutStates() { return states_; }

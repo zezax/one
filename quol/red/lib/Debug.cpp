@@ -81,6 +81,62 @@ void toStringAppend(string &out, const DfaState &ds) {
   out += toString(ds.trans_);
 }
 
+
+template <class T>
+void toStringAppendEquivMap(string &out, const T *ptr, size_t len) {
+  out += "equiv[\n";
+  size_t nval = 0;
+  --nval;  // underflow to largest 2's complement
+  size_t start = 0;
+  size_t prev = nval;
+  size_t idx;
+  for (idx = 0; idx < len; ++idx) {
+    size_t ch = ptr[idx];
+    if (ch != prev) {
+      if (prev != nval) {
+        out += "  " + to_string(prev) + " <- " + to_string(start);
+        if ((idx - 1) > start) {
+          out += '-';
+          out += to_string(idx - 1);
+        }
+        out += '\n';
+      }
+      start = idx;
+    }
+    prev = ch;
+  }
+  if (prev != nval) {
+    --idx;
+    out += "  " + to_string(prev) + " <- " + to_string(start);
+    if (idx > start) {
+      out += '-';
+      out += to_string(idx);
+    }
+    out += '\n';
+  }
+  out += "]\n";
+}
+
+
+void toStringAppend(string &out, const vector<CharIdx> &vec) {
+  toStringAppendEquivMap(out, vec.data(), vec.size());
+}
+
+
+void toStringAppend(string &out, const FileHeader &hdr) {
+  out += visibleChar(hdr.magic_[0]);
+  out += visibleChar(hdr.magic_[1]);
+  out += visibleChar(hdr.magic_[2]);
+  out += visibleChar(hdr.magic_[3]);
+  out += '/' + to_string(static_cast<unsigned>(hdr.majVer_)) +
+    '.' + to_string(static_cast<unsigned>(hdr.minVer_)) + '\n';
+  out += "csum=0x" + toHexString(hdr.checksum_) +
+    " fmt=" + to_string(static_cast<unsigned>(hdr.format_)) +
+    " maxChar=" + to_string(static_cast<unsigned>(hdr.maxChar_)) + '\n';
+  out += "states=" + to_string(hdr.stateCnt_) +
+    " init=$" + toHexString(hdr.initialOff_) + '\n';
+}
+
 } // anonymous
 
 string toString(const MultiChar &mc) {
@@ -307,37 +363,62 @@ string toString(const BlockRecSet &brs) {
 }
 
 
-string toString(const vector<CharIdx> &vec) {
-  string rv = "equiv[\n";
-  CharIdx start = 0;
-  CharIdx prev = ~0U;
-  CharIdx n = static_cast<CharIdx>(vec.size());
-  CharIdx idx;
-  for (idx = 0; idx < n; ++idx) {
-    CharIdx ch = vec[idx];
-    if (ch != prev) {
-      if (prev != ~0U) {
-        rv += "  " + to_string(prev) + " <- " + to_string(start);
-        if ((idx - 1) > start) {
-          rv += '-';
-          rv += to_string(idx - 1);
-        }
-        rv += '\n';
-      }
-      start = idx;
-    }
-    prev = ch;
+string toString(const vector<CharIdx> &vec) { // equiv map
+  string rv;
+  toStringAppend(rv, vec);
+  return rv;
+}
+
+
+string toString(const FileHeader &hdr) {
+  string rv;
+  toStringAppend(rv, hdr);
+  return rv;
+}
+
+
+string toString(const char *buf, size_t len) { // serialized
+  string rv;
+  const char *msg = checkHeader(buf, len);
+  if (msg) {
+    rv = msg;
+    return rv;
   }
-  if (prev != ~0U) {
-    --idx;
-    rv += "  " + to_string(prev) + " <- " + to_string(start);
-    if (idx > start) {
-      rv += '-';
-      rv += to_string(idx);
-    }
-    rv += '\n';
+
+  const FileHeader *hdr = reinterpret_cast<const FileHeader *>(buf);
+  if ((hdr->majVer_ != 1) && (hdr->minVer_ != 0)) {
+    rv = "REDA version not 1.0";
+    return rv;
   }
-  return rv + "]\n";
+
+  toStringAppend(rv, *hdr);
+  toStringAppendEquivMap(rv, hdr->equivMap_, sizeof(hdr->equivMap_));
+
+  if (hdr->format_ != fmtOffset4) {
+    rv = "Format not Offset4";
+    return rv;
+  }
+
+  size_t numChars = hdr->maxChar_;
+  ++numChars;
+  const char *end = buf + len;
+  const char *base = buf + sizeof(FileHeader);
+  size_t inc = sizeof(StateOffset4) + (numChars * sizeof(uint32_t));
+  for (const char *ptr = base; ptr < end; ptr += inc) {
+    size_t off = static_cast<size_t>(ptr - base);
+    const StateOffset4 *rec = reinterpret_cast<const StateOffset4 *>(ptr);
+    Result result = rec->resultAndDeadEnd_ & 0x7fffffff;
+    bool deadEnd = ((rec->resultAndDeadEnd_ >> 31) != 0);
+    rv += '$' + toHexString(off >> 2) + " -> " + to_string(result) + '\n';
+    if (deadEnd)
+      rv += "  DeadEnd\n";
+    for (size_t ii = 0; ii < numChars; ++ii) {
+      rv += "  " + to_string(ii) + " -> $" +
+        toHexString(rec->offsets_[ii]) + '\n';
+    }
+  }
+
+  return rv + "END\n";
 }
 
 

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "Defs.h"
@@ -9,6 +10,10 @@
 namespace zezax::red {
 
 char fromHexDigit(Byte x);
+
+void writeStringToFile(const std::string &str, const char *path);
+std::string readFileToString(const char *path);
+
 
 template <class T>
 T &safeRef(std::vector<T> &vec, size_t idx) {

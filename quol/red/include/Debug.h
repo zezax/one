@@ -13,6 +13,7 @@
 #include "Dfa.h"
 #include "NfaToDfa.h"
 #include "DfaMinimizer.h"
+#include "Serializer.h"
 
 namespace zezax::red {
 
@@ -37,7 +38,10 @@ std::string toString(const DfaEdgeToIds &rev);
 std::string toString(const BlockRec &br);
 std::string toString(const BlockRecSet &brs);
 
-std::string toString(const std::vector<CharIdx> &vec);
+std::string toString(const std::vector<CharIdx> &vec); // equiv map
+
+std::string toString(const FileHeader &hdr);
+std::string toString(const char *buf, size_t len); // serialized
 
 char toHexDigit(Byte x);
 
