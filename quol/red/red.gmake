@@ -4,6 +4,8 @@
 
 ifeq ($(MODE), opt)
   OPT := -O3 -march=native
+else ifeq ($(MODE), dbgo)
+  OPT := -g -O3 -march=native
 else ifeq ($(MODE), dbg)
   OPT := -g
 else ifeq ($(MODE), jemalloc)

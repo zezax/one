@@ -11,6 +11,7 @@ sure: lib
 	$(MAKE) -C test $@
 
 clean: $(DIRS:%=clean-%)
+	$(RM) perf.data
 
 depend: $(DIRS;%=depend-%)
 
