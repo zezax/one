@@ -153,23 +153,6 @@ Executable &Executable::operator=(Executable &&rhs) {
   return *this;
 }
 
-
-Result Executable::match4(string_view sv) const {
-  const FileHeader *hdr = reinterpret_cast<const FileHeader *>(buf_);
-  const StateOffset4 *state =
-    reinterpret_cast<const StateOffset4 *>(base_ + hdr->initialOff_);
-  for (char ch : sv) {
-    Byte byte = static_cast<Byte>(ch);
-    byte = equivMap_[byte];
-    const char *ptr = base_ + (state->offsets_[byte] << 2);
-    state = reinterpret_cast<const StateOffset4 *>(ptr);
-    uint32_t resultAndDeadEnd = state->resultAndDeadEnd_;
-    if (resultAndDeadEnd & 0x80000000)
-      return resultAndDeadEnd & 0x7fffffff;
-  }
-  return state->resultAndDeadEnd_;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void Executable::validate() {

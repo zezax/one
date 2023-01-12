@@ -46,7 +46,12 @@ public:
   Executable(const Executable &) = delete;
   Executable &operator=(const Executable &) = delete;
 
-  Result match4(std::string_view sv) const;
+  const FileHeader *getHeader() const {
+    return reinterpret_cast<const FileHeader *>(buf_);
+  }
+
+  const char *getBase() const { return base_; }
+  const Byte *getEquivMap() const { return equivMap_; }
 
 private:
   void validate();

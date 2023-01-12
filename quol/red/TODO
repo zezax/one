@@ -2,7 +2,6 @@
 - document empty string matches: ()* etc.
 - document lots of .*foo.* .*bar.* patterns cause memory explosion
 - compressed transition map
-- high-locality final dfa
 - vertically align identifiers in .h and .cpp
 - add test suite items from re2, pcre
 - exception subclasses: parse, internal, execute
@@ -14,7 +13,7 @@
 - use range-for where possible
 - consider ordered set/map
 - auto-choose format
-- match object to track positions (public)
+- non-resetting match (save state/off across calls)
 - make install/shared libs
 - mem hog: makeTable
 - cpu hog: makeTable
@@ -32,3 +31,5 @@
 - perf: 9397 words 1:25 5:57u 8.2g as above
 - perf: 4698 words 1:50 0:55u 2.2g fix partition for multi-result
 - perf: 9397 words 1:25 6:01u 8.3g same
+- perf: bench 1000 0:24.488u matchLong, skip success
+- perf: bench 1000 0:23.825u matchLong, skip success, no state_, cur_

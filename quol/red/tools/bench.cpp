@@ -8,9 +8,12 @@
 #include "DfaMinimizer.h"
 #include "Serializer.h"
 #include "Exec.h"
+#include "Matcher.h"
 
 using namespace zezax::red;
 
+using std::make_shared;
+using std::shared_ptr;
 using std::string;
 using std::string_view;
 using std::vector;
@@ -63,17 +66,30 @@ int main(int argc, char **argv) {
       }
     }
 
-    Executable rex(std::move(buf));
+    shared_ptr<const Executable> rex =
+      make_shared<const Executable>(std::move(buf));
+    Matcher mat(rex);
 
-    int rv;
+    int sum = 0;
+    constexpr int iters = 1000;
     const char *beg = words.data();
     const char *end = beg + words.size();
-    for (int ii = 0; ii < 1000; ++ii) {
-      for (const char *ptr = beg; ptr < end; ++ptr)
-        rv += rex.match4(string_view(ptr, end));
-    }
+    for (int ii = 0; ii < iters; ++ii)
+      for (const char *ptr = beg; ptr < end; ) {
+        mat.matchLong(ptr, end - ptr);
+        if (mat.result() > 0) {
+          ptr += mat.end();
+          sum += mat.result();
+        }
+        else
+          ++ptr;
+      }
 
-    return rv;
+    if (sum != (iters * 478)) { // some match multiple times
+      std::cerr << "Bad sum " << sum << std::endl;
+      return 1;
+    }
+    return 0;
   }
   catch (const std::exception &ex) {
     std::cerr << ex.what() << std::endl;

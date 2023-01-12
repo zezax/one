@@ -7,9 +7,11 @@
 #include "DfaMinimizer.h"
 #include "Serializer.h"
 #include "Exec.h"
+#include "Matcher.h"
 
 using namespace zezax::red;
 
+using std::shared_ptr;
 using std::string;
 
 
@@ -33,8 +35,10 @@ TEST(Exec, smoke) {
     }
   }
 
-  Executable re(std::move(buf));
-  EXPECT_EQ(0, re.match4("bca"));
-  EXPECT_EQ(1, re.match4("bac"));
-  EXPECT_EQ(2, re.match4("cab"));
+  shared_ptr<const Executable> rex =
+    make_shared<const Executable>(std::move(buf));
+  Matcher mat(rex);
+  EXPECT_EQ(0, mat.matchLong("bca"));
+  EXPECT_EQ(1, mat.matchLong("bac"));
+  EXPECT_EQ(2, mat.matchLong("cab"));
 }
