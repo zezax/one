@@ -111,7 +111,7 @@ TEST(Convert, stepwise) {
   EXPECT_EQ(gDfaErrorId, id);
   id = dfaFromNfa(chars, tbl, counts, nis1, map, nfa, dfa);
   EXPECT_EQ(gDfaInitialId, id);
-  EXPECT_EQ(4, dfa.getStates().size());
+  EXPECT_EQ(4, dfa.numStates());
   //      +---+     +---+
   //      | b |     | a |
   //      v   | a   v   | b

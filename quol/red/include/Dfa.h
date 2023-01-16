@@ -53,6 +53,7 @@ public:
   void copyEquivMap(const DfaObj &src) { equivMap_ = src.equivMap_; }
   const std::vector<CharIdx> &getEquivMap() const { return equivMap_; }
 
+  size_t numStates() const { return states_.size(); }
   const std::vector<DfaState> &getStates() const { return states_; }
   std::vector<DfaState> &getMutStates() { return states_; }
 

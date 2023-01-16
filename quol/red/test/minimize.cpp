@@ -176,7 +176,7 @@ TEST(Minimize, deadEnds) {
     DfaMinimizer dm(dfa);
     dm.minimize();
   }
-  ASSERT_EQ(4, dfa.getStates().size());
+  ASSERT_EQ(4, dfa.numStates());
   EXPECT_TRUE(dfa[s0].deadEnd_);
   EXPECT_FALSE(dfa[s1].deadEnd_);
   EXPECT_TRUE(dfa[s2].deadEnd_);

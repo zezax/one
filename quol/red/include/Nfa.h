@@ -48,7 +48,7 @@ public:
   const NfaState &operator[](NfaId id) const { return states_[id]; }
   NfaState &operator[](NfaId id) { return states_[id]; }
 
-  size_t size() const { return states_.size(); }
+  size_t numStates() const { return states_.size(); }
   size_t activeSize() const;
 
   void freeAll();

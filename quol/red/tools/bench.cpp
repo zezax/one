@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
       }
       {
         Serializer ser(dfa);
-        buf = ser.serialize(fmtOffset4);
+        buf = ser.serialize(fmtOffsetAuto);
       }
     }
 
