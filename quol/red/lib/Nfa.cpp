@@ -2,6 +2,8 @@
 
 #include "Nfa.h"
 
+#include <limits>
+
 #include "Except.h"
 #include "Fnv.h"
 
@@ -10,6 +12,7 @@
 
 namespace zezax::red {
 
+using std::numeric_limits;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -95,6 +98,8 @@ NfaId NfaObj::newState(Result result) {
   size_t len = states_.size();
   if (len == 0)
     len = 1; // zero is invalid state id
+  if (len > numeric_limits<NfaId>::max())
+    throw RedExcept("NFA state ID overflow");
   states_.resize(len + 1);
   NfaState &ns = states_[len];
   ns.result_ = result;
