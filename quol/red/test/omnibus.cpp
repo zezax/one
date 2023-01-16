@@ -29,12 +29,12 @@ TEST(Omnibus, multi) {
     DfaMinimizer dm(dfa);
     dm.minimize();
   }
-  EXPECT_EQ(0, dfa.match(""));
-  EXPECT_EQ(0, dfa.match("0"));
-  EXPECT_EQ(1, dfa.match("a"));
-  EXPECT_EQ(2, dfa.match("aa"));
-  EXPECT_EQ(3, dfa.match("aaa"));
-  EXPECT_EQ(0, dfa.match("aaaa"));
+  EXPECT_EQ(0, dfa.matchWhole(""));
+  EXPECT_EQ(0, dfa.matchWhole("0"));
+  EXPECT_EQ(1, dfa.matchWhole("a"));
+  EXPECT_EQ(2, dfa.matchWhole("aa"));
+  EXPECT_EQ(3, dfa.matchWhole("aaa"));
+  EXPECT_EQ(0, dfa.matchWhole("aaaa"));
 }
 
 

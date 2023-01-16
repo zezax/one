@@ -57,7 +57,7 @@ public:
   const std::vector<DfaState> &getStates() const { return states_; }
   std::vector<DfaState> &getMutStates() { return states_; }
 
-  Result match(std::string_view s); // for unit tests
+  Result matchWhole(std::string_view s); // for unit tests
 
 private:
   std::vector<DfaState> states_;
