@@ -43,6 +43,22 @@ CharIdx maxCharRecurse(StateIdSet             &seen,
 }
 
 
+Result maxResultRecurse(StateIdSet             &seen,
+                        const vector<DfaState> &states,
+                        StateId                 sid) {
+  const DfaState &ds = states[sid];
+  Result maxResult = ds.result_;
+  for (auto [_, id] : ds.trans_.getMap())
+    if (!seen.testAndSet(id)) {
+      Result sub = maxResultRecurse(seen, states, id);
+      if (sub > maxResult)
+        maxResult = sub;
+    }
+
+  return maxResult;
+}
+
+
 void oneDeadEnd(DfaState &ds, StateId id, CharIdx maxChar) {
   // (likely) try sparse first...
   for (const auto [ch, tid] : ds.trans_.getMap())
@@ -188,6 +204,13 @@ CharIdx DfaObj::findMaxChar() const {
   StateIdSet seen;
   seen.set(gDfaInitialId);
   return maxCharRecurse(seen, states_, gDfaInitialId);
+}
+
+
+Result DfaObj::findMaxResult() const {
+  StateIdSet seen;
+  seen.set(gDfaInitialId);
+  return maxResultRecurse(seen, states_, gDfaInitialId);
 }
 
 

@@ -53,6 +53,25 @@ TEST(Dfa, maxchar) {
 }
 
 
+TEST(Dfa, maxresult) {
+  DfaObj dfa;
+  StateId s0 = mkState(dfa, 0);
+  StateId s1 = mkState(dfa, 1);
+  StateId s2 = mkState(dfa, 2);
+  StateId s3 = mkState(dfa, 3);
+  StateId s4 = mkState(dfa, 4);
+  addTrans(dfa, s1, s1, 'b');
+  addTrans(dfa, s1, s2, 'a');
+  addTrans(dfa, s2, s2, 'a');
+  addTrans(dfa, s2, s3, 'b');
+  addTrans(dfa, s3, s4, gAlphabetSize + 1); // end mark
+  EXPECT_EQ(gDfaErrorId, s0);
+  EXPECT_EQ(gDfaInitialId, s1);
+  Result maxResult = dfa.findMaxResult();
+  EXPECT_EQ(4, maxResult);
+}
+
+
 TEST(Dfa, equivmap) {
   DfaObj dfa;
   mkState(dfa, 0); // zero is error state

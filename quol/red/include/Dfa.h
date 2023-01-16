@@ -46,6 +46,7 @@ public:
 
   StateIdSet allStateIds() const;
   CharIdx findMaxChar() const;
+  Result findMaxResult() const;
 
   void chopEndMarks();
 
