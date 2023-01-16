@@ -1,8 +1,8 @@
 // red tool to match a regex
 
 #include <iostream>
+#include <stdexcept>
 
-#include "Except.h"
 #include "ReParser.h"
 #include "NfaToDfa.h"
 #include "DfaMinimizer.h"
@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 
     return 0;
   }
-  catch (const RedExcept &ex) {
+  catch (const std::exception &ex) {
     std::cerr << ex.what() << std::endl;
     return 1;
   }
