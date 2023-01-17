@@ -43,12 +43,11 @@ void Serializer::serializeToFile(Format fmt, const char *path) {
 void Serializer::ensureCanSerialize(Format fmt) {
   if (fmt != fmtOffset4)
     throw RedExcept("unsupported format for serialize");
-  size_t stateCnt = dfa_.getStates().size();
-  if (stateCnt > 0xffffffff)
-    throw RedExcept("too many states for serialization format");
+  if (dfa_.numStates() > 0xffffffff)
+    throw RedExceptLimit("too many states for serialization format");
   findMaxChar();
   if (maxChar_ >= gAlphabetSize)
-    throw RedExcept("maxChar out of range");
+    throw RedExceptLimit("maxChar out of range");
 }
 
 

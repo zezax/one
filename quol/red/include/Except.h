@@ -9,6 +9,20 @@
 
 namespace zezax::red {
 
+/* Exception hierarchy:
+
+   RedExcept - superclass
+     RedExceptInternal - programming errors
+       RedExceptCompile - compilation errors
+       RedExceptMinimize - minimization errors
+       RedExceptSerialize - serialization errors
+       RedExceptExec - execution errors
+     RedExceptUser - caused by user input
+       RedExceptParse - malformed regexes (with position)
+       RedExceptApi - bad calls/arguments
+     RedExceptLimit - limit reached
+*/
+
 class RedExcept : public std::runtime_error {
 public:
   explicit RedExcept(const std::string &msg)
@@ -39,5 +53,11 @@ public:
 private:
   size_t pos_;
 };
+
+
+class RedExceptLimit : public RedExcept {
+  using RedExcept::RedExcept;
+};
+
 
 } // namespace zezax::red

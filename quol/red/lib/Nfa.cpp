@@ -99,7 +99,7 @@ NfaId NfaObj::newState(Result result) {
   if (len == 0)
     len = 1; // zero is invalid state id
   if (len > numeric_limits<NfaId>::max())
-    throw RedExcept("NFA state ID overflow");
+    throw RedExceptLimit("NFA state ID overflow");
   states_.resize(len + 1);
   NfaState &ns = states_[len];
   ns.result_ = result;
@@ -298,7 +298,7 @@ NfaId NfaObj::stateWildcard() { // basically dot-star
 NfaId NfaObj::stateEndMark(CharIdx res) {
   CharIdx x = res + gAlphabetSize;
   if ((x < res) || (x < gAlphabetSize))
-    throw RedExcept("end-mark overflow");
+    throw RedExceptLimit("end-mark overflow");
   MultiChar mc;
   mc.set(x);
   NfaId init = newState(0);

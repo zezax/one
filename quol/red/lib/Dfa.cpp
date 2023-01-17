@@ -185,7 +185,7 @@ void DfaObj::swap(DfaObj &other) {
 StateId DfaObj::newState() {
   size_t len = states_.size();
   if (len > numeric_limits<StateId>::max())
-    throw RedExcept("DFA state ID overflow");
+    throw RedExceptLimit("DFA state ID overflow");
   states_.resize(len + 1); // default init
   return static_cast<StateId>(len);
 }
