@@ -394,8 +394,14 @@ string toString(const char *buf, size_t len) { // serialized
   toStringAppend(rv, *hdr);
   toStringAppendEquivMap(rv, hdr->equivMap_, sizeof(hdr->equivMap_));
 
-  if (hdr->format_ != fmtOffset4) {
-    rv = "Format not Offset4";
+  Format fmt = static_cast<Format>(hdr->format_);
+  switch (fmt) {
+  case fmtOffset1:
+  case fmtOffset2:
+  case fmtOffset4:
+    break;
+  default:
+    rv = "format not recognized";
     return rv;
   }
 
@@ -403,18 +409,69 @@ string toString(const char *buf, size_t len) { // serialized
   ++numChars;
   const char *end = buf + len;
   const char *base = buf + sizeof(FileHeader);
-  size_t inc = sizeof(StateOffset4) + (numChars * sizeof(uint32_t));
+
+  size_t inc;
+  switch (fmt) {
+  case fmtOffset1:
+    inc = sizeof(StateOffset1) + (numChars * sizeof(uint8_t));
+    break;
+  case fmtOffset2:
+    inc = sizeof(StateOffset2) + (numChars * sizeof(uint16_t));
+    break;
+  case fmtOffset4:
+    inc = sizeof(StateOffset4) + (numChars * sizeof(uint32_t));
+    break;
+  default:
+    throw logic_error("corrupted format");
+  }
+
   for (const char *ptr = base; ptr < end; ptr += inc) {
     size_t off = static_cast<size_t>(ptr - base);
-    const StateOffset4 *rec = reinterpret_cast<const StateOffset4 *>(ptr);
-    Result result = rec->resultAndDeadEnd_ & 0x7fffffff;
-    bool deadEnd = ((rec->resultAndDeadEnd_ >> 31) != 0);
-    rv += '$' + toHexString(off >> 2) + " -> " + to_string(result) + '\n';
-    if (deadEnd)
-      rv += "  DeadEnd\n";
-    for (size_t ii = 0; ii < numChars; ++ii) {
-      rv += "  " + to_string(ii) + " -> $" +
-        toHexString(rec->offsets_[ii]) + '\n';
+    switch (fmt) {
+    case fmtOffset1:
+      {
+        const StateOffset1 *rec = reinterpret_cast<const StateOffset1 *>(ptr);
+        Result result = rec->resultAndDeadEnd_ & 0x7f;
+        bool deadEnd = ((rec->resultAndDeadEnd_ >> 7) != 0);
+        rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
+        if (deadEnd)
+          rv += "  DeadEnd\n";
+        for (size_t ii = 0; ii < numChars; ++ii) {
+          rv += "  " + to_string(ii) + " -> $" +
+            toHexString(rec->offsets_[ii]) + '\n';
+        }
+      }
+      break;
+    case fmtOffset2:
+      {
+        const StateOffset2 *rec = reinterpret_cast<const StateOffset2 *>(ptr);
+        Result result = rec->resultAndDeadEnd_ & 0x7fff;
+        bool deadEnd = ((rec->resultAndDeadEnd_ >> 15) != 0);
+        rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
+        if (deadEnd)
+          rv += "  DeadEnd\n";
+        for (size_t ii = 0; ii < numChars; ++ii) {
+          rv += "  " + to_string(ii) + " -> $" +
+            toHexString(rec->offsets_[ii] << 1) + '\n';
+        }
+      }
+      break;
+    case fmtOffset4:
+      {
+        const StateOffset4 *rec = reinterpret_cast<const StateOffset4 *>(ptr);
+        Result result = rec->resultAndDeadEnd_ & 0x7fffffff;
+        bool deadEnd = ((rec->resultAndDeadEnd_ >> 31) != 0);
+        rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
+        if (deadEnd)
+          rv += "  DeadEnd\n";
+        for (size_t ii = 0; ii < numChars; ++ii) {
+          rv += "  " + to_string(ii) + " -> $" +
+            toHexString(rec->offsets_[ii] << 2) + '\n';
+        }
+      }
+      break;
+    default:
+      break;
     }
   }
 

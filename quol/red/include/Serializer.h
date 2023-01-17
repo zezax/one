@@ -9,12 +9,12 @@
 
 namespace zezax::red {
 
+//FIXME: 3-byte, rename offset -> direct/location/address
 enum Format : uint8_t {
-  fmtTiny1   = 1,
-  fmtTiny2   = 2,
-  fmtOffset2 = 3,
-  fmtOffset3 = 4,
-  fmtOffset4 = 5, // only one for now
+  fmtOffsetAuto = 10,
+  fmtOffset1    = 11,
+  fmtOffset2    = 12,
+  fmtOffset4    = 14,
 };
 
 struct FileHeader {
@@ -32,6 +32,18 @@ struct FileHeader {
 };
 
 
+struct StateOffset1 {
+  uint8_t resultAndDeadEnd_; // low 7 bits are result
+  uint8_t offsets_[0]; // gcc-ism
+};
+
+
+struct StateOffset2 {
+  uint16_t resultAndDeadEnd_; // low 15 bits are result
+  uint16_t offsets_[0]; // gcc-ism
+};
+
+
 struct StateOffset4 {
   uint32_t resultAndDeadEnd_; // low 31 bits are result
   uint32_t offsets_[0]; // gcc-ism
@@ -46,17 +58,20 @@ public:
   void serializeToFile(Format fmt, const char *path);
 
 private:
-  void ensureCanSerialize(Format fmt);
+  void prepareToSerialize();
+  Format validatedFormat(Format fmt);
+  Format optimalFormat();
   std::string serializeToString(Format fmt);
   void populateHeader(FileHeader &hdr, Format fmt);
   void appendState(Format fmt, std::string &buf, const DfaState &ds);
   void tabulateOffsets(Format fmt);
-  uint32_t measureState(Format fmt, const DfaState &ds);
+  size_t measureState(Format fmt, const DfaState &ds);
   void findMaxChar();
 
-  const DfaObj         &dfa_;
-  CharIdx               maxChar_;
-  std::vector<uint32_t> offsets_;
+  const DfaObj       &dfa_;
+  CharIdx             maxChar_;
+  Result              maxResult_;
+  std::vector<size_t> offsets_;
 };
 
 

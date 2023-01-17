@@ -14,9 +14,14 @@ using namespace zezax::red;
 using std::shared_ptr;
 using std::string;
 using std::string_view;
+using testing::TestWithParam;
+using testing::Values;
 
 
-TEST(Matcher, check) {
+class MatcherTest : public TestWithParam<Format> {};
+
+TEST_P(MatcherTest, check) {
+  Format fmt = GetParam();
   string buf;
   {
     ReParser p;
@@ -32,7 +37,7 @@ TEST(Matcher, check) {
     }
     {
       Serializer ser(dfa);
-      buf = ser.serialize(fmtOffset4);
+      buf = ser.serialize(fmt);
     }
   }
 
@@ -45,14 +50,15 @@ TEST(Matcher, check) {
   const char *in0 = "bca";
   string in1 = "bac";
   string_view in2 = "cab";
-  EXPECT_EQ(0, m0.checkShort(in0));
-  EXPECT_EQ(0, m00.checkShort(in0, 3));
-  EXPECT_EQ(1, m1.checkShort(in1));
-  EXPECT_EQ(2, m2.checkShort(in2));
+  EXPECT_EQ(0, m0.checkWhole(in0));
+  EXPECT_EQ(0, m00.checkWhole(in0, 3));
+  EXPECT_EQ(1, m1.checkWhole(in1));
+  EXPECT_EQ(2, m2.checkWhole(in2));
 }
 
 
-TEST(Matcher, match) {
+TEST_P(MatcherTest, match) {
+  Format fmt = GetParam();
   string buf;
   {
     ReParser p;
@@ -68,7 +74,7 @@ TEST(Matcher, match) {
     }
     {
       Serializer ser(dfa);
-      buf = ser.serialize(fmtOffset4);
+      buf = ser.serialize(fmt);
     }
   }
 
@@ -94,3 +100,7 @@ TEST(Matcher, match) {
   EXPECT_EQ(3, m1.end());
   EXPECT_EQ(3, m2.end());
 }
+
+
+INSTANTIATE_TEST_SUITE_P(A, MatcherTest,
+  Values(fmtOffsetAuto, fmtOffset1, fmtOffset2, fmtOffset4));

@@ -8,12 +8,22 @@
 #include "ReParser.h"
 #include "NfaToDfa.h"
 #include "DfaMinimizer.h"
+#include "Serializer.h"
+#include "Exec.h"
+#include "Matcher.h"
 
-using namespace testing;
 using namespace zezax::red;
 
+using std::make_shared;
 using std::ostream;
+using std::shared_ptr;
 using std::string;
+using std::to_string;
+using std::tuple;
+using testing::Combine;
+using testing::TestWithParam;
+using testing::Values;
+using testing::ValuesIn;
 
 
 // FIXME: move this to a matching test
@@ -49,85 +59,7 @@ ostream &operator<<(ostream &os, const Rec &r) {
   return os;
 }
 
-class Omnibus : public TestWithParam<Rec> {};
-
-#if 0
-
-TEST_P(Omnibus, parse) {
-  Rec r = GetParam();
-  try {
-    ReParser p;
-    p.add(r.regex_, 1, 0);
-    p.finish();
-    p.freeAll();
-    EXPECT_FALSE(r.text_ == nullptr);
-  }
-  catch (const RedExcept &ex) {
-    EXPECT_TRUE(r.text_ == nullptr);
-  }
-}
-
-
-TEST_P(Omnibus, convert) {
-  Rec r = GetParam();
-  try {
-    ReParser p;
-    p.add(r.regex_, 1, 0);
-    p.finish();
-    EXPECT_FALSE(r.text_ == nullptr);
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-  }
-  catch (const RedExcept &ex) {
-    EXPECT_TRUE(r.text_ == nullptr);
-  }
-}
-
-
-TEST_P(Omnibus, minimize) {
-  Rec r = GetParam();
-  try {
-    ReParser p;
-    p.add(r.regex_, 1, 0);
-    p.finish();
-    EXPECT_FALSE(r.text_ == nullptr);
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-  }
-  catch (const RedExcept &ex) {
-    EXPECT_TRUE(r.text_ == nullptr);
-  }
-}
-
-#endif
-
-TEST_P(Omnibus, match) {
-  Rec r = GetParam();
-  try {
-    ReParser p;
-    p.add(r.regex_, 1, 0);
-    p.finish();
-    EXPECT_FALSE(r.text_ == nullptr);
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    Result res = dfa.match(r.text_);
-    EXPECT_EQ(r.match_, (res == 1));
-  }
-  catch (const RedExcept &ex) {
-    EXPECT_TRUE(r.text_ == nullptr);
-  }
-}
-
-
-INSTANTIATE_TEST_SUITE_P(A, Omnibus, Values(
+Rec testRecs[] = {
 Rec{"abc", "abc", true},
 Rec{"abc", "xbc", false},
 Rec{"abc", "axc", false},
@@ -288,4 +220,131 @@ Rec{"^(((((llx((-3)|(4)))(;(llx((-3)|(4))))*))))$", "llx-3;llx4", true},
 Rec{"(|a)*", "aaaaa", true},
 Rec{"(|a)+", "aaaaa", true},
 Rec{"^[abc]+$", "def", false}
-));
+};
+
+// These tests are disabled by default for speed.  Any errors they would
+// find would also be found in the downstream test.  If there are failures,
+// however, it can be useful to enable these tests in an attempt to see
+// where the failure arises.
+#if 0
+
+class Omnibus : public TestWithParam<Rec> {};
+
+TEST_P(Omnibus, parse) {
+  Rec r = GetParam();
+  try {
+    ReParser p;
+    p.add(r.regex_, 1, 0);
+    p.finish();
+    p.freeAll();
+    EXPECT_FALSE(r.text_ == nullptr);
+  }
+  catch (const RedExcept &ex) {
+    EXPECT_TRUE(r.text_ == nullptr);
+  }
+}
+
+
+TEST_P(Omnibus, convert) {
+  Rec r = GetParam();
+  try {
+    ReParser p;
+    p.add(r.regex_, 1, 0);
+    p.finish();
+    EXPECT_FALSE(r.text_ == nullptr);
+    DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
+  }
+  catch (const RedExcept &ex) {
+    EXPECT_TRUE(r.text_ == nullptr);
+  }
+}
+
+
+TEST_P(Omnibus, minimize) {
+  Rec r = GetParam();
+  try {
+    ReParser p;
+    p.add(r.regex_, 1, 0);
+    p.finish();
+    EXPECT_FALSE(r.text_ == nullptr);
+    DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
+    {
+      DfaMinimizer dm(dfa);
+      dm.minimize();
+    }
+  }
+  catch (const RedExcept &ex) {
+    EXPECT_TRUE(r.text_ == nullptr);
+  }
+}
+
+
+TEST_P(Omnibus, match) {
+  Rec r = GetParam();
+  try {
+    ReParser p;
+    p.add(r.regex_, 1, 0);
+    p.finish();
+    EXPECT_FALSE(r.text_ == nullptr);
+    DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
+    {
+      DfaMinimizer dm(dfa);
+      dm.minimize();
+    }
+    Result res = dfa.matchWhole(r.text_);
+    EXPECT_EQ(r.match_, (res == 1));
+  }
+  catch (const RedExcept &ex) {
+    EXPECT_TRUE(r.text_ == nullptr);
+  }
+}
+
+
+INSTANTIATE_TEST_SUITE_P(A, Omnibus, ValuesIn(testRecs));
+
+#endif
+
+class OmnibusFmt : public TestWithParam<tuple<Rec, Format>> {};
+
+
+TEST_P(OmnibusFmt, matcher) {
+  Rec r = std::get<0>(GetParam());
+  Format fmt = std::get<1>(GetParam());
+  try {
+    ReParser p;
+    p.add(r.regex_, 1, 0);
+    p.finish();
+    EXPECT_FALSE(r.text_ == nullptr);
+    DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
+    {
+      DfaMinimizer dm(dfa);
+      dm.minimize();
+    }
+    string buf;
+    {
+      Serializer ser(dfa);
+      buf = ser.serialize(fmt);
+    }
+    shared_ptr<const Executable> rex =
+      make_shared<const Executable>(std::move(buf));
+    Matcher mat(rex);
+    Result res = mat.checkWhole(r.text_);
+    EXPECT_EQ(r.match_, (res == 1));
+  }
+  catch (const RedExceptLimit &lim) {
+    // expected in certain cases
+    std::cout << lim.what() << std::endl;
+  }
+  catch (const RedExcept &) {
+    EXPECT_TRUE(r.text_ == nullptr);
+  }
+}
+
+
+INSTANTIATE_TEST_SUITE_P(A, OmnibusFmt, Combine(
+  ValuesIn(testRecs),
+  Values(fmtOffsetAuto, fmtOffset1, fmtOffset2, fmtOffset4)));

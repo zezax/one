@@ -13,9 +13,14 @@ using namespace zezax::red;
 
 using std::shared_ptr;
 using std::string;
+using testing::TestWithParam;
+using testing::Values;
 
 
-TEST(Exec, smoke) {
+class Exec : public TestWithParam<Format> {};
+
+TEST_P(Exec, smoke) {
+  Format fmt = GetParam();
   string buf;
   {
     ReParser p;
@@ -31,7 +36,7 @@ TEST(Exec, smoke) {
     }
     {
       Serializer ser(dfa);
-      buf = ser.serialize(fmtOffset4);
+      buf = ser.serialize(fmt);
     }
   }
 
@@ -42,3 +47,7 @@ TEST(Exec, smoke) {
   EXPECT_EQ(1, mat.matchLong("bac"));
   EXPECT_EQ(2, mat.matchLong("cab"));
 }
+
+
+INSTANTIATE_TEST_SUITE_P(A, Exec,
+  Values(fmtOffsetAuto, fmtOffset1, fmtOffset2, fmtOffset4));

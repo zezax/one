@@ -19,7 +19,7 @@ using std::string_view;
 
 int main(int argc, char **argv) {
   bool raw = false;
-  Format fmt = fmtOffset4;
+  Format fmt = fmtOffsetAuto;
   try {
     string buf;
     {
@@ -29,6 +29,12 @@ int main(int argc, char **argv) {
         string_view sv = argv[ii];
         if (sv == "-r")
           raw = true;
+        else if (sv == "-1")
+          fmt = fmtOffset1;
+        else if (sv == "-2")
+          fmt = fmtOffset2;
+        else if (sv == "-4")
+          fmt = fmtOffset4;
         else if (raw)
           p.addRaw(sv, ++cur, 0);
         else

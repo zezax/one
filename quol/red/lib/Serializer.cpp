@@ -26,13 +26,15 @@ Serializer::Serializer(const DfaObj &dfa)
 
 
 string Serializer::serialize(Format fmt) {
-  ensureCanSerialize(fmt);
+  prepareToSerialize();
+  fmt = validatedFormat(fmt);
   return serializeToString(fmt);
 }
 
 
 void Serializer::serializeToFile(Format fmt, const char *path) {
-  ensureCanSerialize(fmt);
+  prepareToSerialize();
+  fmt = validatedFormat(fmt);
   string buf = serializeToString(fmt);
   writeStringToFile(buf, path);
 }
@@ -40,14 +42,67 @@ void Serializer::serializeToFile(Format fmt, const char *path) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Serializer::ensureCanSerialize(Format fmt) {
-  if (fmt != fmtOffset4)
-    throw RedExcept("unsupported format for serialize");
+void Serializer::prepareToSerialize() {
   if (dfa_.numStates() > 0xffffffff)
     throw RedExceptLimit("too many states for serialization format");
   findMaxChar();
   if (maxChar_ >= gAlphabetSize)
     throw RedExceptLimit("maxChar out of range");
+  maxResult_ = dfa_.findMaxResult();
+}
+
+
+Format Serializer::validatedFormat(Format fmt) {
+  if (fmt == fmtOffsetAuto)
+    fmt = optimalFormat();
+
+  // !!! assume result is same size as transition entries
+  size_t tot = dfa_.numStates() * (maxChar_ + 2);
+
+  switch (fmt) {
+  case fmtOffset1:
+    if ((maxResult_ > 0x7f) || (tot > 0xff))
+      throw RedExceptLimit("DFA too big for 1-byte format");
+    break;
+  case fmtOffset2:
+    if ((maxResult_ > 0x7fff) || (tot > 0xffff))
+      throw RedExceptLimit("DFA too big for 2-byte format");
+    break;
+  case fmtOffset4:
+    if ((maxResult_ > 0x7fffffff) || (tot > 0xffffffff))
+      throw RedExceptLimit("DFA too big for 4-byte format");
+    break;
+  default:
+    throw RedExcept("unsuitable DFA format requested");
+  }
+
+  return fmt;
+}
+
+
+Format Serializer::optimalFormat() {
+  Format res;
+  if (maxResult_ > 0x7fffffff)
+    throw RedExceptLimit("max result too big for any format");
+  else if (maxResult_ > 0x7fff)
+    res = fmtOffset4;
+  else if (maxResult_ > 0x7f)
+    res = fmtOffset2;
+  else
+    res = fmtOffset1;
+
+  size_t tot = dfa_.numStates() * (maxChar_ + 2);
+  Format off;
+  if (tot > 0xffffffff)
+    throw RedExceptLimit("num states too many for any format");
+  else if (tot > 0xffff)
+    off = fmtOffset4;
+  else if (tot > 0xff)
+    off = fmtOffset2;
+  else
+    off = fmtOffset1;
+
+  return std::max(res, off);
 }
 
 
@@ -72,36 +127,85 @@ string Serializer::serializeToString(Format fmt) {
 
 
 void Serializer::populateHeader(FileHeader &hdr, Format fmt) {
+  size_t initOff = measureState(fmt, dfa_[gDfaInitialId]);
+  if (initOff > 0xffffffff)
+    throw RedExcept("initial offset too large");
+
   memset(&hdr, 0, sizeof(hdr));
   memcpy(hdr.magic_, "REDA", 4);
   hdr.majVer_ = 1;
   hdr.minVer_ = 0;
   hdr.format_ = fmt;
   hdr.maxChar_ = static_cast<uint8_t>(maxChar_);
-  hdr.stateCnt_ = static_cast<uint32_t>(dfa_.getStates().size());
-  hdr.initialOff_ = measureState(fmt, dfa_[gDfaInitialId]);
+  hdr.stateCnt_ = static_cast<uint32_t>(dfa_.numStates());
+  hdr.initialOff_ = static_cast<uint32_t>(initOff);
   for (size_t ii = 0; ii < gAlphabetSize; ++ii)
     hdr.equivMap_[ii] = static_cast<uint8_t>(dfa_.getEquivMap()[ii]);
 }
 
 
 void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
-  (void) fmt;
-  StateOffset4 rec;
-  rec.resultAndDeadEnd_ = (ds.result_ & 0x7fffffff) | (ds.deadEnd_ << 31);
-  append(buf, &rec, sizeof(rec));
-  for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
-    StateId id = ds.trans_[ch];
-    uint32_t off = offsets_[id];
-    off >>= 2; // !!! offsets are divided by four in fmtOffset4
-    append(buf, &off, sizeof(off));
+  switch (fmt) {
+
+  case fmtOffset1:
+    {
+      StateOffset1 rec;
+      rec.resultAndDeadEnd_ = (ds.result_ & 0x7f) | (ds.deadEnd_ << 7);
+      append(buf, &rec, sizeof(rec));
+      for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
+        StateId id = ds.trans_[ch];
+        size_t off = offsets_[id];
+        if (off > 0xff)
+          throw RedExcept("overflow in 1-byte appendState");
+        uint8_t off8 = static_cast<uint8_t>(off);
+        append(buf, &off8, sizeof(off8));
+      }
+    }
+    break;
+
+  case fmtOffset2:
+    {
+      StateOffset2 rec;
+      rec.resultAndDeadEnd_ = (ds.result_ & 0x7fff) | (ds.deadEnd_ << 15);
+      append(buf, &rec, sizeof(rec));
+      for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
+        StateId id = ds.trans_[ch];
+        size_t off = offsets_[id];
+        off >>= 1;
+        if (off > 0xffff)
+          throw RedExcept("overflow in 2-byte appendState");
+        uint16_t off16 = static_cast<uint16_t>(off);
+        append(buf, &off16, sizeof(off16));
+      }
+    }
+    break;
+
+  case fmtOffset4:
+    {
+      StateOffset4 rec;
+      rec.resultAndDeadEnd_ = (ds.result_ & 0x7fffffff) | (ds.deadEnd_ << 31);
+      append(buf, &rec, sizeof(rec));
+      for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
+        StateId id = ds.trans_[ch];
+        size_t off = offsets_[id];
+        off >>= 2;
+        if (off > 0xffffffff)
+          throw RedExcept("overflow in 4-byte appendState");
+        uint32_t off32 = static_cast<uint32_t>(off);
+        append(buf, &off32, sizeof(off32));
+      }
+    }
+    break;
+
+  default:
+    throw RedExcept("bad format in appendState");
   }
 }
 
 
 void Serializer::tabulateOffsets(Format fmt) {
   offsets_.clear();
-  uint32_t off = 0;
+  size_t off = 0;
   for (const DfaState &ds : dfa_.getStates()) {
     offsets_.push_back(off);
     off += measureState(fmt, ds);
@@ -110,12 +214,18 @@ void Serializer::tabulateOffsets(Format fmt) {
 }
 
 
-uint32_t Serializer::measureState(Format fmt, const DfaState &ds) {
+size_t Serializer::measureState(Format fmt, const DfaState &ds) {
   (void) ds;
-  if (fmt != fmtOffset4)
-    throw RedExcept("can only measure fmtOffset4");
-  return static_cast<uint32_t>(sizeof(StateOffset4) +
-                               (sizeof(uint32_t) * (maxChar_ + 1)));
+  switch (fmt) {
+  case fmtOffset1:
+    return sizeof(StateOffset1) + (sizeof(uint8_t) * (maxChar_ + 1));
+  case fmtOffset2:
+    return sizeof(StateOffset2) + (sizeof(uint16_t) * (maxChar_ + 1));
+  case fmtOffset4:
+    return sizeof(StateOffset4) + (sizeof(uint32_t) * (maxChar_ + 1));
+  default:
+    throw RedExcept("bad format in measureState");
+  }
 }
 
 
@@ -157,8 +267,14 @@ const char *checkHeader(const void *ptr, size_t len) {
   if (hdr->checksum_ != calcChecksum(ptr, len))
     return "Serialized DFA: checksum mismatch";
 
-  if (hdr->format_ != fmtOffset4)
+  switch (hdr->format_) {
+  case fmtOffset1:
+  case fmtOffset2:
+  case fmtOffset4:
+    break;
+  default:
     return "Serialized DFA: unsupported format";
+  }
 
   return nullptr;
 }
