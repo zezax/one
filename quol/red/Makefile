@@ -20,10 +20,14 @@ tools: lib
 test: lib
 
 $(DIRS):
-	make -C $@
+	$(MAKE) -C $@
 
 all-%:
-	make -C $* all
+	$(MAKE) -C $* all
 
 clean-%:
-	make -C $* clean
+	$(MAKE) -C $* clean
+
+all-tools: all-lib
+
+all-test: all-lib
