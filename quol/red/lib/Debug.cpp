@@ -7,6 +7,8 @@
 #include <set>
 #include <vector>
 
+#include "Proxy.h"
+
 namespace zezax::red {
 
 using std::logic_error;
@@ -413,13 +415,13 @@ string toString(const char *buf, size_t len) { // serialized
   size_t inc;
   switch (fmt) {
   case fmtOffset1:
-    inc = sizeof(StateOffset1) + (numChars * sizeof(uint8_t));
+    inc = DfaProxy<fmtOffset1>::stateSize(hdr->maxChar_);
     break;
   case fmtOffset2:
-    inc = sizeof(StateOffset2) + (numChars * sizeof(uint16_t));
+    inc = DfaProxy<fmtOffset2>::stateSize(hdr->maxChar_);
     break;
   case fmtOffset4:
-    inc = sizeof(StateOffset4) + (numChars * sizeof(uint32_t));
+    inc = DfaProxy<fmtOffset4>::stateSize(hdr->maxChar_);
     break;
   default:
     throw logic_error("corrupted format");
@@ -430,43 +432,46 @@ string toString(const char *buf, size_t len) { // serialized
     switch (fmt) {
     case fmtOffset1:
       {
-        const StateOffset1 *rec = reinterpret_cast<const StateOffset1 *>(ptr);
-        Result result = rec->resultAndDeadEnd_ & 0x7f;
-        bool deadEnd = ((rec->resultAndDeadEnd_ >> 7) != 0);
+        DfaProxy<fmtOffset1> proxy;
+        const decltype(proxy)::State *rec = proxy.stateAt(ptr, 0);
+        Result result = proxy.result(rec);
+        bool deadEnd = proxy.deadEnd(rec);
         rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
         if (deadEnd)
           rv += "  DeadEnd\n";
         for (size_t ii = 0; ii < numChars; ++ii) {
           rv += "  " + to_string(ii) + " -> $" +
-            toHexString(rec->offsets_[ii]) + '\n';
+            toHexString(proxy.trans(rec, ii)) + '\n';
         }
       }
       break;
     case fmtOffset2:
       {
-        const StateOffset2 *rec = reinterpret_cast<const StateOffset2 *>(ptr);
-        Result result = rec->resultAndDeadEnd_ & 0x7fff;
-        bool deadEnd = ((rec->resultAndDeadEnd_ >> 15) != 0);
+        DfaProxy<fmtOffset2> proxy;
+        const decltype(proxy)::State *rec = proxy.stateAt(ptr, 0);
+        Result result = proxy.result(rec);
+        bool deadEnd = proxy.deadEnd(rec);
         rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
         if (deadEnd)
           rv += "  DeadEnd\n";
         for (size_t ii = 0; ii < numChars; ++ii) {
           rv += "  " + to_string(ii) + " -> $" +
-            toHexString(rec->offsets_[ii] << 1) + '\n';
+            toHexString(proxy.trans(rec, ii)) + '\n';
         }
       }
       break;
     case fmtOffset4:
       {
-        const StateOffset4 *rec = reinterpret_cast<const StateOffset4 *>(ptr);
-        Result result = rec->resultAndDeadEnd_ & 0x7fffffff;
-        bool deadEnd = ((rec->resultAndDeadEnd_ >> 31) != 0);
+        DfaProxy<fmtOffset4> proxy;
+        const decltype(proxy)::State *rec = proxy.stateAt(ptr, 0);
+        Result result = proxy.result(rec);
+        bool deadEnd = proxy.deadEnd(rec);
         rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
         if (deadEnd)
           rv += "  DeadEnd\n";
         for (size_t ii = 0; ii < numChars; ++ii) {
           rv += "  " + to_string(ii) + " -> $" +
-            toHexString(rec->offsets_[ii] << 2) + '\n';
+            toHexString(proxy.trans(rec, ii)) + '\n';
         }
       }
       break;

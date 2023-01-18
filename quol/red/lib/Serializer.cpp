@@ -7,6 +7,7 @@
 #include "Except.h"
 #include "Fnv.h"
 #include "Util.h"
+#include "Proxy.h"
 
 namespace zezax::red {
 
@@ -56,21 +57,15 @@ Format Serializer::validatedFormat(Format fmt) {
   if (fmt == fmtOffsetAuto)
     fmt = optimalFormat();
 
-  // !!! assume result is same size as transition entries
-  size_t tot = dfa_.numStates() * (maxChar_ + 2);
-
   switch (fmt) {
   case fmtOffset1:
-    if ((maxResult_ > 0x7f) || (tot > 0xff))
-      throw RedExceptLimit("DFA too big for 1-byte format");
+    DfaProxy<fmtOffset1>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
     break;
   case fmtOffset2:
-    if ((maxResult_ > 0x7fff) || (tot > 0xffff))
-      throw RedExceptLimit("DFA too big for 2-byte format");
+    DfaProxy<fmtOffset2>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
     break;
   case fmtOffset4:
-    if ((maxResult_ > 0x7fffffff) || (tot > 0xffffffff))
-      throw RedExceptLimit("DFA too big for 4-byte format");
+    DfaProxy<fmtOffset4>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
     break;
   default:
     throw RedExcept("unsuitable DFA format requested");
@@ -82,22 +77,21 @@ Format Serializer::validatedFormat(Format fmt) {
 
 Format Serializer::optimalFormat() {
   Format res;
-  if (maxResult_ > 0x7fffffff)
+  if (!DfaProxy<fmtOffset4>::resultFits(maxResult_))
     throw RedExceptLimit("max result too big for any format");
-  else if (maxResult_ > 0x7fff)
+  else if (!DfaProxy<fmtOffset2>::resultFits(maxResult_))
     res = fmtOffset4;
-  else if (maxResult_ > 0x7f)
+  else if (!DfaProxy<fmtOffset1>::resultFits(maxResult_))
     res = fmtOffset2;
   else
     res = fmtOffset1;
 
-  size_t tot = dfa_.numStates() * (maxChar_ + 2);
   Format off;
-  if (tot > 0xffffffff)
+  if (!DfaProxy<fmtOffset4>::offsetFits(maxChar_, dfa_.numStates()))
     throw RedExceptLimit("num states too many for any format");
-  else if (tot > 0xffff)
+  else if (!DfaProxy<fmtOffset2>::offsetFits(maxChar_, dfa_.numStates()))
     off = fmtOffset4;
-  else if (tot > 0xff)
+  else if (!DfaProxy<fmtOffset1>::offsetFits(maxChar_, dfa_.numStates()))
     off = fmtOffset2;
   else
     off = fmtOffset1;
@@ -149,50 +143,42 @@ void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
 
   case fmtOffset1:
     {
-      StateOffset1 rec;
-      rec.resultAndDeadEnd_ = (ds.result_ & 0x7f) | (ds.deadEnd_ << 7);
+      DfaProxy<fmtOffset1> proxy;
+      typename decltype(proxy)::State rec;
+      rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
       append(buf, &rec, sizeof(rec));
       for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
         StateId id = ds.trans_[ch];
         size_t off = offsets_[id];
-        if (off > 0xff)
-          throw RedExcept("overflow in 1-byte appendState");
-        uint8_t off8 = static_cast<uint8_t>(off);
-        append(buf, &off8, sizeof(off8));
+        proxy.appendOff(buf, off);
       }
     }
     break;
 
   case fmtOffset2:
     {
-      StateOffset2 rec;
-      rec.resultAndDeadEnd_ = (ds.result_ & 0x7fff) | (ds.deadEnd_ << 15);
+      DfaProxy<fmtOffset2> proxy;
+      typename decltype(proxy)::State rec;
+      rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
       append(buf, &rec, sizeof(rec));
       for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
         StateId id = ds.trans_[ch];
         size_t off = offsets_[id];
-        off >>= 1;
-        if (off > 0xffff)
-          throw RedExcept("overflow in 2-byte appendState");
-        uint16_t off16 = static_cast<uint16_t>(off);
-        append(buf, &off16, sizeof(off16));
+        proxy.appendOff(buf, off);
       }
     }
     break;
 
   case fmtOffset4:
     {
-      StateOffset4 rec;
-      rec.resultAndDeadEnd_ = (ds.result_ & 0x7fffffff) | (ds.deadEnd_ << 31);
+      DfaProxy<fmtOffset4> proxy;
+      typename decltype(proxy)::State rec;
+      rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
       append(buf, &rec, sizeof(rec));
       for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
         StateId id = ds.trans_[ch];
         size_t off = offsets_[id];
-        off >>= 2;
-        if (off > 0xffffffff)
-          throw RedExcept("overflow in 4-byte appendState");
-        uint32_t off32 = static_cast<uint32_t>(off);
-        append(buf, &off32, sizeof(off32));
+        proxy.appendOff(buf, off);
       }
     }
     break;
@@ -218,11 +204,11 @@ size_t Serializer::measureState(Format fmt, const DfaState &ds) {
   (void) ds;
   switch (fmt) {
   case fmtOffset1:
-    return sizeof(StateOffset1) + (sizeof(uint8_t) * (maxChar_ + 1));
+    return DfaProxy<fmtOffset1>::stateSize(maxChar_);
   case fmtOffset2:
-    return sizeof(StateOffset2) + (sizeof(uint16_t) * (maxChar_ + 1));
+    return DfaProxy<fmtOffset2>::stateSize(maxChar_);
   case fmtOffset4:
-    return sizeof(StateOffset4) + (sizeof(uint32_t) * (maxChar_ + 1));
+    return DfaProxy<fmtOffset4>::stateSize(maxChar_);
   default:
     throw RedExcept("bad format in measureState");
   }

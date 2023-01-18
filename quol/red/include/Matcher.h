@@ -31,19 +31,11 @@ public:
   Result matchLong(const std::string_view sv);
 
 private:
-  template <class INPROXY>
-  Result checkWhole1(INPROXY in);
-  template <class INPROXY>
-  Result checkWhole2(INPROXY in);
-  template <class INPROXY>
-  Result checkWhole4(INPROXY in);
+  template <class INPROXY, class DFAPROXY>
+  Result checkWholeX(INPROXY in, DFAPROXY dfap);
 
-  template <class INPROXY>
-  Result matchLong1(INPROXY in);
-  template <class INPROXY>
-  Result matchLong2(INPROXY in);
-  template <class INPROXY>
-  Result matchLong4(INPROXY in);
+  template <class INPROXY, class DFAPROXY>
+  Result matchLongX(INPROXY in, DFAPROXY dfap);
 
   std::shared_ptr<const Executable> exec_;
   size_t                            matchStart_; // escape initial state
@@ -61,161 +53,47 @@ private:
   const Byte *equivMap = exec->getEquivMap()
 
 
-template <class INPROXY>
-Result Matcher::checkWhole1(INPROXY in) {
+template <class INPROXY, class DFAPROXY>
+Result Matcher::checkWholeX(INPROXY in, DFAPROXY dfap) {
   ZEZAX_RED_PREAMBLE;
 
-  const StateOffset1 *state =
-    reinterpret_cast<const StateOffset1 *>(base + hdr->initialOff_);
+  const typename decltype(dfap)::State *state =
+    dfap.stateAt(base, hdr->initialOff_);
+
   for (; in; ++in) {
     Byte byte = equivMap[*in];
-    state = reinterpret_cast<const StateOffset1 *>(
-            base + state->offsets_[byte]);
-    uint8_t resultAndDeadEnd = state->resultAndDeadEnd_;
-    if (resultAndDeadEnd & 0x80) // dead end
-      return resultAndDeadEnd & 0x7f;
-  }
-  return state->resultAndDeadEnd_ & 0x7f;
-}
-
-
-template <class INPROXY>
-Result Matcher::checkWhole2(INPROXY in) {
-  ZEZAX_RED_PREAMBLE;
-
-  const StateOffset2 *state =
-    reinterpret_cast<const StateOffset2 *>(base + hdr->initialOff_);
-  for (; in; ++in) {
-    Byte byte = equivMap[*in];
-    state = reinterpret_cast<const StateOffset2 *>(
-            base + (state->offsets_[byte] << 1));
-    uint16_t resultAndDeadEnd = state->resultAndDeadEnd_;
-    if (resultAndDeadEnd & 0x8000) // dead end
-      return resultAndDeadEnd & 0x7fff;
-  }
-  return state->resultAndDeadEnd_ & 0x7fff;
-}
-
-
-template <class INPROXY>
-Result Matcher::checkWhole4(INPROXY in) {
-  ZEZAX_RED_PREAMBLE;
-
-  const StateOffset4 *state =
-    reinterpret_cast<const StateOffset4 *>(base + hdr->initialOff_);
-  for (; in; ++in) {
-    Byte byte = equivMap[*in];
-    state = reinterpret_cast<const StateOffset4 *>(
-            base + (state->offsets_[byte] << 2));
-    uint32_t resultAndDeadEnd = state->resultAndDeadEnd_;
-    if (resultAndDeadEnd & 0x80000000) // dead end
-      return resultAndDeadEnd & 0x7fffffff;
-  }
-  return state->resultAndDeadEnd_ & 0x7fffffff;
-}
-
-
-template <class INPROXY>
-Result Matcher::matchLong1(INPROXY in) {
-  ZEZAX_RED_PREAMBLE;
-
-  size_t init = hdr->initialOff_;
-  size_t off = init;
-  const StateOffset1 *state =
-    reinterpret_cast<const StateOffset1 *>(base + off);
-  Result result = state->resultAndDeadEnd_ & 0x7f;
-  Result prevResult = 0;
-  size_t idx = 0;
-
-  for (; in; ++in, ++idx) {
-    Byte byte = equivMap[*in];
-    size_t trans = state->offsets_[byte];
-    if ((off == init) && (off != trans))
-      matchStart_ = idx;
-    off = trans;
-    state = reinterpret_cast<const StateOffset1 *>(base + off);
-    result = state->resultAndDeadEnd_ & 0x7f;
-    if (result > 0) {
-      matchEnd_ = idx + 1;
-      prevResult = result;
-    }
-    else if (state->resultAndDeadEnd_ == 0x80) // non-accept dead end
+    state = dfap.stateAt(base, dfap.trans(state, byte));
+    if (dfap.deadEnd(state))
       break;
   }
-
-  if ((result == 0) && (prevResult > 0)) {
-    result_ = prevResult;
-    return prevResult;
-  }
-
-  result_ = result;
-  return result;
+  return dfap.result(state);
 }
 
 
-template <class INPROXY>
-Result Matcher::matchLong2(INPROXY in) {
+template <class INPROXY, class DFAPROXY>
+Result Matcher::matchLongX(INPROXY in, DFAPROXY dfap) {
   ZEZAX_RED_PREAMBLE;
 
   size_t init = hdr->initialOff_;
   size_t off = init;
-  const StateOffset2 *state =
-    reinterpret_cast<const StateOffset2 *>(base + off);
-  Result result = state->resultAndDeadEnd_ & 0x7fff;
+  const typename decltype(dfap)::State *state = dfap.stateAt(base, init);
+  Result result = dfap.result(state);
   Result prevResult = 0;
   size_t idx = 0;
 
   for (; in; ++in, ++idx) {
     Byte byte = equivMap[*in];
-    size_t trans = state->offsets_[byte] << 1;
+    size_t trans = dfap.trans(state, byte);
     if ((off == init) && (off != trans))
       matchStart_ = idx;
     off = trans;
-    state = reinterpret_cast<const StateOffset2 *>(base + off);
-    result = state->resultAndDeadEnd_ & 0x7fff;
+    state = dfap.stateAt(base, off);
+    result = dfap.result(state);
     if (result > 0) {
       matchEnd_ = idx + 1;
       prevResult = result;
     }
-    else if (state->resultAndDeadEnd_ == 0x8000) // non-accept dead end
-      break;
-  }
-
-  if ((result == 0) && (prevResult > 0)) {
-    result_ = prevResult;
-    return prevResult;
-  }
-
-  result_ = result;
-  return result;
-}
-
-
-template <class INPROXY>
-Result Matcher::matchLong4(INPROXY in) {
-  ZEZAX_RED_PREAMBLE;
-
-  size_t init = hdr->initialOff_;
-  size_t off = init;
-  const StateOffset4 *state =
-    reinterpret_cast<const StateOffset4 *>(base + off);
-  Result result = state->resultAndDeadEnd_ & 0x7fffffff;
-  Result prevResult = 0;
-  size_t idx = 0;
-
-  for (; in; ++in, ++idx) {
-    Byte byte = equivMap[*in];
-    size_t trans = state->offsets_[byte] << 2;
-    if ((off == init) && (off != trans))
-      matchStart_ = idx;
-    off = trans;
-    state = reinterpret_cast<const StateOffset4 *>(base + off);
-    result = state->resultAndDeadEnd_ & 0x7fffffff;
-    if (result > 0) {
-      matchEnd_ = idx + 1;
-      prevResult = result;
-    }
-    else if (state->resultAndDeadEnd_ == 0x80000000) // non-accept dead end
+    else if (dfap.pureDeadEnd(state))
       break;
   }
 
