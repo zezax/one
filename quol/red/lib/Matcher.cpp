@@ -56,195 +56,49 @@ void Matcher::reset() {
 }
 
 
-Result Matcher::checkWhole(const void *ptr, size_t len) {
-  RangeIter it(ptr, len);
-  switch (fmt_) {
-  case fmtOffset1:
-    {
-      DfaProxy<fmtOffset1> proxy;
-      return checkWholeX(it, proxy);
-    }
-  case fmtOffset2:
-    {
-      DfaProxy<fmtOffset2> proxy;
-      return checkWholeX(it, proxy);
-    }
-  case fmtOffset4:
-    {
-      DfaProxy<fmtOffset4> proxy;
-      return checkWholeX(it, proxy);
-    }
-  default:
-    throw RedExcept("unsupported format");
+#define BODY(A_func, A_len)                     \
+  switch (fmt_) {                               \
+  case fmtOffset1: {                            \
+    DfaProxy<fmtOffset1> proxy;                 \
+    return A_func<A_len>(it, proxy); }          \
+  case fmtOffset2: {                            \
+    DfaProxy<fmtOffset2> proxy;                 \
+    return A_func<A_len>(it, proxy); }          \
+  case fmtOffset4: {                            \
+    DfaProxy<fmtOffset4> proxy;                 \
+    return A_func<A_len>(it, proxy); }          \
+  default:                                      \
+    throw RedExcept("unsupported format");      \
   }
-}
 
 
-Result Matcher::checkWhole(const char *str) {
-  NullTermIter it(str);
-  switch (fmt_) {
-  case fmtOffset1:
-    {
-      DfaProxy<fmtOffset1> proxy;
-      return checkWholeX(it, proxy);
-    }
-  case fmtOffset2:
-    {
-      DfaProxy<fmtOffset2> proxy;
-      return checkWholeX(it, proxy);
-    }
-  case fmtOffset4:
-    {
-      DfaProxy<fmtOffset4> proxy;
-      return checkWholeX(it, proxy);
-    }
-  default:
-    throw RedExcept("unsupported format");
+#define PROTOS(A_pfx, A_suf, A_len)                                \
+  Result Matcher::A_pfx ## A_suf(const void *ptr, size_t len) {    \
+    RangeIter it(ptr, len);                                        \
+    BODY(A_pfx ## Core, A_len)                                     \
+  }                                                                \
+  Result Matcher::A_pfx ## A_suf(const char *str) {                \
+    NullTermIter it(str);                                          \
+    BODY(A_pfx ## Core, A_len)                                     \
+  }                                                                \
+  Result Matcher::A_pfx ## A_suf(const string &s) {                \
+    RangeIter it(s);                                               \
+    BODY(A_pfx ## Core, A_len)                                     \
+  }                                                                \
+  Result Matcher::A_pfx ## A_suf(const string_view sv) {           \
+    RangeIter it(sv);                                              \
+    BODY(A_pfx ## Core, A_len)                                     \
   }
-}
 
 
-Result Matcher::checkWhole(const string &s) {
-  RangeIter it(s);
-  switch (fmt_) {
-  case fmtOffset1:
-    {
-      DfaProxy<fmtOffset1> proxy;
-      return checkWholeX(it, proxy);
-    }
-  case fmtOffset2:
-    {
-      DfaProxy<fmtOffset2> proxy;
-      return checkWholeX(it, proxy);
-    }
-  case fmtOffset4:
-    {
-      DfaProxy<fmtOffset4> proxy;
-      return checkWholeX(it, proxy);
-    }
-  default:
-    throw RedExcept("unsupported format");
-  }
-}
+#define SUITE(A_prefix)                         \
+  PROTOS(A_prefix, Short, lenShortest)          \
+  PROTOS(A_prefix, Contig, lenContiguous)       \
+  PROTOS(A_prefix, Last, lenLast)               \
+  PROTOS(A_prefix, Whole, lenWhole)
 
 
-Result Matcher::checkWhole(const string_view sv) {
-  RangeIter it(sv);
-  switch (fmt_) {
-  case fmtOffset1:
-    {
-      DfaProxy<fmtOffset1> proxy;
-      return checkWholeX(it, proxy);
-    }
-  case fmtOffset2:
-    {
-      DfaProxy<fmtOffset2> proxy;
-      return checkWholeX(it, proxy);
-    }
-  case fmtOffset4:
-    {
-      DfaProxy<fmtOffset4> proxy;
-      return checkWholeX(it, proxy);
-    }
-  default:
-    throw RedExcept("unsupported format");
-  }
-}
-
-
-Result Matcher::matchLong(const void *ptr, size_t len) {
-  RangeIter it(ptr, len);
-  switch (fmt_) {
-  case fmtOffset1:
-    {
-      DfaProxy<fmtOffset1> proxy;
-      return matchLongX(it, proxy);
-    }
-  case fmtOffset2:
-    {
-      DfaProxy<fmtOffset2> proxy;
-      return matchLongX(it, proxy);
-    }
-  case fmtOffset4:
-    {
-      DfaProxy<fmtOffset4> proxy;
-      return matchLongX(it, proxy);
-    }
-  default:
-    throw RedExcept("unsupported format");
-  }
-}
-
-
-Result Matcher::matchLong(const char *str) {
-  NullTermIter it(str);
-  switch (fmt_) {
-  case fmtOffset1:
-    {
-      DfaProxy<fmtOffset1> proxy;
-      return matchLongX(it, proxy);
-    }
-  case fmtOffset2:
-    {
-      DfaProxy<fmtOffset2> proxy;
-      return matchLongX(it, proxy);
-    }
-  case fmtOffset4:
-    {
-      DfaProxy<fmtOffset4> proxy;
-      return matchLongX(it, proxy);
-    }
-  default:
-    throw RedExcept("unsupported format");
-  }
-}
-
-
-Result Matcher::matchLong(const string &s) {
-  RangeIter it(s);
-  switch (fmt_) {
-  case fmtOffset1:
-    {
-      DfaProxy<fmtOffset1> proxy;
-      return matchLongX(it, proxy);
-    }
-  case fmtOffset2:
-    {
-      DfaProxy<fmtOffset2> proxy;
-      return matchLongX(it, proxy);
-    }
-  case fmtOffset4:
-    {
-      DfaProxy<fmtOffset4> proxy;
-      return matchLongX(it, proxy);
-    }
-  default:
-    throw RedExcept("unsupported format");
-  }
-}
-
-
-Result Matcher::matchLong(const string_view sv) {
-  RangeIter it(sv);
-  switch (fmt_) {
-  case fmtOffset1:
-    {
-      DfaProxy<fmtOffset1> proxy;
-      return matchLongX(it, proxy);
-    }
-  case fmtOffset2:
-    {
-      DfaProxy<fmtOffset2> proxy;
-      return matchLongX(it, proxy);
-    }
-  case fmtOffset4:
-    {
-      DfaProxy<fmtOffset4> proxy;
-      return matchLongX(it, proxy);
-    }
-  default:
-    throw RedExcept("unsupported format");
-  }
-}
+SUITE(check)
+SUITE(match)
 
 } // namespace zezax::red

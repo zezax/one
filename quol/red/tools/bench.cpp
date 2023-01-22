@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     const char *end = beg + words.size();
     for (int ii = 0; ii < iters; ++ii)
       for (const char *ptr = beg; ptr < end; ) {
-        mat.matchLong(ptr, end - ptr);
+        mat.matchLast(ptr, end - ptr);
         if (mat.result() > 0) {
           ptr += mat.end();
           sum += mat.result();

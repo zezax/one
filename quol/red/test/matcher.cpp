@@ -18,6 +18,89 @@ using testing::TestWithParam;
 using testing::Values;
 
 
+TEST(Matcher, checkLengths) {
+  string buf;
+  {
+    ReParser p;
+    p.addRaw("abc",     1, 0);
+    p.addRaw("abcd",    2, 0);
+    p.addRaw("abcdefg", 3, 0);
+    p.finish();
+
+    DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
+    {
+      DfaMinimizer dm(dfa);
+      dm.minimize();
+    }
+    {
+      Serializer ser(dfa);
+      buf = ser.serialize(fmtOffsetAuto);
+    }
+  }
+
+  shared_ptr<const Executable> rex =
+    make_shared<const Executable>(std::move(buf));
+  Matcher mat(rex);
+  string_view in = "abcdefg";
+
+  EXPECT_EQ(1, mat.checkShort(in));
+  EXPECT_EQ(2, mat.checkContig(in));
+  EXPECT_EQ(3, mat.checkLast(in));
+  EXPECT_EQ(3, mat.checkWhole(in));
+
+  EXPECT_EQ(1, mat.matchShort(in));
+  EXPECT_EQ(1, mat.result());
+  EXPECT_EQ(0, mat.start());
+  EXPECT_EQ(3, mat.end());
+
+  EXPECT_EQ(2, mat.matchContig(in));
+  EXPECT_EQ(2, mat.result());
+  EXPECT_EQ(0, mat.start());
+  EXPECT_EQ(4, mat.end());
+
+  EXPECT_EQ(3, mat.matchLast(in));
+  EXPECT_EQ(3, mat.result());
+  EXPECT_EQ(0, mat.start());
+  EXPECT_EQ(7, mat.end());
+
+  EXPECT_EQ(3, mat.matchWhole(in));
+  EXPECT_EQ(3, mat.result());
+  EXPECT_EQ(0, mat.start());
+  EXPECT_EQ(7, mat.end());
+
+  in = "abcdefgh";
+
+  EXPECT_EQ(1, mat.checkShort(in));
+  EXPECT_EQ(2, mat.checkContig(in));
+  EXPECT_EQ(3, mat.checkLast(in));
+  EXPECT_EQ(0, mat.checkWhole(in));
+
+  EXPECT_EQ(1, mat.matchShort(in));
+  EXPECT_EQ(1, mat.result());
+  EXPECT_EQ(0, mat.start());
+  EXPECT_EQ(3, mat.end());
+
+  EXPECT_EQ(2, mat.matchContig(in));
+  EXPECT_EQ(2, mat.result());
+  EXPECT_EQ(0, mat.start());
+  EXPECT_EQ(4, mat.end());
+
+  EXPECT_EQ(3, mat.matchLast(in));
+  EXPECT_EQ(3, mat.result());
+  EXPECT_EQ(0, mat.start());
+  EXPECT_EQ(7, mat.end());
+
+  EXPECT_EQ(0, mat.matchWhole(in));
+  EXPECT_EQ(0, mat.result());
+  EXPECT_EQ(0, mat.start());
+  EXPECT_EQ(0, mat.end());
+}
+
+
+// FIXME: test replace
+
+
 class MatcherTest : public TestWithParam<Format> {};
 
 TEST_P(MatcherTest, check) {
@@ -87,10 +170,10 @@ TEST_P(MatcherTest, match) {
   const char *in0 = "bca";
   string in1 = "bac";
   string_view in2 = "cab";
-  m0.matchLong(in0);
-  m00.matchLong(in0, 3);
-  m1.matchLong(in1);
-  m2.matchLong(in2);
+  m0.matchWhole(in0);
+  m00.matchWhole(in0, 3);
+  m1.matchWhole(in1);
+  m2.matchWhole(in2);
   EXPECT_EQ(0, m0.result());
   EXPECT_EQ(0, m00.result());
   EXPECT_EQ(1, m1.result());

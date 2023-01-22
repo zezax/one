@@ -12,6 +12,8 @@
 - template tag for bitsets NfaTag DfaTag
 - use range-for where possible
 - consider ordered set/map
+- implement replace
+- states, not offsets in matchCore
 - network byte order?
 - non-resetting match (save state/off across calls)
 - make install/shared libs
