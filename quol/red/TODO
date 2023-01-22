@@ -1,6 +1,7 @@
 - document ^ and $ behave differently
 - document empty string matches: ()* etc.
 - document lots of .*foo.* .*bar.* patterns cause memory explosion
+- document start() is where we escape initial state
 - compressed transition map
 - vertically align identifiers in .h and .cpp
 - add test suite items from re2, pcre

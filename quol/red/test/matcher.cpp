@@ -18,6 +18,51 @@ using testing::TestWithParam;
 using testing::Values;
 
 
+TEST(Matcher, checkStartEnd) {
+  string buf;
+  {
+    ReParser p;
+    p.addRaw("[^a]*ab*c",  1, 0);
+    p.addRaw("[^d]*dummy", 2, 0);
+    p.finish();
+
+    DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
+    {
+      DfaMinimizer dm(dfa);
+      dm.minimize();
+    }
+    {
+      Serializer ser(dfa);
+      buf = ser.serialize(fmtOffsetAuto);
+    }
+  }
+
+  shared_ptr<const Executable> rex =
+    make_shared<const Executable>(std::move(buf));
+  Matcher mat(rex);
+  mat.matchLast("abbc");
+  EXPECT_EQ(1, mat.result());
+  EXPECT_EQ(0, mat.start());
+  EXPECT_EQ(4, mat.end());
+
+  mat.matchLast("xabbc");
+  EXPECT_EQ(1, mat.result());
+  EXPECT_EQ(1, mat.start());
+  EXPECT_EQ(5, mat.end());
+
+  mat.matchLast("xabbcx");
+  EXPECT_EQ(1, mat.result());
+  EXPECT_EQ(1, mat.start());
+  EXPECT_EQ(5, mat.end());
+
+  mat.matchLast("xyzabbcxyz");
+  EXPECT_EQ(1, mat.result());
+  EXPECT_EQ(3, mat.start());
+  EXPECT_EQ(7, mat.end());
+}
+
+
 TEST(Matcher, checkLengths) {
   string buf;
   {
