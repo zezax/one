@@ -68,6 +68,8 @@ public:
   Result matchWhole(const std::string &s);
   Result matchWhole(const std::string_view sv);
 
+  std::string replaceLast(const std::string &src, const std::string &repl);
+
 private:
   template <Length LENGTH, class INPROXY, class DFAPROXY>
   Result checkCore(INPROXY in, DFAPROXY dfap);
@@ -174,24 +176,22 @@ template <Length LENGTH, class INPROXY, class DFAPROXY>
 std::string Matcher::replaceCore(INPROXY in,
                                  DFAPROXY dfap,
                                  const std::string &repl) {
-  static_assert(LENGTH == lenWhole); // FIXME: implement lengths
-
   ZEZAX_RED_PREAMBLE;
 
-  const typename decltype(dfap)::State *state =
+  const typename decltype(dfap)::State *init =
     dfap.stateAt(base, hdr->initialOff_);
 
   std::string str;
 
   while (in) {
     const Byte *found = nullptr;
-    const typename decltype(dfap)::State *st = state;
+    const typename decltype(dfap)::State *state = init;
     for (INPROXY inner(in); inner; ++inner) {
-      Byte byte = equivMap[*in];
+      Byte byte = equivMap[*inner];
       state = dfap.stateAt(base, dfap.trans(state, byte));
       if (dfap.result(state) > 0)
         found = inner.ptr();
-      else if (dfap.deadEnd(state))
+      else if (dfap.pureDeadEnd(state))
         break;
     }
 

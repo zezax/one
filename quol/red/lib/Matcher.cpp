@@ -101,4 +101,25 @@ void Matcher::reset() {
 SUITE(check)
 SUITE(match)
 
+
+#define REPL(A_func, A_len)                     \
+  switch (fmt_) {                               \
+  case fmtOffset1: {                            \
+    DfaProxy<fmtOffset1> proxy;                 \
+    return A_func<A_len>(it, proxy, repl); }    \
+  case fmtOffset2: {                            \
+    DfaProxy<fmtOffset2> proxy;                 \
+    return A_func<A_len>(it, proxy, repl); }    \
+  case fmtOffset4: {                            \
+    DfaProxy<fmtOffset4> proxy;                 \
+    return A_func<A_len>(it, proxy, repl); }    \
+  default:                                      \
+    throw RedExcept("unsupported format");      \
+  }
+
+string Matcher::replaceLast(const string &src, const string &repl) {
+  RangeIter it(src);
+  REPL(replaceCore, lenLast)
+}
+
 } // namespace zezax::red

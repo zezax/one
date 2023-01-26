@@ -38,6 +38,10 @@ public:
   void operator++() { ptr_ += 1; } // !!! void
   explicit operator bool() const { return (ptr_ < end_); }
 
+  // less safe stuff for replaceCore()
+  const Byte *ptr() const { return ptr_; }
+  void operator=(const Byte *p) { ptr_ = p; }
+
 private:
   const Byte *__restrict__ ptr_;
   const Byte *__restrict__ end_;

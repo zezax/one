@@ -143,7 +143,31 @@ TEST(Matcher, checkLengths) {
 }
 
 
-// FIXME: test replace
+TEST(Matcher, replace) {
+  string buf;
+  {
+    ReParser p;
+    p.addRaw("ab*c",  1, 0);
+    p.finish();
+
+    DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
+    {
+      DfaMinimizer dm(dfa);
+      dm.minimize();
+    }
+    {
+      Serializer ser(dfa);
+      buf = ser.serialize(fmtOffsetAuto);
+    }
+  }
+
+  shared_ptr<const Executable> rex =
+    make_shared<const Executable>(std::move(buf));
+  Matcher mat(rex);
+  string s = mat.replaceLast("fooac", "bar");
+  EXPECT_EQ("foobar", s);
+}
 
 
 class MatcherTest : public TestWithParam<Format> {};
