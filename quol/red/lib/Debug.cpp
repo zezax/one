@@ -2,7 +2,6 @@
 
 #include "Debug.h"
 
-#include <stdexcept>
 #include <algorithm>
 #include <set>
 #include <vector>
@@ -11,7 +10,6 @@
 
 namespace zezax::red {
 
-using std::logic_error;
 using std::ostream;
 using std::string;
 using std::to_string;
@@ -218,7 +216,7 @@ string toString(const Token &t) {
   case tLeft:    return "left";
   case tRight:   return "right";
   }
-  throw logic_error("bad token type");
+  throw RedExceptInternal("bad token type");
 }
 
 
@@ -424,7 +422,7 @@ string toString(const char *buf, size_t len) { // serialized
     inc = DfaProxy<fmtOffset4>::stateSize(hdr->maxChar_);
     break;
   default:
-    throw logic_error("corrupted format");
+    throw RedExceptInternal("corrupted format");
   }
 
   for (const char *ptr = base; ptr < end; ptr += inc) {

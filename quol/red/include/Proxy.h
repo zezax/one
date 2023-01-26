@@ -88,7 +88,7 @@ public:
 
   static void appendOff(std::string &buf, size_t off) {
     if (off > maxOffset_)
-      throw RedExcept("overflow in 1-byte appendOff");
+      throw RedExceptSerialize("overflow in 1-byte appendOff");
     Value raw = static_cast<Value>(off);
     buf.append(reinterpret_cast<const char *>(&raw), sizeof(raw));
   }
@@ -154,7 +154,7 @@ public:
   static void appendOff(std::string &buf, size_t off) {
     off /= sizeof(Value);
     if (off > maxOffset_)
-      throw RedExcept("overflow in 2-byte appendOff");
+      throw RedExceptSerialize("overflow in 2-byte appendOff");
     Value raw = static_cast<Value>(off);
     buf.append(reinterpret_cast<const char *>(&raw), sizeof(raw));
   }
@@ -220,7 +220,7 @@ public:
   static void appendOff(std::string &buf, size_t off) {
     off /= sizeof(Value);
     if (off > maxOffset_)
-      throw RedExcept("overflow in 4-byte appendOff");
+      throw RedExceptSerialize("overflow in 4-byte appendOff");
     Value raw = static_cast<Value>(off);
     buf.append(reinterpret_cast<const char *>(&raw), sizeof(raw));
   }

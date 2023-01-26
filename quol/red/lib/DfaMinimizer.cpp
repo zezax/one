@@ -28,7 +28,7 @@ BlockId findInBlock(StateId id, const vector<StateIdSet> &blocks) {
   for (BlockId block = 0; static_cast<size_t>(block) < blocks.size(); ++block)
     if (blocks[block].get(id))
       return block;
-  throw RedExcept("no block containing state");
+  throw RedExceptMinimize("no block containing state");
 }
 
 } // anonymous
@@ -217,7 +217,7 @@ void makeDfaFromBlocks(const DfaObj &srcDfa,
   StateId errId = outDfa.newState();
   StateId initId = outDfa.newState();
   if ((errId != gDfaErrorId) || (initId != gDfaInitialId))
-    throw RedExcept("dfa state ids not what was expected");
+    throw RedExceptMinimize("dfa state ids not what was expected");
   oldToNew.emplace(gDfaErrorId, gDfaErrorId);
   oldToNew.emplace(gDfaInitialId, gDfaInitialId);
 

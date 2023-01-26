@@ -141,12 +141,12 @@ Token Scanner::scanSet() {
   bool escape2 = false;
 
   if ((ch = interpretSingleChar(escape)) < 0)
-    throw RedExcept("incomplete character class", pos());
+    throw RedExceptParse("incomplete character class", pos());
   if (!escape && (ch == '^')) {
     invert = true;
     ch = interpretSingleChar(escape);
     if (ch < 0)
-      throw RedExcept("incomplete inverted character class", pos());
+      throw RedExceptParse("incomplete inverted character class", pos());
   }
   rv.multiChar_.clearAll();
 
@@ -154,15 +154,15 @@ Token Scanner::scanSet() {
     rv.multiChar_.set(ch);
     ch = interpretSingleChar(escape);
     if (ch < 0)
-      throw RedExcept("unfinished character class", pos());
+      throw RedExceptParse("unfinished character class", pos());
   }
 
   while (escape || (ch != ']')) {
     if ((ch2 = interpretSingleChar(escape2)) < 0)
-      throw RedExcept("unexpected end of character class", pos());
+      throw RedExceptParse("unexpected end of character class", pos());
     if (!escape2 && (ch2 == '-')) {
       if ((ch2 = interpretSingleChar(escape2)) < 0)
-        throw RedExcept("unfinished character class range", pos());
+        throw RedExceptParse("unfinished character class range", pos());
       if (!escape2 && (ch2 == ']')) {
         rv.multiChar_.set(ch);
         rv.multiChar_.set('-');
@@ -171,10 +171,10 @@ Token Scanner::scanSet() {
         continue;
       }
       if (ch > ch2)
-        throw RedExcept("inverted range", pos());
+        throw RedExceptParse("backward range", pos());
       rv.multiChar_.setSpan(ch, ch2);
       if ((ch = interpretSingleChar(escape)) < 0)
-        throw RedExcept("incomplete character class range", pos());
+        throw RedExceptParse("incomplete character class range", pos());
     }
     else {
       charToSet(rv.multiChar_, ch, escape);
@@ -204,7 +204,7 @@ Token Scanner::scanCount() {
       break;
     else if (ch == ',') {
       if (rv.min_ >= 0)
-        throw RedExcept("extra comma in count", pos());
+        throw RedExceptParse("extra comma in count", pos());
       rv.min_ = rv.max_;
       rv.max_ = 0;
       seen = false;
@@ -214,19 +214,19 @@ Token Scanner::scanCount() {
       seen = true;
     }
     else
-      throw RedExcept("non-digit in count", pos());
+      throw RedExceptParse("non-digit in count", pos());
   }
 
   if (ch != '}')
-    throw RedExcept("unclosed brace count", pos());
+    throw RedExceptParse("unclosed brace count", pos());
   if ((rv.min_ < 0) && (rv.max_ == 0))
-    throw RedExcept("illegal count", pos());
+    throw RedExceptParse("illegal count", pos());
   if (!seen)
     rv.max_ = -1;
   if ((rv.min_ == 0) && (rv.max_ == 0))
-    throw RedExcept("zero brace count", pos());
+    throw RedExceptParse("zero brace count", pos());
   if ((rv.max_ >= 0) && (rv.max_ < rv.min_))
-    throw RedExcept("backwards brace count", pos());
+    throw RedExceptParse("backwards brace count", pos());
   if (rv.min_ < 0)
     rv.min_ = rv.max_;
   return rv;
@@ -250,7 +250,7 @@ int Scanner::interpretSingleChar(bool &escape) {
 
   if (ch == '\\') {
     if (ptr_ >= end_)
-      throw RedExcept("partial backslash escape", pos());
+      throw RedExceptParse("partial backslash escape", pos());
     ch = *ptr_++;
 
     switch (ch) {
@@ -265,7 +265,7 @@ int Scanner::interpretSingleChar(bool &escape) {
 
       case 'x': {
         if (ptr_ > (end_ - 2))
-          throw RedExcept("unterminated hex escape", pos());
+          throw RedExceptParse("unterminated hex escape", pos());
         char high;
         char low;
         if (((high = fromHexDigit(ptr_[0])) >= 0) &&
@@ -274,7 +274,7 @@ int Scanner::interpretSingleChar(bool &escape) {
           return (high << 4) | low;
         }
         else
-          throw RedExcept("invalid hex escape", pos());
+          throw RedExceptParse("invalid hex escape", pos());
         break;
       }
 
@@ -289,14 +289,14 @@ int Scanner::interpretSingleChar(bool &escape) {
 
 Token Scanner::doExpansion(int ch, bool escape) {
   if (ch < 0)
-    throw RedExcept("trying to expand illegal character", pos());
+    throw RedExceptParse("trying to expand illegal character", pos());
 
   Token rv(tChars, pos());
   rv.multiChar_.clearAll();
 
   if (escape) {
     if ((ch >= '1') && (ch <= '9'))
-      throw RedExcept("backreferences not supported", pos());
+      throw RedExceptParse("backreferences not supported", pos());
 
     if (ch == 'i') {
       rv.type_ = tFlags;

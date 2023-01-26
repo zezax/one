@@ -51,7 +51,7 @@ void Matcher::reset() {
     }
     break;
   default:
-    throw RedExcept("Unsupported format");
+    throw RedExceptExec("Unsupported format");
   }
 }
 
@@ -68,7 +68,7 @@ void Matcher::reset() {
     DfaProxy<fmtOffset4> proxy;                 \
     return A_func<A_len>(it, proxy); }          \
   default:                                      \
-    throw RedExcept("unsupported format");      \
+    throw RedExceptExec("unsupported format");      \
   }
 
 
@@ -114,7 +114,7 @@ SUITE(match)
     DfaProxy<fmtOffset4> proxy;                 \
     return A_func<A_len>(it, proxy, repl); }    \
   default:                                      \
-    throw RedExcept("unsupported format");      \
+    throw RedExceptExec("unsupported format");      \
   }
 
 string Matcher::replaceLast(const string &src, const string &repl) {

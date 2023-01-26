@@ -24,7 +24,7 @@ char fromHexDigit(Byte c) {
 
 void writeStringToFile(const std::string &str, const char *path) {
   if (!path)
-    throw RedExcept("Write file path is null");
+    throw RedExceptApi("Write file path is null");
 
   int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
   if (fd < 0)
@@ -51,7 +51,7 @@ void writeStringToFile(const std::string &str, const char *path) {
 
 string readFileToString(const char *path) {
   if (!path)
-    throw RedExcept("Read file path is null");
+    throw RedExceptApi("Read file path is null");
 
   int fd = open(path, O_RDONLY | O_CLOEXEC);
   if (fd < 0)

@@ -174,7 +174,7 @@ TEST(Scanner, except) {
     Scanner sc("[foo");
     sc.scanOne();
   }
-  catch (RedExcept &ex) {
+  catch (RedExceptParse &ex) {
     threw = true;
     EXPECT_EQ(4, ex.getPos());
   }

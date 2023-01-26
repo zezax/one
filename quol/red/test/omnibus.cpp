@@ -239,7 +239,7 @@ TEST_P(Omnibus, parse) {
     p.freeAll();
     EXPECT_FALSE(r.text_ == nullptr);
   }
-  catch (const RedExcept &ex) {
+  catch (const RedExceptParse &ex) {
     EXPECT_TRUE(r.text_ == nullptr);
   }
 }
@@ -255,7 +255,7 @@ TEST_P(Omnibus, convert) {
     DfaObj dfa = convertNfaToDfa(p.getNfa());
     p.freeAll();
   }
-  catch (const RedExcept &ex) {
+  catch (const RedExceptParse &ex) {
     EXPECT_TRUE(r.text_ == nullptr);
   }
 }
@@ -275,7 +275,7 @@ TEST_P(Omnibus, minimize) {
       dm.minimize();
     }
   }
-  catch (const RedExcept &ex) {
+  catch (const RedExceptParse &ex) {
     EXPECT_TRUE(r.text_ == nullptr);
   }
 }
@@ -297,7 +297,7 @@ TEST_P(Omnibus, match) {
     Result res = dfa.matchWhole(r.text_);
     EXPECT_EQ(r.match_, (res == 1));
   }
-  catch (const RedExcept &ex) {
+  catch (const RedExceptParse &ex) {
     EXPECT_TRUE(r.text_ == nullptr);
   }
 }
@@ -339,7 +339,7 @@ TEST_P(OmnibusFmt, matcher) {
     // expected in certain cases
     std::cout << lim.what() << std::endl;
   }
-  catch (const RedExcept &) {
+  catch (const RedExceptParse &) {
     EXPECT_TRUE(r.text_ == nullptr);
   }
 }

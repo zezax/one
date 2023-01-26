@@ -94,7 +94,7 @@ DfaObj transcribeDfa(const DfaObj &src) {
   StateId errId = rv.newState();
   StateId initId = rv.newState();
   if ((errId != gDfaErrorId) || (initId != gDfaInitialId))
-    throw RedExcept("dfa state ids not as expected");
+    throw RedExceptMinimize("dfa state ids not as expected");
   oldToNew.emplace(gDfaErrorId, gDfaErrorId);
   oldToNew.emplace(gDfaInitialId, gDfaInitialId);
 
@@ -159,7 +159,7 @@ vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
 
 void remapStates(vector<DfaState> &states, const vector<CharIdx> &map) {
   if (map.empty())
-    throw RedExcept("empty equivalence map");
+    throw RedExceptCompile("empty equivalence map");
   for (DfaState &ds : states) {
     CharToStateMap work;
     for (auto [ch, id] : ds.trans_.getMap())

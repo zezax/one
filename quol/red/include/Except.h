@@ -24,29 +24,72 @@ namespace zezax::red {
 */
 
 class RedExcept : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class RedExceptInternal : public RedExcept {
+  using RedExcept::RedExcept;
+};
+
+
+class RedExceptUser : public RedExcept {
+  using RedExcept::RedExcept;
+};
+
+
+class RedExceptLimit : public RedExcept {
+  using RedExcept::RedExcept;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class RedExceptCompile : public RedExceptInternal {
+  using RedExceptInternal::RedExceptInternal;
+};
+
+
+class RedExceptMinimize : public RedExceptInternal {
+  using RedExceptInternal::RedExceptInternal;
+};
+
+
+class RedExceptSerialize : public RedExceptInternal {
+  using RedExceptInternal::RedExceptInternal;
+};
+
+
+class RedExceptExec : public RedExceptInternal {
+  using RedExceptInternal::RedExceptInternal;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class RedExceptParse : public RedExceptUser {
 public:
-  explicit RedExcept(const std::string &msg)
-  : std::runtime_error(msg), pos_(gNoPos) {}
+  explicit RedExceptParse(const std::string &msg)
+  : RedExceptUser(msg), pos_(gNoPos) {}
 
-  explicit RedExcept(const char *msg)
-  : std::runtime_error(msg), pos_(gNoPos) {}
+  explicit RedExceptParse(const char *msg)
+  : RedExceptUser(msg), pos_(gNoPos) {}
 
-  RedExcept(const std::string &msg, size_t pos)
-  : std::runtime_error(msg + " near position " + std::to_string(pos)),
+  RedExceptParse(const std::string &msg, size_t pos)
+  : RedExceptUser(msg + " near position " + std::to_string(pos)),
     pos_(pos) {}
 
-  RedExcept(const char *msg, size_t pos)
-  : std::runtime_error(std::string(msg) + " near position " +
+  RedExceptParse(const char *msg, size_t pos)
+  : RedExceptUser(std::string(msg) + " near position " +
                        std::to_string(pos)),
     pos_(pos) {}
 
-  RedExcept(const RedExcept &other) = default;
-  RedExcept(RedExcept &&other) = default;
+  RedExceptParse(const RedExceptParse &other) = default;
+  RedExceptParse(RedExceptParse &&other) = default;
 
-  virtual ~RedExcept() = default;
+  virtual ~RedExceptParse() = default;
 
-  RedExcept &operator=(const RedExcept &rhs) = default;
-  RedExcept &operator=(RedExcept &&rhs) = default;
+  RedExceptParse &operator=(const RedExceptParse &rhs) = default;
+  RedExceptParse &operator=(RedExceptParse &&rhs) = default;
 
   size_t getPos() const { return pos_; }
 
@@ -55,8 +98,8 @@ private:
 };
 
 
-class RedExceptLimit : public RedExcept {
-  using RedExcept::RedExcept;
+class RedExceptApi : public RedExceptUser {
+  using RedExceptUser::RedExceptUser;
 };
 
 

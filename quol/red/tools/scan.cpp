@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     }
     return 0;
   }
-  catch (const RedExcept &ex) {
+  catch (const std::exception &ex) {
     std::cerr << ex.what() << std::endl;
     return 1;
   }

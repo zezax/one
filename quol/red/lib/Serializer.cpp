@@ -68,7 +68,7 @@ Format Serializer::validatedFormat(Format fmt) {
     DfaProxy<fmtOffset4>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
     break;
   default:
-    throw RedExcept("unsuitable DFA format requested");
+    throw RedExceptSerialize("unsuitable DFA format requested");
   }
 
   return fmt;
@@ -123,7 +123,7 @@ string Serializer::serializeToString(Format fmt) {
 void Serializer::populateHeader(FileHeader &hdr, Format fmt) {
   size_t initOff = measureState(fmt, dfa_[gDfaInitialId]);
   if (initOff > 0xffffffff)
-    throw RedExcept("initial offset too large");
+    throw RedExceptSerialize("initial offset too large");
 
   memset(&hdr, 0, sizeof(hdr));
   memcpy(hdr.magic_, "REDA", 4);
@@ -184,7 +184,7 @@ void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
     break;
 
   default:
-    throw RedExcept("bad format in appendState");
+    throw RedExceptSerialize("bad format in appendState");
   }
 }
 
@@ -210,7 +210,7 @@ size_t Serializer::measureState(Format fmt, const DfaState &ds) {
   case fmtOffset4:
     return DfaProxy<fmtOffset4>::stateSize(maxChar_);
   default:
-    throw RedExcept("bad format in measureState");
+    throw RedExceptSerialize("bad format in measureState");
   }
 }
 
@@ -228,11 +228,11 @@ void Serializer::findMaxChar() {
 string loadFromFile(const char *path) {
   string str = readFileToString(path);
   if (str.empty())
-    throw RedExcept("Serialized DFA file is empty");
+    throw RedExceptApi("Serialized DFA file is empty");
 
   const char *msg = checkHeader(str.data(), str.size());
   if (msg)
-    throw RedExcept(msg);
+    throw RedExceptApi(msg);
 
   return str;
 }

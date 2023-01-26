@@ -63,7 +63,7 @@ void ReParser::add(string_view regex, Result result, FlagsT flags) {
 
 void ReParser::addRaw(string_view regex, Result result, FlagsT flags) {
   if (result <= 0)
-    throw RedExcept("result must be positive");
+    throw RedExceptApi("result must be positive");
 
   obj_.setGoal(result);
   flags_ = flags;
@@ -78,9 +78,9 @@ void ReParser::addRaw(string_view regex, Result result, FlagsT flags) {
   NfaId state = parseExpr();
 
   if (!state)
-    throw RedExcept("uncategorized parsing error");
+    throw RedExceptParse("uncategorized parsing error");
   if (tok_.type_ != tEnd)
-    throw RedExcept("trailing unparsed input");
+    throw RedExceptParse("trailing unparsed input");
 
   if (flags_ & fIgnoreCase)
     state = obj_.stateIgnoreCase(state);
@@ -175,7 +175,7 @@ NfaId ReParser::parseAtom() {
   switch (tok_.type_) {
   case tEnd:
     if (validated_)
-      throw RedExcept("end reached, expected chars or (", tok_.pos_);
+      throw RedExceptParse("end reached, expected chars or (", tok_.pos_);
     return obj_.newGoalState(); // empty matches all
   case tChars:
     validated_ = true;
@@ -183,7 +183,7 @@ NfaId ReParser::parseAtom() {
     break;
   case tBar:
     if (validated_)
-      throw RedExcept("expected chars or (, got |", tok_.pos_);
+      throw RedExceptParse("expected chars or (, got |", tok_.pos_);
     return obj_.newGoalState(); // empty matches all
   case tLeft:
     advance();
@@ -191,15 +191,15 @@ NfaId ReParser::parseAtom() {
     state = parseExpr();
     --level_;
     if (tok_.type_ != tRight)
-      throw RedExcept("close parenthesis not found", tok_.pos_);
+      throw RedExceptParse("close parenthesis not found", tok_.pos_);
     validated_ = true;
     break;
   case tRight:
     if (validated_ || (level_ <= 0))
-      throw RedExcept("unexpected )", tok_.pos_);
+      throw RedExceptParse("unexpected )", tok_.pos_);
     return obj_.newGoalState(); // empty matches all
   default:
-    throw RedExcept("expected chars or (", tok_.pos_);
+    throw RedExceptParse("expected chars or (", tok_.pos_);
   }
 
   advance();

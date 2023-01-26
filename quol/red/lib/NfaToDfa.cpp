@@ -32,17 +32,17 @@ DfaObj convertNfaToDfa(const NfaObj &nfa) {
   DfaObj dfa;
   StateId id = dfa.newState();
   if (id != gDfaErrorId)
-    throw RedExcept("dfa error state must be zero");
+    throw RedExceptCompile("dfa error state must be zero");
 
   NfaIdSet states;
   states.set(initial);
   NfaStatesToId nfaToDfa;
   auto it = table.find(states);
   if (it == table.end())
-    throw RedExcept("cannot find initial nfa states");
+    throw RedExceptCompile("cannot find initial nfa states");
   id = dfaFromNfa(multiChars, table, counts, states, nfaToDfa, nfa, dfa);
   if (id != gDfaInitialId)
-    throw RedExcept("dfa initial state must be one");
+    throw RedExceptCompile("dfa initial state must be one");
   dfa.chopEndMarks(); // end marks have done their job
   return dfa;
 }
