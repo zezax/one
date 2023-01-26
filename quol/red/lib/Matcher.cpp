@@ -29,25 +29,22 @@ void Matcher::reset() {
   case fmtOffset1:
     {
       DfaProxy<fmtOffset1> proxy;
-      const decltype(proxy)::State *state =
-        proxy.stateAt(base, hdr->initialOff_);
-      result_ = proxy.result(state);
+      proxy.init(base, hdr->initialOff_);
+      result_ = proxy.result();
     }
     break;
   case fmtOffset2:
     {
       DfaProxy<fmtOffset2> proxy;
-      const decltype(proxy)::State *state =
-        proxy.stateAt(base, hdr->initialOff_);
-      result_ = proxy.result(state);
+      proxy.init(base, hdr->initialOff_);
+      result_ = proxy.result();
     }
     break;
   case fmtOffset4:
     {
       DfaProxy<fmtOffset4> proxy;
-      const decltype(proxy)::State *state =
-        proxy.stateAt(base, hdr->initialOff_);
-      result_ = proxy.result(state);
+      proxy.init(base, hdr->initialOff_);
+      result_ = proxy.result();
     }
     break;
   default:

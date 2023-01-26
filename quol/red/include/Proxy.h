@@ -93,29 +93,36 @@ public:
     buf.append(reinterpret_cast<const char *>(&raw), sizeof(raw));
   }
 
-  static const State *stateAt(const char *base, size_t off) {
-    return reinterpret_cast<const State *>(base + off);
-  }
-
-  static size_t trans(const State *state, size_t byte) {
-    return state->offsets_[byte];
-  }
-
   static uint8_t resultAndDeadEnd(Result res, bool de) {
     return (res & resultMask_) | (de << deadEndShift_);
   }
 
-  static Result result(const State *state) {
-    return state->resultAndDeadEnd_ & resultMask_;
+  Result result() const {
+    return state_->resultAndDeadEnd_ & resultMask_;
   }
 
-  static bool deadEnd(const State *state) {
-    return state->resultAndDeadEnd_ >> deadEndShift_;
+  bool deadEnd() const {
+    return state_->resultAndDeadEnd_ >> deadEndShift_;
   }
 
-  static bool pureDeadEnd(const State *state) {
-    return (state->resultAndDeadEnd_ == (1u << deadEndShift_));
+  bool pureDeadEnd() const {
+    return (state_->resultAndDeadEnd_ == (1u << deadEndShift_));
   }
+
+  void init(const char *base, size_t offset) {
+    state_ = reinterpret_cast<const State *>(base + offset);
+  }
+
+  size_t trans(size_t byte) const {
+    return state_->offsets_[byte] * sizeof(Value);
+  }
+
+  void next(const char *base, size_t byte) { init(base, trans(byte)); }
+
+  const State *state() const { return state_; }
+
+private:
+  const State *__restrict__ state_;
 };
 
 
@@ -159,29 +166,36 @@ public:
     buf.append(reinterpret_cast<const char *>(&raw), sizeof(raw));
   }
 
-  static const State *stateAt(const char *base, size_t off) {
-    return reinterpret_cast<const State *>(base + off);
-  }
-
-  static size_t trans(const State *state, size_t byte) {
-    return state->offsets_[byte] * sizeof(Value);
-  }
-
   static uint16_t resultAndDeadEnd(Result res, bool de) {
     return (res & resultMask_) | (de << deadEndShift_);
   }
 
-  static Result result(const State *state) {
-    return state->resultAndDeadEnd_ & resultMask_;
+  Result result() const {
+    return state_->resultAndDeadEnd_ & resultMask_;
   }
 
-  static bool deadEnd(const State *state) {
-    return state->resultAndDeadEnd_ >> deadEndShift_;
+  bool deadEnd() const {
+    return state_->resultAndDeadEnd_ >> deadEndShift_;
   }
 
-  static bool pureDeadEnd(const State *state) {
-    return (state->resultAndDeadEnd_ == (1u << deadEndShift_));
+  bool pureDeadEnd() const {
+    return (state_->resultAndDeadEnd_ == (1u << deadEndShift_));
   }
+
+  void init(const char *base, size_t offset) {
+    state_ = reinterpret_cast<const State *>(base + offset);
+  }
+
+  size_t trans(size_t byte) const {
+    return state_->offsets_[byte] * sizeof(Value);
+  }
+
+  void next(const char *base, size_t byte) { init(base, trans(byte)); }
+
+  const State *state() const { return state_; }
+
+private:
+  const State *__restrict__ state_;
 };
 
 
@@ -225,29 +239,36 @@ public:
     buf.append(reinterpret_cast<const char *>(&raw), sizeof(raw));
   }
 
-  static const State *stateAt(const char *base, size_t off) {
-    return reinterpret_cast<const State *>(base + off);
-  }
-
-  static size_t trans(const State *state, size_t byte) {
-    return state->offsets_[byte] * sizeof(Value);
-  }
-
   static uint32_t resultAndDeadEnd(Result res, bool de) {
     return (res & resultMask_) | (de << deadEndShift_);
   }
 
-  static Result result(const State *state) {
-    return state->resultAndDeadEnd_ & resultMask_;
+  Result result() const {
+    return state_->resultAndDeadEnd_ & resultMask_;
   }
 
-  static bool deadEnd(const State *state) {
-    return state->resultAndDeadEnd_ >> deadEndShift_;
+  bool deadEnd() const {
+    return state_->resultAndDeadEnd_ >> deadEndShift_;
   }
 
-  static bool pureDeadEnd(const State *state) {
-    return (state->resultAndDeadEnd_ == (1u << deadEndShift_));
+  bool pureDeadEnd() const {
+    return (state_->resultAndDeadEnd_ == (1u << deadEndShift_));
   }
+
+  void init(const char *base, size_t offset) {
+    state_ = reinterpret_cast<const State *>(base + offset);
+  }
+
+  size_t trans(size_t byte) const {
+    return state_->offsets_[byte] * sizeof(Value);
+  }
+
+  void next(const char *base, size_t byte) { init(base, trans(byte)); }
+
+  const State *state() const { return state_; }
+
+private:
+  const State *__restrict__ state_;
 };
 
 } // namespace zezax::red

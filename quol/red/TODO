@@ -40,3 +40,4 @@
 - perf: bench 1000 0:23.825u matchLong, skip success, no state_, cur_
 - perf: bench 1000 0:27.262u matchLong, multi-format, auto-choose
 - perf: bench 1000 0:26.017u matchLong, templated format
+- perf: bench 1000 0:25.649u matchLast, conditional escape check

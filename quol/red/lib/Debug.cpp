@@ -431,45 +431,45 @@ string toString(const char *buf, size_t len) { // serialized
     case fmtOffset1:
       {
         DfaProxy<fmtOffset1> proxy;
-        const decltype(proxy)::State *rec = proxy.stateAt(ptr, 0);
-        Result result = proxy.result(rec);
-        bool deadEnd = proxy.deadEnd(rec);
+        proxy.init(ptr, 0);
+        Result result = proxy.result();
+        bool deadEnd = proxy.deadEnd();
         rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
         if (deadEnd)
           rv += "  DeadEnd\n";
         for (size_t ii = 0; ii < numChars; ++ii) {
           rv += "  " + to_string(ii) + " -> $" +
-            toHexString(proxy.trans(rec, ii)) + '\n';
+            toHexString(proxy.trans(ii)) + '\n';
         }
       }
       break;
     case fmtOffset2:
       {
         DfaProxy<fmtOffset2> proxy;
-        const decltype(proxy)::State *rec = proxy.stateAt(ptr, 0);
-        Result result = proxy.result(rec);
-        bool deadEnd = proxy.deadEnd(rec);
+        proxy.init(ptr, 0);
+        Result result = proxy.result();
+        bool deadEnd = proxy.deadEnd();
         rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
         if (deadEnd)
           rv += "  DeadEnd\n";
         for (size_t ii = 0; ii < numChars; ++ii) {
           rv += "  " + to_string(ii) + " -> $" +
-            toHexString(proxy.trans(rec, ii)) + '\n';
+            toHexString(proxy.trans(ii)) + '\n';
         }
       }
       break;
     case fmtOffset4:
       {
         DfaProxy<fmtOffset4> proxy;
-        const decltype(proxy)::State *rec = proxy.stateAt(ptr, 0);
-        Result result = proxy.result(rec);
-        bool deadEnd = proxy.deadEnd(rec);
+        proxy.init(ptr, 0);
+        Result result = proxy.result();
+        bool deadEnd = proxy.deadEnd();
         rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
         if (deadEnd)
           rv += "  DeadEnd\n";
         for (size_t ii = 0; ii < numChars; ++ii) {
           rv += "  " + to_string(ii) + " -> $" +
-            toHexString(proxy.trans(rec, ii)) + '\n';
+            toHexString(proxy.trans(ii)) + '\n';
         }
       }
       break;
