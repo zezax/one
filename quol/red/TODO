@@ -9,7 +9,8 @@
 - make dfa.cpp unit test.  move stuff from minimize.cpp
 - move stuff into classes if clearer
 - detail namespace
-- template tag for bitsets NfaTag DfaTag
+- StateId -> DfaId
+- CamelCase templates
 - use range-for where possible
 - consider ordered set/map
 - implement replace variants
@@ -34,6 +35,7 @@
 - perf: 4698 words 1:50 0:55u 2.2g fix partition for multi-result
 - perf: 9397 words 1:25 6:01u 8.3g same
 - perf: 4698 words 1:50 0:54.189u check NFA/DFA IDs for overflow
+- perf: 4698 words 1:50 0:51.657u MultiChar 64 -> 32 bit
 - perf: bench 1000 0:24.488u matchLong, skip success
 - perf: bench 1000 0:23.825u matchLong, skip success, no state_, cur_
 - perf: bench 1000 0:27.262u matchLong, multi-format, auto-choose

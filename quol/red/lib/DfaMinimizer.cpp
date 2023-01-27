@@ -56,7 +56,7 @@ DfaEdgeToIds invert(const StateIdSet       &stateSet,
 void partition(const StateIdSet       &stateSet,
                const vector<DfaState> &stateVec,
                vector<StateIdSet>     &blocks) {
-  BitSet<Result> resultSet;
+  ResultSet resultSet;
   resultSet.set(0); // make sure non-accepting result is present
   for (StateId sid : stateSet)
     resultSet.set(stateVec[sid].result_);

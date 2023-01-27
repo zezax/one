@@ -14,7 +14,7 @@
 namespace zezax::red {
 
 // forward declaration of the main attraction, below
-template <class Index, class Word> class BitSet;
+template <class Index, class Tag, class Word> class BitSet;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -22,7 +22,10 @@ template <class Index, class Word> class BitSet;
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-template <class Index, class Word>
+struct DefaultTag {};
+
+
+template <class Index, class Tag, class Word>
 class BitSetIter {
 public:
   static constexpr Index wordBits_  = std::numeric_limits<Word>::digits;
@@ -66,13 +69,13 @@ private:
   const Word *limit_;
   Index       bit_;
 
-  friend class BitSet<Index, Word>;
+  friend class BitSet<Index, Tag, Word>;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 // depending on application uint16_t or uint32_t may be more efficient
-template <class Index, class Word = uint64_t>
+template <class Index, class Tag = DefaultTag, class Word = uint64_t>
 class BitSet {
 public:
   static_assert(std::is_integral_v<Index>);
@@ -82,7 +85,7 @@ public:
   static constexpr Word  wordFFFF_  = static_cast<Word>(0) - 1;
   static constexpr Word  one_       = static_cast<Word>(1);
 
-  typedef BitSetIter<Index, Word> Iter;
+  typedef BitSetIter<Index, Tag, Word> Iter;
 
   BitSet() = default;
   explicit BitSet(Index idx) { set(idx); }
@@ -146,7 +149,7 @@ public:
   Index population() const;
   size_t hash() const;
 
-  Iter begin() const { return BitSetIter(vec_.data(), rawSize()); }
+  Iter begin() const { return Iter(vec_.data(), rawSize()); }
   Iter end() const { return endIter_; }
 
 private:
@@ -201,8 +204,8 @@ template <> inline int popCount(unsigned long long x) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // this is a performance-critical function
-template <class Index, class Word>
-BitSetIter<Index, Word> &BitSetIter<Index, Word>::operator++() {
+template <class Index, class Tag, class Word>
+BitSetIter<Index, Tag, Word> &BitSetIter<Index, Tag, Word>::operator++() {
   ++bit_;
   Index word = bit_ / wordBits_;
   Index shift = bit_ % wordBits_;
@@ -234,12 +237,13 @@ BitSetIter<Index, Word> &BitSetIter<Index, Word>::operator++() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <class Index, class Word>
-const BitSetIter<Index, Word> BitSet<Index, Word>::endIter_(nullptr);
+template <class Index, class Tag, class Word>
+const BitSetIter<Index, Tag, Word> BitSet<Index, Tag, Word>::endIter_(nullptr);
 
 
-template <class Index, class Word>
-bool BitSet<Index, Word>::operator<(const BitSet<Index, Word>& rhs) const {
+template <class Index, class Tag, class Word>
+bool BitSet<Index, Tag, Word>::operator<(
+    const BitSet<Index, Tag, Word>& rhs) const {
   Index mySize = rawSize();
   Index rhsSize = rhs.rawSize();
   Index limit = std::min(mySize, rhsSize);
@@ -265,8 +269,9 @@ bool BitSet<Index, Word>::operator<(const BitSet<Index, Word>& rhs) const {
 }
 
 
-template <class Index, class Word>
-bool BitSet<Index, Word>::operator==(const BitSet<Index, Word>& rhs) const {
+template <class Index, class Tag, class Word>
+bool BitSet<Index, Tag, Word>::operator==(
+    const BitSet<Index, Tag, Word>& rhs) const {
   Index mySize = rawSize();
   Index rhsSize = rhs.rawSize();
   Index limit = std::min(mySize, rhsSize);
@@ -287,8 +292,8 @@ bool BitSet<Index, Word>::operator==(const BitSet<Index, Word>& rhs) const {
 }
 
 
-template <class Index, class Word>
-void BitSet<Index, Word>::resize(Index bits) {
+template <class Index, class Tag, class Word>
+void BitSet<Index, Tag, Word>::resize(Index bits) {
   Index old = rawSize();
   Index words = (bits + wordBits_ - 1) / wordBits_;
   vec_.resize(words);
@@ -304,8 +309,8 @@ void BitSet<Index, Word>::resize(Index bits) {
 }
 
 
-template <class Index, class Word>
-void BitSet<Index, Word>::setSpan(Index first, Index last) {
+template <class Index, class Tag, class Word>
+void BitSet<Index, Tag, Word>::setSpan(Index first, Index last) {
   ensure(last);
   Index firstWord = first / wordBits_;
   Index lastWord = last / wordBits_;
@@ -330,8 +335,9 @@ void BitSet<Index, Word>::setSpan(Index first, Index last) {
 }
 
 
-template <class Index, class Word>
-void BitSet<Index, Word>::intersectWith(const BitSet<Index, Word> &other) {
+template <class Index, class Tag, class Word>
+void BitSet<Index, Tag, Word>::intersectWith(
+    const BitSet<Index, Tag, Word> &other) {
   Index mySize = rawSize();
   Index otherSize = other.rawSize();
   if (mySize > otherSize) {
@@ -343,8 +349,9 @@ void BitSet<Index, Word>::intersectWith(const BitSet<Index, Word> &other) {
 }
 
 
-template <class Index, class Word>
-void BitSet<Index, Word>::unionWith(const BitSet<Index, Word> &other) {
+template <class Index, class Tag, class Word>
+void BitSet<Index, Tag, Word>::unionWith(
+    const BitSet<Index, Tag, Word> &other) {
   Index mySize = rawSize();
   Index otherSize = other.rawSize();
   if (mySize < otherSize)
@@ -354,8 +361,8 @@ void BitSet<Index, Word>::unionWith(const BitSet<Index, Word> &other) {
 }
 
 
-template <class Index, class Word>
-void BitSet<Index, Word>::xorWith(const BitSet<Index, Word> &other) {
+template <class Index, class Tag, class Word>
+void BitSet<Index, Tag, Word>::xorWith(const BitSet<Index, Tag, Word> &other) {
   Index mySize = rawSize();
   Index otherSize = other.rawSize();
   if (mySize < otherSize)
@@ -365,8 +372,8 @@ void BitSet<Index, Word>::xorWith(const BitSet<Index, Word> &other) {
 }
 
 
-template <class Index, class Word>
-void BitSet<Index, Word>::subtract(const BitSet<Index, Word> &other) {
+template <class Index, class Tag, class Word>
+void BitSet<Index, Tag, Word>::subtract(const BitSet<Index, Tag, Word> &other) {
   Index limit = std::min(rawSize(), other.rawSize());
   for (Index ii = 0; ii < limit; ++ii)
     vec_[ii] &= ~other.vec_[ii];
@@ -374,9 +381,9 @@ void BitSet<Index, Word>::subtract(const BitSet<Index, Word> &other) {
 
 
 // this is a performance-critical function
-template <class Index, class Word>
-bool BitSet<Index, Word>::hasIntersection(const BitSet<Index,
-                                                       Word> &other) const {
+template <class Index, class Tag, class Word>
+bool BitSet<Index, Tag, Word>::hasIntersection(
+    const BitSet<Index, Tag, Word> &other) const {
   Index limit = std::min(rawSize(), other.rawSize());
   for (Index ii = 0; ii < limit; ++ii)
     if (vec_[ii] & other.vec_[ii])
@@ -385,8 +392,9 @@ bool BitSet<Index, Word>::hasIntersection(const BitSet<Index,
 }
 
 
-template <class Index, class Word>
-bool BitSet<Index, Word>::contains(const BitSet<Index, Word> &other) const {
+template <class Index, class Tag, class Word>
+bool BitSet<Index, Tag, Word>::contains(
+    const BitSet<Index, Tag, Word> &other) const {
   Index mySize = rawSize();
   Index otherSize = other.rawSize();
   Index limit = std::min(mySize, otherSize);
@@ -401,8 +409,8 @@ bool BitSet<Index, Word>::contains(const BitSet<Index, Word> &other) const {
 }
 
 
-template <class Index, class Word>
-Index BitSet<Index, Word>::population() const {
+template <class Index, class Tag, class Word>
+Index BitSet<Index, Tag, Word>::population() const {
   Index rv = 0;
   for (Word x : vec_)
     rv += popCount(x);
@@ -410,8 +418,8 @@ Index BitSet<Index, Word>::population() const {
 }
 
 
-template <class Index, class Word>
-size_t BitSet<Index, Word>::hash() const {
+template <class Index, class Tag, class Word>
+size_t BitSet<Index, Tag, Word>::hash() const {
   size_t limit = 0;
   size_t n = vec_.size();
   for (size_t ii = 0; ii < n; ++ii)
@@ -422,13 +430,19 @@ size_t BitSet<Index, Word>::hash() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ResultTag {};
+struct NfaTag {};
+struct DfaTag {};
+
 // names more clear for specific purpose...
-typedef BitSet<CharIdx> MultiChar;
-typedef BitSet<CharIdx>::Iter MultiCharIter;
-typedef BitSet<NfaId> NfaIdSet;
-typedef BitSet<NfaId>::Iter NfaIdSetIter;
-typedef BitSet<StateId> StateIdSet;
-typedef BitSet<StateId>::Iter StateIdSetIter;
+typedef BitSet<CharIdx, DefaultTag, uint32_t> MultiChar;
+typedef BitSet<CharIdx, DefaultTag, uint32_t>::Iter MultiCharIter;
+typedef BitSet<Result, ResultTag> ResultSet;
+typedef BitSet<Result, ResultTag>::Iter ResultSetIter;
+typedef BitSet<NfaId, NfaTag> NfaIdSet;
+typedef BitSet<NfaId, NfaTag>::Iter NfaIdSetIter;
+typedef BitSet<StateId, DfaTag> StateIdSet;
+typedef BitSet<StateId, DfaTag>::Iter StateIdSetIter;
 
 } // namespace zezax::red
 
