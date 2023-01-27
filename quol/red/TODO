@@ -14,8 +14,6 @@
 - consider ordered set/map
 - implement replace variants
 - convenience compile wrapper
-- state in proxy
-- states, not offsets in matchCore
 - network byte order?
 - non-resetting match (save state/off across calls)
 - make install/shared libs
