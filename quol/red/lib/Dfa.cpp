@@ -17,20 +17,20 @@ using std::vector;
 
 namespace {
 
-void allStatesRecurse(StateIdSet             &seen,
+void allStatesRecurse(DfaIdSet               &seen,
                       const vector<DfaState> &states,
-                      StateId                 sid) {
-  for (auto [_, id] : states[sid].trans_.getMap())
+                      DfaId                   did) {
+  for (auto [_, id] : states[did].trans_.getMap())
     if (!seen.testAndSet(id))
       allStatesRecurse(seen, states, id);
 }
 
 
-CharIdx maxCharRecurse(StateIdSet             &seen,
+CharIdx maxCharRecurse(DfaIdSet               &seen,
                        const vector<DfaState> &states,
-                       StateId                 sid) {
+                       DfaId                   did) {
   CharIdx maxChar = 0;
-  for (auto [ch, id] : states[sid].trans_.getMap()) {
+  for (auto [ch, id] : states[did].trans_.getMap()) {
     if (ch > maxChar)
       maxChar = ch;
     if (!seen.testAndSet(id)) {
@@ -43,10 +43,10 @@ CharIdx maxCharRecurse(StateIdSet             &seen,
 }
 
 
-Result maxResultRecurse(StateIdSet             &seen,
+Result maxResultRecurse(DfaIdSet               &seen,
                         const vector<DfaState> &states,
-                        StateId                 sid) {
-  const DfaState &ds = states[sid];
+                        DfaId                   did) {
+  const DfaState &ds = states[did];
   Result maxResult = ds.result_;
   for (auto [_, id] : ds.trans_.getMap())
     if (!seen.testAndSet(id)) {
@@ -59,7 +59,7 @@ Result maxResultRecurse(StateIdSet             &seen,
 }
 
 
-void oneDeadEnd(DfaState &ds, StateId id, CharIdx maxChar) {
+void oneDeadEnd(DfaState &ds, DfaId id, CharIdx maxChar) {
   // (likely) try sparse first...
   for (const auto [ch, tid] : ds.trans_.getMap())
     if ((ch < gAlphabetSize) && (tid != id)) {
@@ -87,26 +87,26 @@ bool shareFate(const vector<DfaState> &states, CharIdx aa, CharIdx bb) {
 
 DfaObj transcribeDfa(const DfaObj &src) {
   DfaObj rv;
-  StateIdSet states = src.allStateIds();
+  DfaIdSet states = src.allStateIds();
   rv.reserve(states.population());
 
   StateToStateMap oldToNew;
-  StateId errId = rv.newState();
-  StateId initId = rv.newState();
+  DfaId errId = rv.newState();
+  DfaId initId = rv.newState();
   if ((errId != gDfaErrorId) || (initId != gDfaInitialId))
     throw RedExceptMinimize("dfa state ids not as expected");
   oldToNew.emplace(gDfaErrorId, gDfaErrorId);
   oldToNew.emplace(gDfaInitialId, gDfaInitialId);
 
   // this skips unreachable states
-  for (StateId srcId : states) {
+  for (DfaId srcId : states) {
     if (!oldToNew.contains(srcId)) {
-      StateId newId = rv.newState();
+      DfaId newId = rv.newState();
       oldToNew[srcId] = newId;
     }
   }
 
-  for (StateId srcId : states) {
+  for (DfaId srcId : states) {
     const DfaState &srcState = src[srcId];
     DfaState &newState = rv[oldToNew[srcId]];
     for (auto srcIt = srcState.trans_.getMap().cbegin();
@@ -125,7 +125,7 @@ DfaObj transcribeDfa(const DfaObj &src) {
 
 
 void flagDeadEnds(vector<DfaState> &states, CharIdx maxChar) {
-  StateId id = 0;
+  DfaId id = 0;
   for (DfaState &ds : states) {
     oneDeadEnd(ds, id, maxChar);
     ++id;
@@ -182,17 +182,17 @@ void DfaObj::swap(DfaObj &other) {
 }
 
 
-StateId DfaObj::newState() {
+DfaId DfaObj::newState() {
   size_t len = states_.size();
-  if (len > numeric_limits<StateId>::max())
+  if (len > numeric_limits<DfaId>::max())
     throw RedExceptLimit("DFA state ID overflow");
   states_.resize(len + 1); // default init
-  return static_cast<StateId>(len);
+  return static_cast<DfaId>(len);
 }
 
 
-StateIdSet DfaObj::allStateIds() const {
-  StateIdSet seen;
+DfaIdSet DfaObj::allStateIds() const {
+  DfaIdSet seen;
   seen.set(gDfaErrorId);
   seen.set(gDfaInitialId);
   allStatesRecurse(seen, states_, gDfaInitialId);
@@ -201,14 +201,14 @@ StateIdSet DfaObj::allStateIds() const {
 
 
 CharIdx DfaObj::findMaxChar() const {
-  StateIdSet seen;
+  DfaIdSet seen;
   seen.set(gDfaInitialId);
   return maxCharRecurse(seen, states_, gDfaInitialId);
 }
 
 
 Result DfaObj::findMaxResult() const {
-  StateIdSet seen;
+  DfaIdSet seen;
   seen.set(gDfaInitialId);
   return maxResultRecurse(seen, states_, gDfaInitialId);
 }

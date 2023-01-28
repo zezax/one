@@ -20,8 +20,8 @@ typedef std::unordered_map<NfaIdSet,
 
 typedef std::unordered_map<NfaId, size_t> NfaStateToCount;
 
-//FIXME: make sure this compares by id
-typedef std::unordered_map<NfaIdSet, StateId> NfaStatesToId;
+// this should compare by id
+typedef std::unordered_map<NfaIdSet, DfaId> NfaStatesToId;
 
 // utility functions
 MultiCharSet basisMultiChars(const MultiCharSet &mcs);
@@ -37,12 +37,12 @@ Result getResult(const NfaIdSet        &ss,
                  const NfaStateToCount &counts,
                  const NfaObj          &nfa);
 
-StateId dfaFromNfa(const std::vector<MultiChar> &multiChars,
-                   const NfaStatesToTransitions &table,
-                   const NfaStateToCount        &counts,
-                   const NfaIdSet               &init,
-                   NfaStatesToId                &map,
-                   const NfaObj                 &nfa,
-                   DfaObj                       &dfa);
+DfaId dfaFromNfa(const std::vector<MultiChar> &multiChars,
+                 const NfaStatesToTransitions &table,
+                 const NfaStateToCount        &counts,
+                 const NfaIdSet               &init,
+                 NfaStatesToId                &map,
+                 const NfaObj                 &nfa,
+                 DfaObj                       &dfa);
 
 } // namespace zezax::red

@@ -11,7 +11,7 @@
 
 namespace zezax::red {
 
-constexpr StateId gNfaNullId   = 0;
+constexpr NfaId gNfaNullId   = 0;
 
 struct NfaState;
 

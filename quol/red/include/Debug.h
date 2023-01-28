@@ -21,8 +21,8 @@ namespace zezax::red {
 std::string toString(const MultiChar &mc);
 std::string toString(const MultiCharSet &mcs);
 std::string toString(const NfaIdSet &nis);
-std::string toString(const StateIdSet &sis);
-std::string toString(const std::vector<StateIdSet> &blocks);
+std::string toString(const DfaIdSet &dis);
+std::string toString(const std::vector<DfaIdSet> &blocks);
 std::string toString(const Token &t);
 std::string toString(const NfaObj &nfa);
 std::string toString(const NfaIdSet &nis, const NfaObj &nfa);
@@ -60,6 +60,6 @@ std::string toHexString(T x) {
 
 // for readable gtest output
 std::ostream &operator<<(std::ostream &os, const MultiChar &mc);
-std::ostream &operator<<(std::ostream &os, const StateIdSet &sis);
+std::ostream &operator<<(std::ostream &os, const DfaIdSet &dis);
 
 } // namespace zezax::red

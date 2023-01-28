@@ -12,7 +12,7 @@ typedef int32_t  FlagsT;
 typedef int32_t  Result;
 typedef int32_t  NfaId;
 typedef uint32_t CharIdx;
-typedef int64_t  StateId;
+typedef int64_t  DfaId;
 
 enum Flags : FlagsT {
   fIgnoreCase = 0x01,

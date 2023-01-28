@@ -12,11 +12,11 @@
 
 namespace zezax::red {
 
-constexpr StateId gDfaErrorId   = 0;
-constexpr StateId gDfaInitialId = 1;
+constexpr DfaId gDfaErrorId   = 0;
+constexpr DfaId gDfaInitialId = 1;
 
-typedef DefaultMap<CharIdx, StateId>         CharToStateMap;
-typedef std::unordered_map<StateId, StateId> StateToStateMap;
+typedef DefaultMap<CharIdx, DfaId>       CharToStateMap;
+typedef std::unordered_map<DfaId, DfaId> StateToStateMap;
 
 
 struct DfaState {
@@ -35,16 +35,16 @@ public:
   DfaObj &operator=(const DfaObj &rhs) = delete;
   DfaObj &operator=(DfaObj &&rhs) = default;
 
-  const DfaState &operator[](StateId id) const { return states_[id]; }
-  DfaState &operator[](StateId id) { return states_[id]; }
+  const DfaState &operator[](DfaId id) const { return states_[id]; }
+  DfaState &operator[](DfaId id) { return states_[id]; }
 
   void clear();
   void reserve(size_t n) { states_.reserve(n); }
   void swap(DfaObj &other);
 
-  StateId newState();
+  DfaId newState();
 
-  StateIdSet allStateIds() const;
+  DfaIdSet allStateIds() const;
   CharIdx findMaxChar() const;
   Result findMaxResult() const;
 

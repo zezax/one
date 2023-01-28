@@ -30,7 +30,7 @@ DfaObj convertNfaToDfa(const NfaObj &nfa) {
   NfaStateToCount counts = countAcceptingStates(table, nfa);
 
   DfaObj dfa;
-  StateId id = dfa.newState();
+  DfaId id = dfa.newState();
   if (id != gDfaErrorId)
     throw RedExceptCompile("dfa error state must be zero");
 
@@ -152,30 +152,30 @@ Result getResult(const NfaIdSet        &nis,
 }
 
 
-StateId dfaFromNfa(const vector<MultiChar>      &multiChars,
-                   const NfaStatesToTransitions &table,
-                   const NfaStateToCount        &counts,
-                   const NfaIdSet               &stateSet,
-                   NfaStatesToId                &map,
-                   const NfaObj                 &nfa,
-                   DfaObj                       &dfa) {
-  std::pair<NfaIdSet, StateId> mapNode;
+DfaId dfaFromNfa(const vector<MultiChar>      &multiChars,
+                 const NfaStatesToTransitions &table,
+                 const NfaStateToCount        &counts,
+                 const NfaIdSet               &stateSet,
+                 NfaStatesToId                &map,
+                 const NfaObj                 &nfa,
+                 DfaObj                       &dfa) {
+  std::pair<NfaIdSet, DfaId> mapNode;
   mapNode.first = stateSet;
   auto [mapIter, novel] = map.emplace(std::move(mapNode));
   if (!novel)
     return mapIter->second;
 
-  StateId dfaId = dfa.newState();
+  DfaId dfaId = dfa.newState();
   mapIter->second = dfaId;
 
   auto tableIter = table.find(stateSet);
   if (tableIter == table.end())
     return dfaId; // FIXME can this happen? is it right?
 
-  StateId ii = 0;
+  DfaId ii = 0;
   for (const NfaIdSet &nis : tableIter->second) {
     if (nis.population() > 0) {
-      StateId subId = dfaFromNfa(multiChars, table, counts, nis, map, nfa, dfa);
+      DfaId subId = dfaFromNfa(multiChars, table, counts, nis, map, nfa, dfa);
       for (CharIdx ch : multiChars[ii]) // FIXME why is mc[ii] valid???
         dfa[dfaId].trans_.set(ch, subId);
     }

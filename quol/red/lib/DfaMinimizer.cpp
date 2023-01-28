@@ -17,14 +17,14 @@ using std::vector;
 
 namespace {
 
-StateId &twinRef(vector<StateId> &vec, size_t idx) {
+DfaId &twinRef(vector<DfaId> &vec, size_t idx) {
   while (vec.size() <= idx)
     vec.push_back(-1);
   return vec[idx];
 }
 
 
-BlockId findInBlock(StateId id, const vector<StateIdSet> &blocks) {
+BlockId findInBlock(DfaId id, const vector<DfaIdSet> &blocks) {
   for (BlockId block = 0; static_cast<size_t>(block) < blocks.size(); ++block)
     if (blocks[block].get(id))
       return block;
@@ -33,19 +33,19 @@ BlockId findInBlock(StateId id, const vector<StateIdSet> &blocks) {
 
 } // anonymous
 
-DfaEdgeToIds invert(const StateIdSet       &stateSet,
+DfaEdgeToIds invert(const DfaIdSet         &stateSet,
                     const vector<DfaState> &stateVec,
                     CharIdx                 maxChar) {
   DfaEdgeToIds rv;
 
-  for (StateId sid : stateSet) {
-    const DfaState &ds = stateVec[sid];
+  for (DfaId did : stateSet) {
+    const DfaState &ds = stateVec[did];
     for (CharIdx ch = 0; ch <= maxChar; ++ch) { // need to enumerate all
-      std::pair<DfaEdge, StateIdSet> node;
+      std::pair<DfaEdge, DfaIdSet> node;
       node.first.id_ = ds.trans_[ch];
       node.first.char_ = ch;
       auto [it, _] = rv.emplace(std::move(node));
-      it->second.set(sid);
+      it->second.set(did);
     }
   }
 
@@ -53,13 +53,13 @@ DfaEdgeToIds invert(const StateIdSet       &stateSet,
 }
 
 
-void partition(const StateIdSet       &stateSet,
+void partition(const DfaIdSet         &stateSet,
                const vector<DfaState> &stateVec,
-               vector<StateIdSet>     &blocks) {
+               vector<DfaIdSet>       &blocks) {
   ResultSet resultSet;
   resultSet.set(0); // make sure non-accepting result is present
-  for (StateId sid : stateSet)
-    resultSet.set(stateVec[sid].result_);
+  for (DfaId did : stateSet)
+    resultSet.set(stateVec[did].result_);
 
   // states with different results must be differentiated into different blocks
   std::map<Result, BlockId> result2block;
@@ -67,17 +67,17 @@ void partition(const StateIdSet       &stateSet,
   for (Result res : resultSet)
     result2block[res] = block++;
 
-  for (StateId sid : stateSet) {
-    block = result2block[stateVec[sid].result_];
-    safeRef(blocks, block).set(sid);
+  for (DfaId did : stateSet) {
+    block = result2block[stateVec[did].result_];
+    safeRef(blocks, block).set(did);
   }
 }
 
 
-BlockRecSet makeList(CharIdx                   maxChar,
-                     const vector<StateIdSet> &blocks) {
-  StateId zeroPop = blocks[0].population();
-  StateId restPop = 0;
+BlockRecSet makeList(CharIdx                 maxChar,
+                     const vector<DfaIdSet> &blocks) {
+  DfaId zeroPop = blocks[0].population();
+  DfaId restPop = 0;
 
   BlockId num = static_cast<BlockId>(blocks.size());
   for (BlockId bid = 1; bid < num; ++bid)
@@ -104,13 +104,13 @@ BlockRecSet makeList(CharIdx                   maxChar,
 }
 
 
-StateIdSet locateSplits(const BlockRec           &blockRec,
-                        const vector<StateIdSet> &blocks,
-                        const DfaEdgeToIds       &inv) {
-  StateIdSet rv;
+DfaIdSet locateSplits(const BlockRec         &blockRec,
+                      const vector<DfaIdSet> &blocks,
+                      const DfaEdgeToIds     &inv) {
+  DfaIdSet rv;
   DfaEdge key;
   key.char_ = blockRec.char_;
-  for (StateId id : blocks[blockRec.block_]) {
+  for (DfaId id : blocks[blockRec.block_]) {
     key.id_ = id;
     auto it = inv.find(key);
     if (it != inv.end())
@@ -121,13 +121,13 @@ StateIdSet locateSplits(const BlockRec           &blockRec,
 
 
 void performSplits(const BlockRec         &blockRec,
-                   const StateIdSet       &splits,
+                   const DfaIdSet         &splits,
                    vector<BlockId>        &twins,
                    PatchSet               &patches,
                    const vector<DfaState> &stateVec,
-                   vector<StateIdSet>     &blocks) {
+                   vector<DfaIdSet>       &blocks) {
   twins.clear(); // forget old
-  for (StateId splitId : splits) {
+  for (DfaId splitId : splits) {
     BlockId blockNum = findInBlock(splitId, blocks);
     if (!containedIn(blockNum, blockRec.block_, blockRec.char_,
                      stateVec, blocks))
@@ -136,15 +136,15 @@ void performSplits(const BlockRec         &blockRec,
 }
 
 
-bool containedIn(BlockId                   needleId,
-                 BlockId                   haystackId,
-                 CharIdx                   ch,
-                 const vector<DfaState>   &stateVec,
-                 const vector<StateIdSet> &blocks) {
-  const StateIdSet &needle = blocks[needleId];
-  const StateIdSet &haystack = blocks[haystackId];
+bool containedIn(BlockId                 needleId,
+                 BlockId                 haystackId,
+                 CharIdx                 ch,
+                 const vector<DfaState> &stateVec,
+                 const vector<DfaIdSet> &blocks) {
+  const DfaIdSet &needle = blocks[needleId];
+  const DfaIdSet &haystack = blocks[haystackId];
 
-  for (StateId id : needle) {
+  for (DfaId id : needle) {
     const DfaState &ds = stateVec[id];
     if (!haystack.get(ds.trans_[ch]))
       return false;
@@ -154,11 +154,11 @@ bool containedIn(BlockId                   needleId,
 }
 
 
-void handleTwins(StateId             stateId,
-                 BlockId             blockId,
-                 vector<StateIdSet> &blocks,
-                 vector<BlockId>    &twins,
-                 PatchSet           &patches) {
+void handleTwins(DfaId             stateId,
+                 BlockId           blockId,
+                 vector<DfaIdSet> &blocks,
+                 vector<BlockId>  &twins,
+                 PatchSet         &patches) {
   BlockId twin = twinRef(twins, blockId);
 
   if (twin == -1) {
@@ -173,21 +173,21 @@ void handleTwins(StateId             stateId,
 }
 
 
-void patchBlocks(PatchSet                 &patches,
-                 BlockRecSet              &list,
-                 CharIdx                   maxChar,
-                 const vector<StateIdSet> &blocks) {
+void patchBlocks(PatchSet               &patches,
+                 BlockRecSet            &list,
+                 CharIdx                 maxChar,
+                 const vector<DfaIdSet> &blocks) {
   for (const Patch &patch : patches)
     patchPair(patch.first, patch.second, list, maxChar, blocks);
   patches.clear();
 }
 
 
-void patchPair(BlockId ii,
-               BlockId jj,
-               BlockRecSet &list,
-               CharIdx maxChar,
-               const vector<StateIdSet> &blocks) {
+void patchPair(BlockId                 ii,
+               BlockId                 jj,
+               BlockRecSet            &list,
+               CharIdx                 maxChar,
+               const vector<DfaIdSet> &blocks) {
   BlockRec bii;
   bii.block_ = ii;
   BlockRec bjj;
@@ -209,22 +209,22 @@ void patchPair(BlockId ii,
 }
 
 
-void makeDfaFromBlocks(const DfaObj &srcDfa,
-                 DfaObj &outDfa,
-                 const vector<StateIdSet> &blocks) {
+void makeDfaFromBlocks(const DfaObj           &srcDfa,
+                       DfaObj                 &outDfa,
+                       const vector<DfaIdSet> &blocks) {
   // make new states, one per block, and map old ids to new ids
   StateToStateMap oldToNew;
-  StateId errId = outDfa.newState();
-  StateId initId = outDfa.newState();
+  DfaId errId = outDfa.newState();
+  DfaId initId = outDfa.newState();
   if ((errId != gDfaErrorId) || (initId != gDfaInitialId))
     throw RedExceptMinimize("dfa state ids not what was expected");
   oldToNew.emplace(gDfaErrorId, gDfaErrorId);
   oldToNew.emplace(gDfaInitialId, gDfaInitialId);
 
-  for (const StateIdSet &sis : blocks) {
+  for (const DfaIdSet &sis : blocks) {
     auto it = sis.begin();
     if (it != sis.end()) {
-      StateId id;
+      DfaId id;
       auto found = oldToNew.find(*it);
       if (found == oldToNew.end())
         id = outDfa.newState();
@@ -236,9 +236,9 @@ void makeDfaFromBlocks(const DfaObj &srcDfa,
   }
 
   // transcribe state transitions to new ids
-  for (const StateIdSet &sis : blocks) {
-    auto it = sis.begin();
-    if (it != sis.end()) {
+  for (const DfaIdSet &dis : blocks) {
+    auto it = dis.begin();
+    if (it != dis.end()) {
       const DfaState &srcState = srcDfa[*it];
       DfaState &outState = outDfa[oldToNew[*it]];
       for (auto srcIt = srcState.trans_.getMap().cbegin();
@@ -279,7 +279,7 @@ void DfaMinimizer::setup() {
   maxChar_ = src_.findMaxChar();
 
   {
-    StateIdSet stateSet = src_.allStateIds();
+    DfaIdSet stateSet = src_.allStateIds();
 
     inverse_ = std::move(invert(stateSet, src_.getStates(), maxChar_));
 
@@ -298,7 +298,7 @@ void DfaMinimizer::iterate() {
   while (!list_.empty()) {
     auto node = list_.extract(list_.begin());
     BlockRec &br = node.value();
-    StateIdSet splits = locateSplits(br, blocks_, inverse_);
+    DfaIdSet splits = locateSplits(br, blocks_, inverse_);
     if (splits.population() > 0) {
       performSplits(br, splits, twins, patches, src_.getStates(), blocks_);
       patchBlocks(patches, list_, maxChar_, blocks_);

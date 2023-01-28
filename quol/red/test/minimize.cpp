@@ -14,14 +14,14 @@ using std::vector;
 
 namespace {
 
-StateId mkState(DfaObj &dfa, Result r) {
-  StateId id = dfa.newState();
+DfaId mkState(DfaObj &dfa, Result r) {
+  DfaId id = dfa.newState();
   dfa[id].result_ = r;
   return id;
 }
 
 
-void addTrans(DfaObj &dfa, StateId from, StateId to, CharIdx ch) {
+void addTrans(DfaObj &dfa, DfaId from, DfaId to, CharIdx ch) {
   dfa[from].trans_.set(ch, to);
 }
 
@@ -29,11 +29,11 @@ void addTrans(DfaObj &dfa, StateId from, StateId to, CharIdx ch) {
 
 TEST(Minimize, invert) {
   DfaObj dfa;
-  StateId s0 = mkState(dfa, 0);
-  StateId s1 = mkState(dfa, 0);
-  StateId s2 = mkState(dfa, 0);
-  StateId s3 = mkState(dfa, 0);
-  StateId s4 = mkState(dfa, 1);
+  DfaId s0 = mkState(dfa, 0);
+  DfaId s1 = mkState(dfa, 0);
+  DfaId s2 = mkState(dfa, 0);
+  DfaId s3 = mkState(dfa, 0);
+  DfaId s4 = mkState(dfa, 1);
   addTrans(dfa, s1, s1, 'b');
   addTrans(dfa, s1, s2, 'a');
   addTrans(dfa, s2, s2, 'a');
@@ -58,17 +58,17 @@ TEST(Minimize, invert) {
   maxChar = dfa.findMaxChar();
   std::cout << toString(dfa) << std::endl;
 
-  StateIdSet states = dfa.allStateIds();
+  DfaIdSet states = dfa.allStateIds();
   EXPECT_EQ(4, states.population());
   DfaEdgeToIds rev = invert(states, vec, maxChar);
   EXPECT_EQ(6, rev.size());
   std::cout << toString(rev) << std::endl;
 
-  vector<StateIdSet> blocks;
+  vector<DfaIdSet> blocks;
   partition(states, vec, blocks);
   ASSERT_EQ(2, blocks.size());
-  StateIdSet &normal = blocks[0];
-  StateIdSet &accept = blocks[1];
+  DfaIdSet &normal = blocks[0];
+  DfaIdSet &accept = blocks[1];
   ASSERT_EQ(3, normal.population());
   EXPECT_TRUE(normal.get(s0));
   EXPECT_TRUE(normal.get(s1));
@@ -82,7 +82,7 @@ TEST(Minimize, invert) {
   BlockRec br;
   br.block_ = s1; // using state id as block id
   br.char_ = 'b';
-  StateIdSet splits = locateSplits(br, blocks, rev);
+  DfaIdSet splits = locateSplits(br, blocks, rev);
   std::cout << toString(splits) << std::endl;
 }
 
@@ -93,11 +93,11 @@ TEST(Minimize, obj) {
   //      v   | a   v   | b
   // S0   S1 -+---> S2 -+---> S3 -+---> S4 accept
   DfaObj dfa;
-  StateId s0 = mkState(dfa, 0);
-  StateId s1 = mkState(dfa, 0);
-  StateId s2 = mkState(dfa, 0);
-  StateId s3 = mkState(dfa, 0);
-  StateId s4 = mkState(dfa, 1);
+  DfaId s0 = mkState(dfa, 0);
+  DfaId s1 = mkState(dfa, 0);
+  DfaId s2 = mkState(dfa, 0);
+  DfaId s3 = mkState(dfa, 0);
+  DfaId s4 = mkState(dfa, 1);
   addTrans(dfa, s1, s1, 'b');
   addTrans(dfa, s1, s2, 'a');
   addTrans(dfa, s2, s2, 'a');
@@ -124,14 +124,14 @@ TEST(Minimize, obj) {
 
 TEST(Minimize, results) {
   DfaObj dfa;
-  StateId s0 = mkState(dfa, 0);
-  StateId s1 = mkState(dfa, 0);
-  StateId s2 = mkState(dfa, 0);
-  StateId s3 = mkState(dfa, 2);
-  StateId s4 = mkState(dfa, 2);
-  StateId s5 = mkState(dfa, 0);
-  StateId s6 = mkState(dfa, 1);
-  StateId s7 = mkState(dfa, 1);
+  DfaId s0 = mkState(dfa, 0);
+  DfaId s1 = mkState(dfa, 0);
+  DfaId s2 = mkState(dfa, 0);
+  DfaId s3 = mkState(dfa, 2);
+  DfaId s4 = mkState(dfa, 2);
+  DfaId s5 = mkState(dfa, 0);
+  DfaId s6 = mkState(dfa, 1);
+  DfaId s7 = mkState(dfa, 1);
   addTrans(dfa, s1, s2, 'c');
   addTrans(dfa, s1, s5, 'a');
   addTrans(dfa, s2, s3, 'b');
@@ -155,10 +155,10 @@ TEST(Minimize, results) {
 
 TEST(Minimize, deadEnds) {
   DfaObj dfa;
-  StateId s0 = mkState(dfa, 0);
-  StateId s1 = mkState(dfa, 0);
-  StateId s2 = mkState(dfa, 0);
-  StateId s3 = mkState(dfa, 1);
+  DfaId s0 = mkState(dfa, 0);
+  DfaId s1 = mkState(dfa, 0);
+  DfaId s2 = mkState(dfa, 0);
+  DfaId s3 = mkState(dfa, 1);
   addTrans(dfa, s1, s1, 0);
   addTrans(dfa, s1, s1, 2);
   addTrans(dfa, s1, s1, 3);

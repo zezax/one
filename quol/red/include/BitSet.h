@@ -441,8 +441,8 @@ typedef BitSet<Result, ResultTag> ResultSet;
 typedef BitSet<Result, ResultTag>::Iter ResultSetIter;
 typedef BitSet<NfaId, NfaTag> NfaIdSet;
 typedef BitSet<NfaId, NfaTag>::Iter NfaIdSetIter;
-typedef BitSet<StateId, DfaTag> StateIdSet;
-typedef BitSet<StateId, DfaTag>::Iter StateIdSetIter;
+typedef BitSet<DfaId, DfaTag> DfaIdSet;
+typedef BitSet<DfaId, DfaTag>::Iter DfaIdSetIter;
 
 } // namespace zezax::red
 
@@ -457,8 +457,8 @@ template<> struct std::hash<zezax::red::NfaIdSet> {
   }
 };
 
-template<> struct std::hash<zezax::red::StateIdSet> {
-  size_t operator()(const zezax::red::StateIdSet &sis) const {
+template<> struct std::hash<zezax::red::DfaIdSet> {
+  size_t operator()(const zezax::red::DfaIdSet &sis) const {
     return sis.hash();
   }
 };

@@ -54,9 +54,9 @@ void toStringAppend(string &out, const NfaIdSet &nis) {
 }
 
 
-void toStringAppend(string &out, const StateIdSet &sis) {
+void toStringAppend(string &out, const DfaIdSet &dis) {
   bool first = true;
-  for (StateIdSetIter it = sis.begin(); it != sis.end(); ++it) {
+  for (DfaIdSetIter it = dis.begin(); it != dis.end(); ++it) {
     if (first)
       first = false;
     else
@@ -185,19 +185,19 @@ string toString(const NfaIdSet &nis) {
 }
 
 
-string toString(const StateIdSet &sis) {
+string toString(const DfaIdSet &dis) {
   string rv;
-  toStringAppend(rv, sis);
+  toStringAppend(rv, dis);
   return rv;
 }
 
 
-string toString(const vector<StateIdSet> &blocks) {
+string toString(const vector<DfaIdSet> &blocks) {
   string rv = "blocks[\n";
   int ii = 0;
-  for (const StateIdSet &sis : blocks) {
+  for (const DfaIdSet &dis : blocks) {
     rv += "  " + to_string(ii) + ": ";
-    toStringAppend(rv, sis);
+    toStringAppend(rv, dis);
     rv += '\n';
     ++ii;
   }
@@ -270,7 +270,7 @@ string toString(const NfaStateToCount &c) {
 ///////////////////////////////////////////////////////////////////////////////
 
 string toString(const CharToStateMap &map) {
-  vector<std::pair<CharIdx, StateId>> vec;
+  vector<std::pair<CharIdx, DfaId>> vec;
   for (auto [ch, id] : map.getMap())
     vec.emplace_back(ch, id);
   std::sort(vec.begin(), vec.end());
@@ -278,7 +278,7 @@ string toString(const CharToStateMap &map) {
   string rv;
   CharIdx start = 0;
   CharIdx prevCh = ~0U;
-  StateId prevId = -1;
+  DfaId prevId = -1;
   for (auto [ch, id] : vec) {
     if ((id != prevId) || (ch != (prevCh + 1))) {
       if (prevCh != ~0U) {
@@ -319,7 +319,7 @@ string toString(const DfaObj &dfa) {
   string rv = "Dfa init=" + to_string(gDfaInitialId) +
     " err=" + to_string(gDfaErrorId) + '\n';
   const vector<DfaState> &vec = dfa.getStates();
-  StateId ii = 0;
+  DfaId ii = 0;
   for (const DfaState &ds : vec) {
     rv += to_string(ii) + ' ';
     toStringAppend(rv, ds);
@@ -344,8 +344,8 @@ string toString(const DfaEdgeSet &des) {
 
 string toString(const DfaEdgeToIds &rev) {
   string rv = "rev{\n";
-  for (const auto &[e, sis] : rev)
-    rv += "  " + toString(e) + " -> " + toString(sis) + '\n';
+  for (const auto &[e, dis] : rev)
+    rv += "  " + toString(e) + " -> " + toString(dis) + '\n';
   return rv + "}\n";
 }
 
@@ -495,8 +495,8 @@ ostream &operator<<(ostream &os, const MultiChar &mc) {
   return os;
 }
 
-ostream &operator<<(ostream &os, const StateIdSet &sis) {
-  os << toString(sis); // FIXME: non-char version
+ostream &operator<<(ostream &os, const DfaIdSet &dis) {
+  os << toString(dis); // FIXME: non-char version
   return os;
 }
 

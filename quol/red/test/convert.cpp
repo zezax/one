@@ -107,7 +107,7 @@ TEST(Convert, stepwise) {
 
   NfaStatesToId map;
   DfaObj dfa;
-  StateId id = dfa.newState();
+  DfaId id = dfa.newState();
   EXPECT_EQ(gDfaErrorId, id);
   id = dfaFromNfa(chars, tbl, counts, nis1, map, nfa, dfa);
   EXPECT_EQ(gDfaInitialId, id);

@@ -14,7 +14,7 @@ namespace zezax::red {
 typedef int64_t BlockId;
 
 struct DfaEdge {
-  StateId id_;
+  DfaId   id_;
   CharIdx char_;
 };
 
@@ -23,11 +23,11 @@ struct BlockRec {
   CharIdx char_;
 };
 
-typedef std::unordered_set<DfaEdge>             DfaEdgeSet;
-typedef std::unordered_map<DfaEdge, StateIdSet> DfaEdgeToIds;
-typedef std::unordered_set<BlockRec>            BlockRecSet;
-typedef std::pair<BlockId, BlockId>             Patch;
-typedef std::unordered_set<Patch>               PatchSet;
+typedef std::unordered_set<DfaEdge>           DfaEdgeSet;
+typedef std::unordered_map<DfaEdge, DfaIdSet> DfaEdgeToIds;
+typedef std::unordered_set<BlockRec>          BlockRecSet;
+typedef std::pair<BlockId, BlockId>           Patch;
+typedef std::unordered_set<Patch>             PatchSet;
 
 } // namespace zezax::red
 
@@ -85,63 +85,63 @@ private:
   void iterate();
   void cleanup(DfaObj &work);
 
-  DfaObj                 &src_;
-  CharIdx                 maxChar_;
-  DfaEdgeToIds            inverse_;
-  std::vector<StateIdSet> blocks_;
-  BlockRecSet             list_;
+  DfaObj               &src_;
+  CharIdx               maxChar_;
+  DfaEdgeToIds          inverse_;
+  std::vector<DfaIdSet> blocks_;
+  BlockRecSet           list_;
 };
 
 
-// building blocks
-DfaEdgeToIds invert(const StateIdSet            &stateSet,
+// implementation functions
+DfaEdgeToIds invert(const DfaIdSet              &stateSet,
                     const std::vector<DfaState> &stateVec,
                     CharIdx                      maxChar);
 
-void partition(const StateIdSet            &stateSet,
+void partition(const DfaIdSet              &stateSet,
                const std::vector<DfaState> &stateVec,
-               std::vector<StateIdSet>     &blocks);
+               std::vector<DfaIdSet>       &blocks);
 
-BlockRecSet makeList(CharIdx                        maxChar,
-                     const std::vector<StateIdSet> &blocks);
+BlockRecSet makeList(CharIdx                      maxChar,
+                     const std::vector<DfaIdSet> &blocks);
 
-StateIdSet locateSplits(const BlockRec                &blockRec,
-                        const std::vector<StateIdSet> &blocks,
-                        const DfaEdgeToIds            &inv);
+DfaIdSet locateSplits(const BlockRec                &blockRec,
+                        const std::vector<DfaIdSet> &blocks,
+                        const DfaEdgeToIds          &inv);
 
 void performSplits(const BlockRec              &blockRec,
-                   const StateIdSet            &splits,
+                   const DfaIdSet              &splits,
                    std::vector<BlockId>        &twins,
                    PatchSet                    &patches,
                    const std::vector<DfaState> &stateVec,
-                   std::vector<StateIdSet>     &blocks);
+                   std::vector<DfaIdSet>       &blocks);
 
-bool containedIn(BlockId                        needleId,
-                 BlockId                        haystackId,
-                 CharIdx                        ch,
-                 const std::vector<DfaState>   &stateVec,
-                 const std::vector<StateIdSet> &blocks);
+bool containedIn(BlockId                      needleId,
+                 BlockId                      haystackId,
+                 CharIdx                      ch,
+                 const std::vector<DfaState> &stateVec,
+                 const std::vector<DfaIdSet> &blocks);
 
-void handleTwins(StateId                  src,
-                 BlockId                  dst,
-                 std::vector<StateIdSet> &blocks,
-                 std::vector<StateId>    &twins,
-                 PatchSet                &patches);
+void handleTwins(DfaId                  src,
+                 BlockId                dst,
+                 std::vector<DfaIdSet> &blocks,
+                 std::vector<DfaId>    &twins,
+                 PatchSet              &patches);
 
-void patchBlocks(PatchSet                      &patches,
-                 BlockRecSet                   &list,
-                 CharIdx                        maxChar,
-                 const std::vector<StateIdSet> &blocks);
+void patchBlocks(PatchSet                    &patches,
+                 BlockRecSet                 &list,
+                 CharIdx                      maxChar,
+                 const std::vector<DfaIdSet> &blocks);
 
-void patchPair(BlockId                        ii,
-               BlockId                        jj,
-               BlockRecSet                   &list,
-               CharIdx                        maxChar,
-               const std::vector<StateIdSet> &blocks);
+void patchPair(BlockId                      ii,
+               BlockId                      jj,
+               BlockRecSet                 &list,
+               CharIdx                      maxChar,
+               const std::vector<DfaIdSet> &blocks);
 
-void makeDfaFromBlocks(const DfaObj                  &srcDfa,
-                       DfaObj                        &outDfa,
-                       const std::vector<StateIdSet> &blocks);
+void makeDfaFromBlocks(const DfaObj                &srcDfa,
+                       DfaObj                      &outDfa,
+                       const std::vector<DfaIdSet> &blocks);
 
 void improveDfa(DfaObj &dfa);
 

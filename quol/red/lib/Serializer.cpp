@@ -148,7 +148,7 @@ void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
       rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
       append(buf, &rec, sizeof(rec));
       for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
-        StateId id = ds.trans_[ch];
+        DfaId id = ds.trans_[ch];
         size_t off = offsets_[id];
         proxy.appendOff(buf, off);
       }
@@ -162,7 +162,7 @@ void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
       rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
       append(buf, &rec, sizeof(rec));
       for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
-        StateId id = ds.trans_[ch];
+        DfaId id = ds.trans_[ch];
         size_t off = offsets_[id];
         proxy.appendOff(buf, off);
       }
@@ -176,7 +176,7 @@ void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
       rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
       append(buf, &rec, sizeof(rec));
       for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
-        StateId id = ds.trans_[ch];
+        DfaId id = ds.trans_[ch];
         size_t off = offsets_[id];
         proxy.appendOff(buf, off);
       }
