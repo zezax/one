@@ -9,7 +9,6 @@
 - make dfa.cpp unit test.  move stuff from minimize.cpp
 - move stuff into classes if clearer
 - detail namespace
-- CamelCase templates
 - use range-for where possible
 - consider ordered set/map
 - implement replace variants

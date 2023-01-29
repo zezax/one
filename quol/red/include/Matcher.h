@@ -98,8 +98,8 @@ private:
   const Byte *equivMap = exec->getEquivMap()
 
 
-template <Length LENGTH, class INPROXY, class DFAPROXY>
-Result Matcher::checkCore(INPROXY in, DFAPROXY dfap) {
+template <Length length, class InProxyT, class DfaProxyT>
+Result Matcher::checkCore(InProxyT in, DfaProxyT dfap) {
   ZEZAX_RED_PREAMBLE;
 
   dfap.init(base, hdr->initialOff_);
@@ -111,17 +111,17 @@ Result Matcher::checkCore(INPROXY in, DFAPROXY dfap) {
     dfap.next(base, byte);
     result = dfap.result();
     if (result > 0) {
-      if ((LENGTH == lenContiguous) || (LENGTH == lenLast))
+      if ((length == lenContiguous) || (length == lenLast))
         prevResult = result;
-      if (LENGTH == lenShortest)
+      if (length == lenShortest)
         break;
     }
-    else if (((LENGTH == lenContiguous) && (prevResult > 0)) ||
+    else if (((length == lenContiguous) && (prevResult > 0)) ||
              dfap.pureDeadEnd())
       break;
   }
 
-  if ((LENGTH == lenContiguous) || (LENGTH == lenLast))
+  if ((length == lenContiguous) || (length == lenLast))
     if ((result == 0) && (prevResult > 0))
       return prevResult;
 
@@ -129,8 +129,8 @@ Result Matcher::checkCore(INPROXY in, DFAPROXY dfap) {
 }
 
 
-template <Length LENGTH, class INPROXY, class DFAPROXY>
-Result Matcher::matchCore(INPROXY in, DFAPROXY dfap) {
+template <Length length, class InProxyT, class DfaProxyT>
+Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
   ZEZAX_RED_PREAMBLE;
   typedef typename decltype(dfap)::State State;
 
@@ -155,17 +155,17 @@ Result Matcher::matchCore(INPROXY in, DFAPROXY dfap) {
     result = dfap.result();
     if (result > 0) {
       matchEnd = idx + 1;
-      if ((LENGTH == lenContiguous) || (LENGTH == lenLast))
+      if ((length == lenContiguous) || (length == lenLast))
         prevResult = result;
-      if (LENGTH == lenShortest)
+      if (length == lenShortest)
         break;
     }
-    else if (((LENGTH == lenContiguous) && (prevResult > 0)) ||
+    else if (((length == lenContiguous) && (prevResult > 0)) ||
              dfap.pureDeadEnd())
       break;
   }
 
-  if ((LENGTH == lenContiguous) || (LENGTH == lenLast))
+  if ((length == lenContiguous) || (length == lenLast))
     if ((result == 0) && (prevResult > 0))
       result = prevResult;
 
@@ -175,9 +175,9 @@ Result Matcher::matchCore(INPROXY in, DFAPROXY dfap) {
 }
 
 
-template <Length LENGTH, class INPROXY, class DFAPROXY>
-std::string Matcher::replaceCore(INPROXY in,
-                                 DFAPROXY dfap,
+template <Length length, class InProxyT, class DfaProxyT>
+std::string Matcher::replaceCore(InProxyT           in,
+                                 DfaProxyT          dfap,
                                  const std::string &repl) {
   ZEZAX_RED_PREAMBLE;
 
@@ -186,8 +186,8 @@ std::string Matcher::replaceCore(INPROXY in,
 
   while (in) {
     const Byte *found = nullptr;
-    DFAPROXY dproxy = dfap;
-    for (INPROXY inner(in); inner; ++inner) {
+    DfaProxyT dproxy = dfap;
+    for (InProxyT inner(in); inner; ++inner) {
       Byte byte = equivMap[*inner];
       dproxy.next(base, byte);
       if (dproxy.result() > 0)

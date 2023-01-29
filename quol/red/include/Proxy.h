@@ -49,7 +49,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <Format FMT>
+template <Format fmt>
 struct DfaDefs {};
 
 template <>
@@ -88,16 +88,16 @@ struct DfaDefs<fmtOffset4> {
 };
 
 
-template <Format FMT>
+template <Format fmt>
 class DfaProxy {
 public:
-  typedef typename DfaDefs<FMT>::State State;
-  typedef typename DfaDefs<FMT>::Value Value;
+  typedef typename DfaDefs<fmt>::State State;
+  typedef typename DfaDefs<fmt>::Value Value;
 
-  static constexpr Value  resultMask_   = DfaDefs<FMT>::resultMask_;
-  static constexpr Result maxResult_    = DfaDefs<FMT>::maxResult_;
-  static constexpr size_t maxOffset_    = DfaDefs<FMT>::maxOffset_;
-  static constexpr int    deadEndShift_ = DfaDefs<FMT>::deadEndShift_;
+  static constexpr Value  resultMask_   = DfaDefs<fmt>::resultMask_;
+  static constexpr Result maxResult_    = DfaDefs<fmt>::maxResult_;
+  static constexpr size_t maxOffset_    = DfaDefs<fmt>::maxOffset_;
+  static constexpr int    deadEndShift_ = DfaDefs<fmt>::deadEndShift_;
 
   static bool resultFits(Result maxResult) {
     return (maxResult <= maxResult_);
