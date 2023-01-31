@@ -41,22 +41,22 @@ TEST(Matcher, checkStartEnd) {
   shared_ptr<const Executable> rex =
     make_shared<const Executable>(std::move(buf));
   Matcher mat(rex);
-  mat.matchLast("abbc");
+  mat.match("abbc", lenLast);
   EXPECT_EQ(1, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(4, mat.end());
 
-  mat.matchLast("xabbc");
+  mat.match("xabbc", lenLast);
   EXPECT_EQ(1, mat.result());
   EXPECT_EQ(1, mat.start());
   EXPECT_EQ(5, mat.end());
 
-  mat.matchLast("xabbcx");
+  mat.match("xabbcx", lenLast);
   EXPECT_EQ(1, mat.result());
   EXPECT_EQ(1, mat.start());
   EXPECT_EQ(5, mat.end());
 
-  mat.matchLast("xyzabbcxyz");
+  mat.match("xyzabbcxyz", lenLast);
   EXPECT_EQ(1, mat.result());
   EXPECT_EQ(3, mat.start());
   EXPECT_EQ(7, mat.end());
@@ -89,54 +89,54 @@ TEST(Matcher, checkLengths) {
   Matcher mat(rex);
   string_view in = "abcdefg";
 
-  EXPECT_EQ(1, mat.checkShort(in));
-  EXPECT_EQ(2, mat.checkContig(in));
-  EXPECT_EQ(3, mat.checkLast(in));
-  EXPECT_EQ(3, mat.checkWhole(in));
+  EXPECT_EQ(1, mat.check(in, lenShortest));
+  EXPECT_EQ(2, mat.check(in, lenContiguous));
+  EXPECT_EQ(3, mat.check(in, lenLast));
+  EXPECT_EQ(3, mat.check(in, lenWhole));
 
-  EXPECT_EQ(1, mat.matchShort(in));
+  EXPECT_EQ(1, mat.match(in, lenShortest));
   EXPECT_EQ(1, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(3, mat.end());
 
-  EXPECT_EQ(2, mat.matchContig(in));
+  EXPECT_EQ(2, mat.match(in, lenContiguous));
   EXPECT_EQ(2, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(4, mat.end());
 
-  EXPECT_EQ(3, mat.matchLast(in));
+  EXPECT_EQ(3, mat.match(in, lenLast));
   EXPECT_EQ(3, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(7, mat.end());
 
-  EXPECT_EQ(3, mat.matchWhole(in));
+  EXPECT_EQ(3, mat.match(in, lenWhole));
   EXPECT_EQ(3, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(7, mat.end());
 
   in = "abcdefgh";
 
-  EXPECT_EQ(1, mat.checkShort(in));
-  EXPECT_EQ(2, mat.checkContig(in));
-  EXPECT_EQ(3, mat.checkLast(in));
-  EXPECT_EQ(0, mat.checkWhole(in));
+  EXPECT_EQ(1, mat.check(in, lenShortest));
+  EXPECT_EQ(2, mat.check(in, lenContiguous));
+  EXPECT_EQ(3, mat.check(in, lenLast));
+  EXPECT_EQ(0, mat.check(in, lenWhole));
 
-  EXPECT_EQ(1, mat.matchShort(in));
+  EXPECT_EQ(1, mat.match(in, lenShortest));
   EXPECT_EQ(1, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(3, mat.end());
 
-  EXPECT_EQ(2, mat.matchContig(in));
+  EXPECT_EQ(2, mat.match(in, lenContiguous));
   EXPECT_EQ(2, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(4, mat.end());
 
-  EXPECT_EQ(3, mat.matchLast(in));
+  EXPECT_EQ(3, mat.match(in, lenLast));
   EXPECT_EQ(3, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(7, mat.end());
 
-  EXPECT_EQ(0, mat.matchWhole(in));
+  EXPECT_EQ(0, mat.match(in, lenWhole));
   EXPECT_EQ(0, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(0, mat.end());
@@ -165,7 +165,7 @@ TEST(Matcher, replace) {
   shared_ptr<const Executable> rex =
     make_shared<const Executable>(std::move(buf));
   Matcher mat(rex);
-  string s = mat.replaceLast("fooac", "bar");
+  string s = mat.replace("fooac", "bar", lenLast);
   EXPECT_EQ("foobar", s);
 }
 
@@ -202,10 +202,10 @@ TEST_P(MatcherTest, check) {
   const char *in0 = "bca";
   string in1 = "bac";
   string_view in2 = "cab";
-  EXPECT_EQ(0, m0.checkWhole(in0));
-  EXPECT_EQ(0, m00.checkWhole(in0, 3));
-  EXPECT_EQ(1, m1.checkWhole(in1));
-  EXPECT_EQ(2, m2.checkWhole(in2));
+  EXPECT_EQ(0, m0.check(in0, lenWhole));
+  EXPECT_EQ(0, m00.check(in0, 3, lenWhole));
+  EXPECT_EQ(1, m1.check(in1, lenWhole));
+  EXPECT_EQ(2, m2.check(in2, lenWhole));
 }
 
 
@@ -239,10 +239,10 @@ TEST_P(MatcherTest, match) {
   const char *in0 = "bca";
   string in1 = "bac";
   string_view in2 = "cab";
-  m0.matchWhole(in0);
-  m00.matchWhole(in0, 3);
-  m1.matchWhole(in1);
-  m2.matchWhole(in2);
+  m0.match(in0, lenWhole);
+  m00.match(in0, 3, lenWhole);
+  m1.match(in1, lenWhole);
+  m2.match(in2, lenWhole);
   EXPECT_EQ(0, m0.result());
   EXPECT_EQ(0, m00.result());
   EXPECT_EQ(1, m1.result());

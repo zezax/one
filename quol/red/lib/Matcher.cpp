@@ -3,7 +3,6 @@
 #include "Matcher.h"
 
 #include "Except.h"
-#include "Proxy.h"
 
 namespace zezax::red {
 
@@ -53,70 +52,69 @@ void Matcher::reset() {
 }
 
 
-#define BODY(A_func, A_len)                     \
-  switch (fmt_) {                               \
-  case fmtOffset1: {                            \
-    DfaProxy<fmtOffset1> proxy;                 \
-    return A_func<A_len>(it, proxy); }          \
-  case fmtOffset2: {                            \
-    DfaProxy<fmtOffset2> proxy;                 \
-    return A_func<A_len>(it, proxy); }          \
-  case fmtOffset4: {                            \
-    DfaProxy<fmtOffset4> proxy;                 \
-    return A_func<A_len>(it, proxy); }          \
-  default:                                      \
-    throw RedExceptExec("unsupported format");      \
+#define FCASE(A_name, A_len, ...)      \
+  case A_len:                          \
+    return A_name<A_len>(__VA_ARGS__);
+
+
+#define RCASE(A_name, A_len, ...)                             \
+  case A_len:                                                 \
+    ZEZAX_RED_FMT_SWITCH(A_name ## Core, A_len, __VA_ARGS__);
+
+
+// runtime dispatch based on match-length; concatenate pfx & suf to expand
+#define LEN_SWITCH(A_name, A_pfx, A_suf, ...)                \
+  switch(mlen) {                                         \
+    A_pfx ## A_suf(A_name, lenShortest,   __VA_ARGS__)   \
+    A_pfx ## A_suf(A_name, lenContiguous, __VA_ARGS__)   \
+    A_pfx ## A_suf(A_name, lenLast,       __VA_ARGS__)   \
+    A_pfx ## A_suf(A_name, lenWhole,      __VA_ARGS__)   \
+  default:                                               \
+    throw RedExceptExec("unsupported length");           \
   }
 
 
-#define PROTOS(A_pfx, A_suf, A_len)                                \
-  Result Matcher::A_pfx ## A_suf(const void *ptr, size_t len) {    \
-    RangeIter it(ptr, len);                                        \
-    BODY(A_pfx ## Core, A_len)                                     \
-  }                                                                \
-  Result Matcher::A_pfx ## A_suf(const char *str) {                \
-    NullTermIter it(str);                                          \
-    BODY(A_pfx ## Core, A_len)                                     \
-  }                                                                \
-  Result Matcher::A_pfx ## A_suf(const string &s) {                \
-    RangeIter it(s);                                               \
-    BODY(A_pfx ## Core, A_len)                                     \
-  }                                                                \
-  Result Matcher::A_pfx ## A_suf(const string_view sv) {           \
-    RangeIter it(sv);                                              \
-    BODY(A_pfx ## Core, A_len)                                     \
+// generate functions with different prototypes
+#define SUITE(A_name)                                                 \
+  Result Matcher::A_name(const void *ptr, size_t len, Length mlen) {  \
+    LEN_SWITCH(A_name, F, CASE, ptr, len)                             \
+  }                                                                   \
+  Result Matcher::A_name(const char *str, Length mlen) {              \
+    LEN_SWITCH(A_name, F, CASE, str)                                  \
+  }                                                                   \
+  Result Matcher::A_name(const string &s, Length mlen) {              \
+    LEN_SWITCH(A_name, F, CASE, s)                                    \
+  }                                                                   \
+  Result Matcher::A_name(string_view sv, Length mlen) {               \
+    LEN_SWITCH(A_name, F, CASE, sv)                                   \
   }
-
-
-#define SUITE(A_prefix)                         \
-  PROTOS(A_prefix, Short, lenShortest)          \
-  PROTOS(A_prefix, Contig, lenContiguous)       \
-  PROTOS(A_prefix, Last, lenLast)               \
-  PROTOS(A_prefix, Whole, lenWhole)
 
 
 SUITE(check)
 SUITE(match)
 
 
-#define REPL(A_func, A_len)                     \
-  switch (fmt_) {                               \
-  case fmtOffset1: {                            \
-    DfaProxy<fmtOffset1> proxy;                 \
-    return A_func<A_len>(it, proxy, repl); }    \
-  case fmtOffset2: {                            \
-    DfaProxy<fmtOffset2> proxy;                 \
-    return A_func<A_len>(it, proxy, repl); }    \
-  case fmtOffset4: {                            \
-    DfaProxy<fmtOffset4> proxy;                 \
-    return A_func<A_len>(it, proxy, repl); }    \
-  default:                                      \
-    throw RedExceptExec("unsupported format");      \
+// generate functions with different prototypes
+#define REPL(A_name, ...)                                                   \
+  string Matcher::A_name(const void *ptr, size_t len,                       \
+                         string_view repl, Length mlen) {                   \
+    RangeIter it(ptr, len);                                                 \
+    LEN_SWITCH(A_name, R, CASE, __VA_ARGS__)                                \
+  }                                                                         \
+  string Matcher::A_name(const char *str, string_view repl, Length mlen) {  \
+    NullTermIter it(str);                                                   \
+    LEN_SWITCH(A_name, R, CASE, __VA_ARGS__)                                \
+  }                                                                         \
+  string Matcher::A_name(const string &s, string_view repl, Length mlen) {  \
+    RangeIter it(s);                                                        \
+    LEN_SWITCH(A_name, R, CASE, __VA_ARGS__)                                \
+  }                                                                         \
+  string Matcher::A_name(string_view sv, string_view repl, Length mlen) {   \
+    RangeIter it(sv);                                                       \
+    LEN_SWITCH(A_name, R, CASE, __VA_ARGS__)                                \
   }
 
-string Matcher::replaceLast(const string &src, const string &repl) {
-  RangeIter it(src);
-  REPL(replaceCore, lenLast)
-}
+
+REPL(replace, it, proxy, repl)
 
 } // namespace zezax::red

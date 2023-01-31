@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "Exec.h"
+#include "Proxy.h"
 
 namespace zezax::red {
 
@@ -28,47 +29,40 @@ public:
   size_t start() const { return matchStart_; }
   size_t end() const { return matchEnd_; }
 
-  Result checkShort(const void *ptr, size_t len);
-  Result checkShort(const char *str);
-  Result checkShort(const std::string &s);
-  Result checkShort(const std::string_view sv);
+  Result check(const void *ptr, size_t len, Length mlen = lenWhole);
+  Result check(const char *str, Length mlen = lenWhole);
+  Result check(const std::string &s, Length mlen = lenWhole);
+  Result check(std::string_view sv, Length mlen = lenWhole);
 
-  Result checkContig(const void *ptr, size_t len);
-  Result checkContig(const char *str);
-  Result checkContig(const std::string &s);
-  Result checkContig(const std::string_view sv);
+  Result match(const void *ptr, size_t len, Length mlen = lenWhole);
+  Result match(const char *str, Length mlen = lenWhole);
+  Result match(const std::string &s, Length mlen = lenWhole);
+  Result match(std::string_view sv, Length mlen = lenWhole);
 
-  Result checkLast(const void *ptr, size_t len);
-  Result checkLast(const char *str);
-  Result checkLast(const std::string &s);
-  Result checkLast(const std::string_view sv);
+  std::string replace(const void       *ptr,
+                      size_t            len,
+                      std::string_view  repl,
+                      Length            mlen = lenWhole);
+  std::string replace(const char       *str,
+                      std::string_view  repl,
+                      Length            mlen = lenWhole);
+  std::string replace(const std::string &src,
+                      std::string_view   repl,
+                      Length             mlen = lenWhole);
+  std::string replace(std::string_view  src,
+                      std::string_view  repl,
+                      Length            mlen = lenWhole);
 
-  Result checkWhole(const void *ptr, size_t len);
-  Result checkWhole(const char *str);
-  Result checkWhole(const std::string &s);
-  Result checkWhole(const std::string_view sv);
+  // these versions skip the run-time dispatch based on match-length
+  template <Length length> Result check(const void *ptr, size_t len);
+  template <Length length> Result check(const char *str);
+  template <Length length> Result check(const std::string &s);
+  template <Length length> Result check(std::string_view sv);
 
-  Result matchShort(const void *ptr, size_t len);
-  Result matchShort(const char *str);
-  Result matchShort(const std::string &s);
-  Result matchShort(const std::string_view sv);
-
-  Result matchContig(const void *ptr, size_t len);
-  Result matchContig(const char *str);
-  Result matchContig(const std::string &s);
-  Result matchContig(const std::string_view sv);
-
-  Result matchLast(const void *ptr, size_t len);
-  Result matchLast(const char *str);
-  Result matchLast(const std::string &s);
-  Result matchLast(const std::string_view sv);
-
-  Result matchWhole(const void *ptr, size_t len);
-  Result matchWhole(const char *str);
-  Result matchWhole(const std::string &s);
-  Result matchWhole(const std::string_view sv);
-
-  std::string replaceLast(const std::string &src, const std::string &repl);
+  template <Length length> Result match(const void *ptr, size_t len);
+  template <Length length> Result match(const char *str);
+  template <Length length> Result match(const std::string &s);
+  template <Length length> Result match(std::string_view sv);
 
 private:
   template <Length LENGTH, class INPROXY, class DFAPROXY>
@@ -78,23 +72,69 @@ private:
   Result matchCore(INPROXY in, DFAPROXY dfap);
 
   template <Length LENGTH, class INPROXY, class DFAPROXY>
-  std::string replaceCore(INPROXY in,
-                           DFAPROXY dfap,
-                           const std::string &repl);
+  std::string replaceCore(INPROXY          in,
+                          DFAPROXY         dfap,
+                          std::string_view repl);
 
   std::shared_ptr<const Executable> exec_;
   size_t                            matchStart_; // escape initial state
-  size_t                            matchEnd_; // most recent accept
+  size_t                            matchEnd_;   // most recent accept
   Result                            result_;
   Format                            fmt_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define ZEZAX_RED_PREAMBLE \
-  const Executable *exec = exec_.get(); \
-  const FileHeader *hdr = exec->getHeader(); \
-  const char *base = exec->getBase(); \
+// runtime dispatch to template functions based on format
+#define ZEZAX_RED_FMT_SWITCH(A_func, A_len, ...)        \
+  switch (fmt_) {                                       \
+  case fmtOffset1: {                                    \
+    DfaProxy<fmtOffset1> proxy;                         \
+    return A_func<A_len>(__VA_ARGS__); }                \
+  case fmtOffset2: {                                    \
+    DfaProxy<fmtOffset2> proxy;                         \
+    return A_func<A_len>(__VA_ARGS__); }                \
+  case fmtOffset4: {                                    \
+    DfaProxy<fmtOffset4> proxy;                         \
+    return A_func<A_len>(__VA_ARGS__); }                \
+  default:                                              \
+    throw RedExceptExec("unsupported format");          \
+  }
+
+
+// generate template functions with different prototypes
+#define ZEZAX_RED_FUNC_DEFS(A_func, ...)                        \
+  template <Length length>                                      \
+  Result Matcher::A_func(const void *ptr, size_t len) {         \
+    RangeIter it(ptr, len);                                     \
+    ZEZAX_RED_FMT_SWITCH(A_func ## Core, length, __VA_ARGS__)   \
+  }                                                             \
+  template <Length length>                                      \
+  Result Matcher::A_func(const char *str) {                     \
+    NullTermIter it(str);                                       \
+    ZEZAX_RED_FMT_SWITCH(A_func ## Core, length, __VA_ARGS__)   \
+  }                                                             \
+  template <Length length>                                      \
+  Result Matcher::A_func(const std::string &s) {                \
+    RangeIter it(s);                                            \
+    ZEZAX_RED_FMT_SWITCH(A_func ## Core, length, __VA_ARGS__)   \
+  }                                                             \
+  template <Length length>                                      \
+  Result Matcher::A_func(std::string_view sv) {                 \
+    RangeIter it(sv);                                           \
+    ZEZAX_RED_FMT_SWITCH(A_func ## Core, length, __VA_ARGS__)   \
+  }
+
+
+ZEZAX_RED_FUNC_DEFS(check, it, proxy)
+ZEZAX_RED_FUNC_DEFS(match, it, proxy)
+
+///////////////////////////////////////////////////////////////////////////////
+
+#define ZEZAX_RED_PREAMBLE                      \
+  const Executable *exec = exec_.get();         \
+  const FileHeader *hdr = exec->getHeader();    \
+  const char *base = exec->getBase();           \
   const Byte *equivMap = exec->getEquivMap()
 
 
@@ -176,10 +216,12 @@ Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
 
 
 template <Length length, class InProxyT, class DfaProxyT>
-std::string Matcher::replaceCore(InProxyT           in,
-                                 DfaProxyT          dfap,
-                                 const std::string &repl) {
+std::string Matcher::replaceCore(InProxyT         in,
+                                 DfaProxyT        dfap,
+                                 std::string_view repl) {
   ZEZAX_RED_PREAMBLE;
+
+  // FIXME: implement length
 
   dfap.init(base, hdr->initialOff_);
   std::string str;
@@ -208,5 +250,9 @@ std::string Matcher::replaceCore(InProxyT           in,
 
   return str;
 }
+
+// #undef ZEZAX_RED_FMT_SWITCH
+#undef ZEZAX_RED_FUNC_DEFS
+#undef ZEZAX_RED_PREAMBLE
 
 } // namespace zezax::red

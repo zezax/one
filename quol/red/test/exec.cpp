@@ -43,9 +43,9 @@ TEST_P(Exec, smoke) {
   shared_ptr<const Executable> rex =
     make_shared<const Executable>(std::move(buf));
   Matcher mat(rex);
-  EXPECT_EQ(0, mat.matchWhole("bca"));
-  EXPECT_EQ(1, mat.matchWhole("bac"));
-  EXPECT_EQ(2, mat.matchWhole("cab"));
+  EXPECT_EQ(0, mat.match("bca", lenWhole));
+  EXPECT_EQ(1, mat.match("bac", lenWhole));
+  EXPECT_EQ(2, mat.match("cab", lenWhole));
 }
 
 

@@ -113,7 +113,7 @@ TEST(Minimize, obj) {
     dm.minimize();
   }
 
-  std::cout << "FIXME final " << toString(dfa) << std::endl;
+  std::cout << toString(dfa) << std::endl;
 
   EXPECT_EQ(0, dfa.matchWhole(""));
   EXPECT_EQ(1, dfa.matchWhole("ab"));

@@ -20,6 +20,10 @@ public:
   void operator++() { ptr_ += 1; } // !!! void
   explicit operator bool() const { return (*ptr_ != 0); }
 
+  // less safe stuff for replaceCore()
+  const Byte *ptr() const { return ptr_; }
+  void operator=(const Byte *p) { ptr_ = p; }
+
 private:
   const Byte *__restrict__ ptr_;
 };

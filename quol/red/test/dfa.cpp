@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 #include "Dfa.h"
-#include "Debug.h" // FIXME
 
 using namespace zezax::red;
 
