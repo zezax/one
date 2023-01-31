@@ -221,8 +221,6 @@ std::string Matcher::replaceCore(InProxyT         in,
                                  std::string_view repl) {
   ZEZAX_RED_PREAMBLE;
 
-  // FIXME: implement length
-
   dfap.init(base, hdr->initialOff_);
   std::string str;
 
@@ -232,10 +230,18 @@ std::string Matcher::replaceCore(InProxyT         in,
     for (InProxyT inner(in); inner; ++inner) {
       Byte byte = equivMap[*inner];
       dproxy.next(base, byte);
-      if (dproxy.result() > 0)
+      if (dproxy.result() > 0) {
         found = inner.ptr();
-      else if (dproxy.pureDeadEnd())
-        break;
+        if (length == lenShortest)
+          break;
+      }
+      else {
+        if (length == lenWhole)
+          found = nullptr;
+        if (((length == lenContiguous) && found) ||
+            dproxy.pureDeadEnd())
+          break;
+      }
     }
 
     if (found) {

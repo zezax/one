@@ -147,7 +147,7 @@ TEST(Matcher, replace) {
   string buf;
   {
     ReParser p;
-    p.addRaw("ab*c",  1, 0);
+    p.addRaw("ab*c", 1, 0);
     p.finish();
 
     DfaObj dfa = convertNfaToDfa(p.getNfa());
@@ -165,8 +165,40 @@ TEST(Matcher, replace) {
   shared_ptr<const Executable> rex =
     make_shared<const Executable>(std::move(buf));
   Matcher mat(rex);
-  string s = mat.replace("fooac", "bar", lenLast);
-  EXPECT_EQ("foobar", s);
+  EXPECT_EQ("foobar", mat.replace("fooac", "bar", lenLast));
+  EXPECT_EQ("foobarz", mat.replace("fooacz", "bar", lenLast));
+}
+
+
+TEST(Matcher, replaceLengths) {
+  string buf;
+  {
+    ReParser p;
+    p.addRaw("abc",     1, 0);
+    p.addRaw("abcd",    2, 0);
+    p.addRaw("abcdefg", 3, 0);
+    p.finish();
+
+    DfaObj dfa = convertNfaToDfa(p.getNfa());
+    p.freeAll();
+    {
+      DfaMinimizer dm(dfa);
+      dm.minimize();
+    }
+    {
+      Serializer ser(dfa);
+      buf = ser.serialize(fmtOffsetAuto);
+    }
+  }
+
+  shared_ptr<const Executable> rex =
+    make_shared<const Executable>(std::move(buf));
+  Matcher mat(rex);
+  EXPECT_EQ("1xyzdefg2", mat.replace("1abcdefg2", "xyz", lenShortest));
+  EXPECT_EQ("1xyzefg2", mat.replace("1abcdefg2", "xyz", lenContiguous));
+  EXPECT_EQ("1xyz2", mat.replace("1abcdefg2", "xyz", lenLast));
+  EXPECT_EQ("1abcdefg2", mat.replace("1abcdefg2", "xyz", lenWhole));
+  EXPECT_EQ("1xyz", mat.replace("1abcdefg", "xyz", lenWhole));
 }
 
 
