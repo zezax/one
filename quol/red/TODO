@@ -11,7 +11,9 @@
 - detail namespace
 - consider ordered set/map
 - convenience compile wrapper
-- network byte order?
+- endian conversion
+- likely/unlikely
+- prefetch
 - non-resetting match (save state/off across calls)
 - make install/shared libs
 - mem hog: makeTable

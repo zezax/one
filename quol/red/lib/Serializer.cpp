@@ -250,8 +250,12 @@ const char *checkHeader(const void *ptr, size_t len) {
   if ((hdr->majVer_ != 1) || (hdr->minVer_ != 0))
     return "Serialized DFA: unrecognized version";
 
-  if (hdr->checksum_ != calcChecksum(ptr, len))
-    return "Serialized DFA: checksum mismatch";
+  uint32_t csum = calcChecksum(ptr, len);
+  if (hdr->checksum_ != csum) {
+    if (hdr->checksum_ == __builtin_bswap32(csum))
+      return "serialized DFA: foreign endian-ness";
+    return "serialized DFA: checksum mismatch";
+  }
 
   switch (hdr->format_) {
   case fmtOffset1:
