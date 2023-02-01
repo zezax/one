@@ -44,24 +44,24 @@ string visibleChar(CharIdx ch) {
 
 void toStringAppend(string &out, const NfaIdSet &nis) {
   bool first = true;
-  for (NfaIdSetIter it = nis.begin(); it != nis.end(); ++it) {
+  for (NfaId id : nis) {
     if (first)
       first = false;
     else
       out += ',';
-    out += to_string(*it);
+    out += to_string(id);
   }
 }
 
 
 void toStringAppend(string &out, const DfaIdSet &dis) {
   bool first = true;
-  for (DfaIdSetIter it = dis.begin(); it != dis.end(); ++it) {
+  for (DfaId id : dis) {
     if (first)
       first = false;
     else
       out += ',';
-    out += to_string(*it);
+    out += to_string(id);
   }
 }
 
@@ -143,8 +143,7 @@ string toString(const MultiChar &mc) {
   string rv;
   CharIdx start = 0;
   CharIdx prev = ~0U;
-  for (MultiCharIter it = mc.begin(); it != mc.end(); ++it) {
-    CharIdx cur = *it;
+  for (CharIdx cur : mc) {
     if (cur != (prev + 1)) {
       if (prev != ~0U) {
         rv += visibleChar(start);

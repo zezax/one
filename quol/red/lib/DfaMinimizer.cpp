@@ -241,10 +241,8 @@ void makeDfaFromBlocks(const DfaObj           &srcDfa,
     if (it != dis.end()) {
       const DfaState &srcState = srcDfa[*it];
       DfaState &outState = outDfa[oldToNew[*it]];
-      for (auto srcIt = srcState.trans_.getMap().cbegin();
-           srcIt != srcState.trans_.getMap().cend();
-           ++srcIt)
-        outState.trans_.emplace(srcIt->first, oldToNew[srcIt->second]);
+      for (auto [ch, st] : srcState.trans_.getMap())
+        outState.trans_.emplace(ch, oldToNew[st]);
       outState.result_ = srcState.result_;
       outState.deadEnd_ = srcState.deadEnd_;
     }

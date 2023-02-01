@@ -22,8 +22,8 @@ DfaObj convertNfaToDfa(const NfaObj &nfa) {
     MultiCharSet allMcs = nfa.allMultiChars(initial);
     MultiCharSet basisMcs = basisMultiChars(allMcs);
     allMcs.clear(); // save memory
-    for (auto it = basisMcs.begin(); it != basisMcs.end(); ++it)
-      multiChars.emplace_back(std::move(*it));
+    for (const MultiChar &mc : basisMcs)
+      multiChars.emplace_back(std::move(mc));
   }
 
   NfaStatesToTransitions table = makeTable(initial, nfa, multiChars);

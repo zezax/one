@@ -68,8 +68,8 @@ TEST(Convert, stepwise) {
   MultiCharSet all = nfa.allMultiChars(s1);
   MultiCharSet basis = basisMultiChars(all);
   vector<MultiChar> chars;
-  for (auto it = basis.begin(); it != basis.end(); ++it)
-    chars.emplace_back(std::move(*it));
+  for (const MultiChar &mc : basis)
+    chars.emplace_back(std::move(mc));
   NfaStatesToTransitions tbl = makeTable(s1, nfa, chars);
   EXPECT_EQ(3, tbl.size());
 

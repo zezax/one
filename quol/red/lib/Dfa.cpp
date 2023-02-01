@@ -109,10 +109,8 @@ DfaObj transcribeDfa(const DfaObj &src) {
   for (DfaId srcId : states) {
     const DfaState &srcState = src[srcId];
     DfaState &newState = rv[oldToNew[srcId]];
-    for (auto srcIt = srcState.trans_.getMap().cbegin();
-         srcIt != srcState.trans_.getMap().cend();
-         ++srcIt)
-      newState.trans_.emplace(srcIt->first, oldToNew[srcIt->second]);
+    for (auto [ch, st] : srcState.trans_.getMap())
+      newState.trans_.emplace(ch, oldToNew[st]);
     newState.result_ = srcState.result_;
     newState.deadEnd_ = srcState.deadEnd_;
   }
