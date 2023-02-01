@@ -1,4 +1,4 @@
-// containers for dfa header
+// default map header
 
 #pragma once
 
@@ -24,10 +24,10 @@ public:
   }
 
   // this goes on infinitely; iterators make no sense
-  Map::iterator begin() const = delete;
+  Map::iterator begin()  const = delete;
   Map::iterator cbegin() const = delete;
-  Map::iterator end() const = delete;
-  Map::iterator cend() const = delete;
+  Map::iterator end()    const = delete;
+  Map::iterator cend()   const = delete;
 
   // under-the-covers access
   const Map &getMap() const { return static_cast<const Map &>(*this); }

@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-#include "Defs.h"
+#include "Types.h"
 #include "Serializer.h"
 
 namespace zezax::red {

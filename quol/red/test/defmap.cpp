@@ -1,12 +1,12 @@
-// unit tests for containers
+// unit tests for default-map
 
 #include <gtest/gtest.h>
 
-#include "Container.h"
+#include "DefMap.h"
 
 using namespace zezax::red;
 
-TEST(Container, defaultMap) {
+TEST(DefMap, smoke) {
   DefaultMap<int, int> map;
   map.set(1, 1);
   map.set(2, 2);

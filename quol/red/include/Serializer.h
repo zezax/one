@@ -4,7 +4,7 @@
 
 #include <string>
 
-#include "Defs.h"
+#include "Types.h"
 #include "Dfa.h"
 
 namespace zezax::red {

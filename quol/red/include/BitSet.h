@@ -8,7 +8,6 @@
 #include <limits>
 #include <vector>
 
-#include "Defs.h"
 #include "Fnv.h"
 
 namespace zezax::red {
@@ -428,37 +427,4 @@ size_t BitSet<Index, Tag, Word>::hash() const {
   return fnv1a<size_t>(vec_.data(), limit * sizeof(Word));
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-struct ResultTag {};
-struct NfaTag {};
-struct DfaTag {};
-
-// names more clear for specific purpose...
-typedef BitSet<CharIdx, DefaultTag, uint32_t> MultiChar;
-typedef BitSet<CharIdx, DefaultTag, uint32_t>::Iter MultiCharIter;
-typedef BitSet<Result, ResultTag> ResultSet;
-typedef BitSet<Result, ResultTag>::Iter ResultSetIter;
-typedef BitSet<NfaId, NfaTag> NfaIdSet;
-typedef BitSet<NfaId, NfaTag>::Iter NfaIdSetIter;
-typedef BitSet<DfaId, DfaTag> DfaIdSet;
-typedef BitSet<DfaId, DfaTag>::Iter DfaIdSetIter;
-
 } // namespace zezax::red
-
-// for use in std::unordered_map
-template<> struct std::hash<zezax::red::MultiChar> {
-  size_t operator()(const zezax::red::MultiChar &mc) const { return mc.hash(); }
-};
-
-template<> struct std::hash<zezax::red::NfaIdSet> {
-  size_t operator()(const zezax::red::NfaIdSet &nis) const {
-    return nis.hash();
-  }
-};
-
-template<> struct std::hash<zezax::red::DfaIdSet> {
-  size_t operator()(const zezax::red::DfaIdSet &sis) const {
-    return sis.hash();
-  }
-};

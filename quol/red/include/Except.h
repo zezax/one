@@ -5,7 +5,7 @@
 #include <string>
 #include <stdexcept>
 
-#include "Defs.h"
+#include "Consts.h"
 
 namespace zezax::red {
 

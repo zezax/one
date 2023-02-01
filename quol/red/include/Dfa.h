@@ -6,14 +6,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Defs.h"
-#include "Container.h"
-#include "BitSet.h"
+#include "Consts.h"
 
 namespace zezax::red {
-
-constexpr DfaId gDfaErrorId   = 0;
-constexpr DfaId gDfaInitialId = 1;
 
 typedef DefaultMap<CharIdx, DfaId>       CharToStateMap;
 typedef std::unordered_map<DfaId, DfaId> StateToStateMap;

@@ -2,8 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "Defs.h"
-#include "BitSet.h"
+#include "Consts.h"
 #include "Debug.h"
 
 using namespace zezax::red;

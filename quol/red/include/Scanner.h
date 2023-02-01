@@ -4,8 +4,7 @@
 
 #include <string_view>
 
-#include "Defs.h"
-#include "BitSet.h"
+#include "Types.h"
 
 namespace zezax::red {
 

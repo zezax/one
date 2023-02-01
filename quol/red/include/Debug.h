@@ -6,8 +6,7 @@
 #include <string>
 #include <iostream>
 
-#include "Defs.h"
-#include "BitSet.h"
+#include "Types.h"
 #include "Scanner.h"
 #include "Nfa.h"
 #include "Dfa.h"

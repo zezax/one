@@ -6,14 +6,9 @@
 #include <unordered_set>
 #include <vector>
 
-#include "Defs.h"
-#include "BitSet.h"
+#include "Consts.h"
 
 namespace zezax::red {
-
-constexpr NfaId gNfaNullId   = 0;
-
-struct NfaState;
 
 struct NfaTransition {
   NfaId     next_;
