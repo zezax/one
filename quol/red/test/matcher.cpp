@@ -3,9 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "ReParser.h"
-#include "NfaToDfa.h"
-#include "DfaMinimizer.h"
-#include "Serializer.h"
+#include "Compile.h"
 #include "Exec.h"
 #include "Matcher.h"
 
@@ -19,27 +17,13 @@ using testing::Values;
 
 
 TEST(Matcher, checkStartEnd) {
-  string buf;
+  shared_ptr<const Executable> rex;
   {
     ReParser p;
     p.addRaw("[^a]*ab*c",  1, 0);
     p.addRaw("[^d]*dummy", 2, 0);
-    p.finish();
-
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    {
-      Serializer ser(dfa);
-      buf = ser.serialize(fmtOffsetAuto);
-    }
+    rex = compile(p);
   }
-
-  shared_ptr<const Executable> rex =
-    make_shared<const Executable>(std::move(buf));
   Matcher mat(rex);
   mat.match("abbc", lenLast);
   EXPECT_EQ(1, mat.result());
@@ -64,28 +48,14 @@ TEST(Matcher, checkStartEnd) {
 
 
 TEST(Matcher, checkLengths) {
-  string buf;
+  shared_ptr<const Executable> rex;
   {
     ReParser p;
     p.addRaw("abc",     1, 0);
     p.addRaw("abcd",    2, 0);
     p.addRaw("abcdefg", 3, 0);
-    p.finish();
-
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    {
-      Serializer ser(dfa);
-      buf = ser.serialize(fmtOffsetAuto);
-    }
+    rex = compile(p);
   }
-
-  shared_ptr<const Executable> rex =
-    make_shared<const Executable>(std::move(buf));
   Matcher mat(rex);
   string_view in = "abcdefg";
 
@@ -144,26 +114,12 @@ TEST(Matcher, checkLengths) {
 
 
 TEST(Matcher, replace) {
-  string buf;
+  shared_ptr<const Executable> rex;
   {
     ReParser p;
     p.addRaw("ab*c", 1, 0);
-    p.finish();
-
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    {
-      Serializer ser(dfa);
-      buf = ser.serialize(fmtOffsetAuto);
-    }
+    rex = compile(p);
   }
-
-  shared_ptr<const Executable> rex =
-    make_shared<const Executable>(std::move(buf));
   Matcher mat(rex);
   EXPECT_EQ("foobar", mat.replace("fooac", "bar", lenLast));
   EXPECT_EQ("foobarz", mat.replace("fooacz", "bar", lenLast));
@@ -171,28 +127,14 @@ TEST(Matcher, replace) {
 
 
 TEST(Matcher, replaceLengths) {
-  string buf;
+  shared_ptr<const Executable> rex;
   {
     ReParser p;
     p.addRaw("abc",     1, 0);
     p.addRaw("abcd",    2, 0);
     p.addRaw("abcdefg", 3, 0);
-    p.finish();
-
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    {
-      Serializer ser(dfa);
-      buf = ser.serialize(fmtOffsetAuto);
-    }
+    rex = compile(p);
   }
-
-  shared_ptr<const Executable> rex =
-    make_shared<const Executable>(std::move(buf));
   Matcher mat(rex);
   EXPECT_EQ("1xyzdefg2", mat.replace("1abcdefg2", "xyz", lenShortest));
   EXPECT_EQ("1xyzefg2", mat.replace("1abcdefg2", "xyz", lenContiguous));
@@ -206,27 +148,13 @@ class MatcherTest : public TestWithParam<Format> {};
 
 TEST_P(MatcherTest, check) {
   Format fmt = GetParam();
-  string buf;
+  shared_ptr<const Executable> rex;
   {
     ReParser p;
     p.add("ab*c", 1, 0);
     p.add("ca*b", 2, 0);
-    p.finish();
-
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    {
-      Serializer ser(dfa);
-      buf = ser.serialize(fmt);
-    }
+    rex = compile(p, fmt);
   }
-
-  shared_ptr<const Executable> rex =
-    make_shared<const Executable>(std::move(buf));
   Matcher m0(rex);
   Matcher m00(rex);
   Matcher m1(rex);
@@ -243,27 +171,13 @@ TEST_P(MatcherTest, check) {
 
 TEST_P(MatcherTest, match) {
   Format fmt = GetParam();
-  string buf;
+  shared_ptr<const Executable> rex;
   {
     ReParser p;
     p.add("ab*c", 1, 0);
     p.add("ca*b", 2, 0);
-    p.finish();
-
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    {
-      Serializer ser(dfa);
-      buf = ser.serialize(fmt);
-    }
+    rex = compile(p, fmt);
   }
-
-  shared_ptr<const Executable> rex =
-    make_shared<const Executable>(std::move(buf));
   Matcher m0(rex);
   Matcher m00(rex);
   Matcher m1(rex);

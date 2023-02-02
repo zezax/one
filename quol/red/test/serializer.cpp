@@ -24,16 +24,17 @@ TEST_P(SerializerTest, smoke) {
     ReParser p;
     p.add("ab*c", 1, 0);
     p.finish();
-
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
     {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    {
-      Serializer ser(dfa);
-      buf = ser.serialize(fmt);
+      DfaObj dfa = convertNfaToDfa(p.getNfa());
+      p.freeAll();
+      {
+        DfaMinimizer dm(dfa);
+        dm.minimize();
+      }
+      {
+        Serializer ser(dfa);
+        buf = ser.serialize(fmt);
+      }
     }
   }
   EXPECT_EQ(nullptr, checkHeader(buf.data(), buf.size()));
@@ -47,16 +48,17 @@ TEST_P(SerializerTest, file) {
     ReParser p;
     p.add("ab*c", 1, 0);
     p.finish();
-
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
     {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    {
-      Serializer ser(dfa);
-      ser.serializeToFile(fmt, fn.c_str());
+      DfaObj dfa = convertNfaToDfa(p.getNfa());
+      p.freeAll();
+      {
+        DfaMinimizer dm(dfa);
+        dm.minimize();
+      }
+      {
+        Serializer ser(dfa);
+        ser.serializeToFile(fmt, fn.c_str());
+      }
     }
   }
   string buf = loadFromFile(fn.c_str());

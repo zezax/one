@@ -3,9 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "ReParser.h"
-#include "NfaToDfa.h"
-#include "DfaMinimizer.h"
-#include "Serializer.h"
+#include "Compile.h"
 #include "Exec.h"
 #include "Matcher.h"
 
@@ -21,27 +19,13 @@ class Exec : public TestWithParam<Format> {};
 
 TEST_P(Exec, smoke) {
   Format fmt = GetParam();
-  string buf;
+  shared_ptr<const Executable> rex;
   {
     ReParser p;
     p.add("ab*c", 1, 0);
     p.add("ca*b", 2, 0);
-    p.finish();
-
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
-    {
-      Serializer ser(dfa);
-      buf = ser.serialize(fmt);
-    }
+    rex = compile(p, fmt);
   }
-
-  shared_ptr<const Executable> rex =
-    make_shared<const Executable>(std::move(buf));
   Matcher mat(rex);
   EXPECT_EQ(0, mat.match("bca", lenWhole));
   EXPECT_EQ(1, mat.match("bac", lenWhole));

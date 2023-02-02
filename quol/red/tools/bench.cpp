@@ -4,9 +4,7 @@
 
 #include "Util.h"
 #include "ReParser.h"
-#include "NfaToDfa.h"
-#include "DfaMinimizer.h"
-#include "Serializer.h"
+#include "Compile.h"
 #include "Exec.h"
 #include "Matcher.h"
 
@@ -25,8 +23,7 @@ int main(int argc, char **argv) {
   try {
     string words = readFileToString("/usr/share/dict/words");
 
-    string buf;
-
+    shared_ptr<const Executable> rex;
     {
       ReParser p;
       p.addRaw("anticritique",   1, fIgnoreCase);
@@ -52,22 +49,8 @@ int main(int argc, char **argv) {
       p.addRaw("unadventuring", 21, fIgnoreCase);
       p.addRaw("unpretending",  22, fIgnoreCase);
       p.addRaw("waxily",        23, fIgnoreCase);
-      p.finish();
-
-      DfaObj dfa = convertNfaToDfa(p.getNfa());
-      p.freeAll();
-      {
-        DfaMinimizer dm(dfa);
-        dm.minimize();
-      }
-      {
-        Serializer ser(dfa);
-        buf = ser.serialize(fmtOffsetAuto);
-      }
+      rex = compile(p);
     }
-
-    shared_ptr<const Executable> rex =
-      make_shared<const Executable>(std::move(buf));
     Matcher mat(rex);
 
     int sum = 0;

@@ -314,23 +314,27 @@ TEST_P(OmnibusFmt, matcher) {
   Rec r = std::get<0>(GetParam());
   Format fmt = std::get<1>(GetParam());
   try {
-    ReParser p;
-    p.add(r.regex_, 1, 0);
-    p.finish();
-    EXPECT_FALSE(r.text_ == nullptr);
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
+    shared_ptr<const Executable> rex;
     {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
+      ReParser p;
+      p.add(r.regex_, 1, 0);
+      p.finish();
+      EXPECT_FALSE(r.text_ == nullptr);
+      string buf;
+      {
+        DfaObj dfa = convertNfaToDfa(p.getNfa());
+        p.freeAll();
+        {
+          DfaMinimizer dm(dfa);
+          dm.minimize();
+        }
+        {
+          Serializer ser(dfa);
+          buf = ser.serialize(fmt);
+        }
+      }
+      rex = make_shared<const Executable>(std::move(buf));
     }
-    string buf;
-    {
-      Serializer ser(dfa);
-      buf = ser.serialize(fmt);
-    }
-    shared_ptr<const Executable> rex =
-      make_shared<const Executable>(std::move(buf));
     Matcher mat(rex);
     Result res = mat.check(r.text_, lenWhole);
     EXPECT_EQ(r.match_, (res == 1));

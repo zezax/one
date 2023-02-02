@@ -41,15 +41,17 @@ int main(int argc, char **argv) {
           p.add(sv, ++cur, 0);
       }
       p.finish();
-      DfaObj dfa = convertNfaToDfa(p.getNfa());
-      p.freeAll();
       {
-        DfaMinimizer dm(dfa);
-        dm.minimize();
-      }
-      {
-        Serializer ser(dfa);
-        buf = ser.serialize(fmt);
+        DfaObj dfa = convertNfaToDfa(p.getNfa());
+        p.freeAll();
+        {
+          DfaMinimizer dm(dfa);
+          dm.minimize();
+        }
+        {
+          Serializer ser(dfa);
+          buf = ser.serialize(fmt);
+        }
       }
     }
     std::cout << toString(buf.data(), buf.size()) << std::flush;

@@ -8,9 +8,10 @@
 - .depend directory
 - make dfa.cpp unit test.  move stuff from minimize.cpp
 - move stuff into classes if clearer
+- add -> addAuto; addRaw -> add
+- matcher without shared_ptr
 - detail namespace
 - consider ordered set/map
-- convenience compile wrapper
 - endian conversion
 - non-resetting match (save state/off across calls)
 - make install/shared libs
