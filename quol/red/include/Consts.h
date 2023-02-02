@@ -18,4 +18,7 @@ constexpr NfaId   gNfaNullId    = 0;
 constexpr DfaId   gDfaErrorId   = 0;
 constexpr DfaId   gDfaInitialId = 1;
 
+#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+
 } // namespace zezax::red

@@ -150,7 +150,7 @@ Result Matcher::checkCore(InProxyT in, DfaProxyT dfap) {
     Byte byte = equivMap[*in];
     dfap.next(base, byte);
     result = dfap.result();
-    if (result > 0) {
+    if (UNLIKELY(result > 0)) {
       if ((length == lenContiguous) || (length == lenLast))
         prevResult = result;
       if (length == lenShortest)
@@ -184,7 +184,7 @@ Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
   for (; in; ++in, ++idx) {
     Byte byte = equivMap[*in];
 
-    if (dfap.state() == init) {
+    if (UNLIKELY(dfap.state() == init)) {
       const State *prevState = dfap.state();
       dfap.next(base, byte);
       if (dfap.state() != prevState)
@@ -193,7 +193,7 @@ Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
     else
       dfap.next(base, byte);
     result = dfap.result();
-    if (result > 0) {
+    if (UNLIKELY(result > 0)) {
       matchEnd = idx + 1;
       if ((length == lenContiguous) || (length == lenLast))
         prevResult = result;
@@ -230,7 +230,7 @@ std::string Matcher::replaceCore(InProxyT         in,
     for (InProxyT inner(in); inner; ++inner) {
       Byte byte = equivMap[*inner];
       dproxy.next(base, byte);
-      if (dproxy.result() > 0) {
+      if (UNLIKELY(dproxy.result() > 0)) {
         found = inner.ptr();
         if (length == lenShortest)
           break;

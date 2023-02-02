@@ -12,8 +12,6 @@
 - consider ordered set/map
 - convenience compile wrapper
 - endian conversion
-- likely/unlikely
-- prefetch
 - non-resetting match (save state/off across calls)
 - make install/shared libs
 - mem hog: makeTable
@@ -41,3 +39,4 @@
 - perf: bench 1000 0:25.649u matchLast, conditional escape check
 - perf: bench 1000 0:25.202u match<length>()
 - perf: bench 1000 0:21.317u range-for
+- perf: bench 1000 0:19.162u UNLIKELY

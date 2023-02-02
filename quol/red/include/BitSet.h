@@ -205,9 +205,9 @@ template <> inline int popCount(unsigned long long x) {
 // this is a performance-critical function
 template <class Index, class Tag, class Word>
 BitSetIter<Index, Tag, Word> &BitSetIter<Index, Tag, Word>::operator++() {
-  ++bit_;
-  Index word = bit_ / wordBits_;
-  Index shift = bit_ % wordBits_;
+  Index bit = bit_ + 1;
+  Index word = bit / wordBits_;
+  Index shift = bit % wordBits_;
   const Word *p = ptr_ + word;
   while (p < limit_) {
     Word val = *p;
