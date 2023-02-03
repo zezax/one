@@ -2,8 +2,8 @@
 
 #include "Compile.h"
 
-#include "NfaToDfa.h"
-#include "DfaMinimizer.h"
+#include "Powerset.h"
+#include "Minimizer.h"
 
 namespace zezax::red {
 
@@ -15,8 +15,12 @@ shared_ptr<const Executable> compile(ReParser &rp, Format fmt) {
   string buf;
   rp.finish(); // idempotent
   {
-    DfaObj dfa = convertNfaToDfa(rp.getNfa());
-    rp.freeAll();
+    DfaObj dfa;
+    {
+      PowersetConverter psc(rp.getNfa());
+      dfa = psc.convert();
+      rp.freeAll();
+    }
     {
       DfaMinimizer dm(dfa);
       dm.minimize();

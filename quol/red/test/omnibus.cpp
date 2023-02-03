@@ -6,8 +6,8 @@
 
 #include "Except.h"
 #include "ReParser.h"
-#include "NfaToDfa.h"
-#include "DfaMinimizer.h"
+#include "Powerset.h"
+#include "Minimizer.h"
 #include "Serializer.h"
 #include "Exec.h"
 #include "Matcher.h"
@@ -33,8 +33,12 @@ TEST(Omnibus, multi) {
   p.addRaw("aa", 2, 0);
   p.addRaw("aaa", 3, 0);
   p.finish();
-  DfaObj dfa = convertNfaToDfa(p.getNfa());
-  p.freeAll();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(p.getNfa());
+    dfa = psc.convert();
+    p.freeAll();
+  }
   {
     DfaMinimizer dm(dfa);
     dm.minimize();
@@ -252,8 +256,12 @@ TEST_P(Omnibus, convert) {
     p.add(r.regex_, 1, 0);
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
+    DfaObj dfa;
+    {
+      PowersetConverter psc(p.getNfa());
+      dfa = psc.convert();
+      p.freeAll();
+    }
   }
   catch (const RedExceptParse &ex) {
     EXPECT_TRUE(r.text_ == nullptr);
@@ -268,8 +276,12 @@ TEST_P(Omnibus, minimize) {
     p.add(r.regex_, 1, 0);
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
+    DfaObj dfa;
+    {
+      PowersetConverter psc(p.getNfa());
+      dfa = psc.convert();
+      p.freeAll();
+    }
     {
       DfaMinimizer dm(dfa);
       dm.minimize();
@@ -288,8 +300,12 @@ TEST_P(Omnibus, match) {
     p.add(r.regex_, 1, 0);
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
+    DfaObj dfa;
+    {
+      PowersetConverter psc(p.getNfa());
+      dfa = psc.convert();
+      p.freeAll();
+    }
     {
       DfaMinimizer dm(dfa);
       dm.minimize();
@@ -322,8 +338,12 @@ TEST_P(OmnibusFmt, matcher) {
       EXPECT_FALSE(r.text_ == nullptr);
       string buf;
       {
-        DfaObj dfa = convertNfaToDfa(p.getNfa());
-        p.freeAll();
+        DfaObj dfa;
+        {
+          PowersetConverter psc(p.getNfa());
+          dfa = psc.convert();
+          p.freeAll();
+        }
         {
           DfaMinimizer dm(dfa);
           dm.minimize();

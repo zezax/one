@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "Util.h"
-#include "DfaMinimizer.h"
+#include "Minimizer.h"
 #include "Debug.h" // FIXME
 
 using namespace zezax::red;
@@ -27,7 +27,7 @@ void addTrans(DfaObj &dfa, DfaId from, DfaId to, CharIdx ch) {
 
 } // anonymous
 
-TEST(Minimize, invert) {
+TEST(Minimizer, invert) {
   DfaObj dfa;
   DfaId s0 = mkState(dfa, 0);
   DfaId s1 = mkState(dfa, 0);
@@ -87,7 +87,7 @@ TEST(Minimize, invert) {
 }
 
 
-TEST(Minimize, obj) {
+TEST(Minimizer, obj) {
   //      +---+     +---+
   //      | b |     | a |
   //      v   | a   v   | b
@@ -122,7 +122,7 @@ TEST(Minimize, obj) {
 }
 
 
-TEST(Minimize, results) {
+TEST(Minimizer, results) {
   DfaObj dfa;
   DfaId s0 = mkState(dfa, 0);
   DfaId s1 = mkState(dfa, 0);
@@ -153,7 +153,7 @@ TEST(Minimize, results) {
 }
 
 
-TEST(Minimize, deadEnds) {
+TEST(Minimizer, deadEnds) {
   DfaObj dfa;
   DfaId s0 = mkState(dfa, 0);
   DfaId s1 = mkState(dfa, 0);

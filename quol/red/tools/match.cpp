@@ -4,8 +4,8 @@
 #include <stdexcept>
 
 #include "ReParser.h"
-#include "NfaToDfa.h"
-#include "DfaMinimizer.h"
+#include "Powerset.h"
+#include "Minimizer.h"
 #include "Debug.h"
 
 using namespace zezax::red;
@@ -28,8 +28,12 @@ int main(int argc, char **argv) {
         p.add(sv, ++cur, 0);
     }
     p.finish();
-    DfaObj dfa = convertNfaToDfa(p.getNfa());
-    p.freeAll();
+    DfaObj dfa;
+    {
+      PowersetConverter psc(p.getNfa());
+      dfa = psc.convert();
+      p.freeAll();
+    }
     {
       DfaMinimizer dm(dfa);
       dm.minimize();

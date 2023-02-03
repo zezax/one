@@ -6,8 +6,8 @@
 
 #include "Except.h"
 #include "ReParser.h"
-#include "NfaToDfa.h"
-#include "DfaMinimizer.h"
+#include "Powerset.h"
+#include "Minimizer.h"
 #include "Debug.h"
 
 #ifdef USE_JEMALLOC
@@ -74,8 +74,13 @@ int main(int argc, char **argv) {
     std::cout << "NFA orig size " << nfa.activeSize() << std::endl;
     p.finish();
     std::cout << "NFA live size " << nfa.activeSize() << std::endl;
-    DfaObj dfa = convertNfaToDfa(nfa);
-    p.freeAll();
+
+    DfaObj dfa;
+    {
+      PowersetConverter psc(nfa);
+      dfa = psc.convert();
+      p.freeAll();
+    }
     std::cout << "Converted size " << dfa.numStates() << std::endl;
     {
       DfaMinimizer dm(dfa);

@@ -2,7 +2,7 @@
 
 // Note: This is used for DFAs with end marks.  Untested without.
 
-#include "DfaMinimizer.h"
+#include "Minimizer.h"
 
 #include <cassert>
 #include <map>

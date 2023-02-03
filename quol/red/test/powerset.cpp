@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "Util.h"
-#include "NfaToDfa.h"
+#include "Powerset.h"
 #include "Debug.h" // FIXME
 
 using namespace zezax::red;
@@ -23,7 +23,7 @@ void addTrans(NfaObj &nfa, NfaId from, NfaId to, CharIdx ch) {
 
 } // anonymous
 
-TEST(Convert, unique) {
+TEST(Powerset, unique) {
   MultiChar aa('a');
   MultiChar bb('b');
   MultiChar cc('a', 'b');
@@ -50,7 +50,7 @@ TEST(Convert, unique) {
 }
 
 
-TEST(Convert, stepwise) {
+TEST(Powerset, stepwise) {
   // example from http://www.geeksforgeeks.org/conversion-from-nfa-to-dfa/
   // +---+
   // |a,b|
@@ -105,11 +105,13 @@ TEST(Convert, stepwise) {
   ASSERT_TRUE(counts.contains(s3));
   EXPECT_EQ(1, counts[s3]);
 
-  NfaStatesToId map;
   DfaObj dfa;
   DfaId id = dfa.newState();
   EXPECT_EQ(gDfaErrorId, id);
-  id = dfaFromNfa(chars, tbl, counts, nis1, map, nfa, dfa);
+  {
+    NfaStatesToId map;
+    id = dfaFromNfaRecurse(chars, tbl, counts, nis1, map, nfa, dfa);
+  }
   EXPECT_EQ(gDfaInitialId, id);
   EXPECT_EQ(4, dfa.numStates());
   //      +---+     +---+
@@ -119,7 +121,7 @@ TEST(Convert, stepwise) {
 }
 
 
-TEST(Convert, convert) {
+TEST(Powerset, convert) {
   // +---+
   // |a,b|
   // v   | a       b      [1]
@@ -136,8 +138,12 @@ TEST(Convert, convert) {
   addTrans(nfa, s3, s4, gAlphabetSize + 1); // end mark
   nfa.setNfaInitial(s1);
 
-  DfaObj dfa = convertNfaToDfa(nfa);
-  nfa.freeAll();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(nfa);
+    dfa = psc.convert();
+    nfa.freeAll();
+  }
   const vector<DfaState> &states = dfa.getStates();
   EXPECT_EQ(5, states.size());
   std::cout << toString(dfa) << std::endl;

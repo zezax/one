@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "ReParser.h"
-#include "NfaToDfa.h"
-#include "DfaMinimizer.h"
+#include "Powerset.h"
+#include "Minimizer.h"
 #include "Serializer.h"
 
 using namespace zezax::red;
@@ -25,8 +25,12 @@ TEST_P(SerializerTest, smoke) {
     p.add("ab*c", 1, 0);
     p.finish();
     {
-      DfaObj dfa = convertNfaToDfa(p.getNfa());
-      p.freeAll();
+      DfaObj dfa;
+      {
+        PowersetConverter psc(p.getNfa());
+        dfa = psc.convert();
+        p.freeAll();
+      }
       {
         DfaMinimizer dm(dfa);
         dm.minimize();
@@ -49,8 +53,12 @@ TEST_P(SerializerTest, file) {
     p.add("ab*c", 1, 0);
     p.finish();
     {
-      DfaObj dfa = convertNfaToDfa(p.getNfa());
-      p.freeAll();
+      DfaObj dfa;
+      {
+        PowersetConverter psc(p.getNfa());
+        dfa = psc.convert();
+        p.freeAll();
+      }
       {
         DfaMinimizer dm(dfa);
         dm.minimize();

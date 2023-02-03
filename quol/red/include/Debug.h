@@ -10,8 +10,8 @@
 #include "Scanner.h"
 #include "Nfa.h"
 #include "Dfa.h"
-#include "NfaToDfa.h"
-#include "DfaMinimizer.h"
+#include "Powerset.h"
+#include "Minimizer.h"
 #include "Serializer.h"
 
 namespace zezax::red {

@@ -1,10 +1,11 @@
-// nfa to dfa converter implementation
+// powerset nfa to dfa converter implementation
+// Rabin-Scott method
 
 #include <limits>
 
 #include "Except.h"
 #include "Util.h"
-#include "NfaToDfa.h"
+#include "Powerset.h"
 
 namespace zezax::red {
 
@@ -12,22 +13,46 @@ using std::numeric_limits;
 using std::unordered_set;
 using std::vector;
 
+namespace {
+
+Result getResult(const NfaIdSet        &nis,
+                 const NfaStateToCount &counts,
+                 const NfaObj          &nfa) {
+  Result rv = -1;
+  size_t min = numeric_limits<size_t>::max();
+
+  for (NfaId id : nis) {
+    auto it = counts.find(id);
+    if (it != counts.end()) {
+      size_t num = it->second;
+      if (num < min) { // lowest number of accepting wins
+        min = num;
+        rv = nfa[id].result_;
+      }
+    }
+  }
+
+  return rv;
+}
+
+} // anonymous
+
 ///////////////////////////////////////////////////////////////////////////////
 
-DfaObj convertNfaToDfa(const NfaObj &nfa) {
-  NfaId initial = nfa.getNfaInitial();
+DfaObj PowersetConverter::convert() {
+  NfaId initial = nfa_.getNfaInitial();
 
   vector<MultiChar> multiChars;
   {
-    MultiCharSet allMcs = nfa.allMultiChars(initial);
+    MultiCharSet allMcs = nfa_.allMultiChars(initial);
     MultiCharSet basisMcs = basisMultiChars(allMcs);
     allMcs.clear(); // save memory
     for (const MultiChar &mc : basisMcs)
       multiChars.emplace_back(std::move(mc));
   }
 
-  NfaStatesToTransitions table = makeTable(initial, nfa, multiChars);
-  NfaStateToCount counts = countAcceptingStates(table, nfa);
+  NfaStatesToTransitions table = makeTable(initial, nfa_, multiChars);
+  NfaStateToCount counts = countAcceptingStates(table, nfa_);
 
   DfaObj dfa;
   DfaId id = dfa.newState();
@@ -36,15 +61,24 @@ DfaObj convertNfaToDfa(const NfaObj &nfa) {
 
   NfaIdSet states;
   states.set(initial);
-  NfaStatesToId nfaToDfa;
   auto it = table.find(states);
   if (it == table.end())
     throw RedExceptCompile("cannot find initial nfa states");
-  id = dfaFromNfa(multiChars, table, counts, states, nfaToDfa, nfa, dfa);
+  id = dfaFromNfa(multiChars, table, counts, states, dfa);
   if (id != gDfaInitialId)
     throw RedExceptCompile("dfa initial state must be one");
   dfa.chopEndMarks(); // end marks have done their job
   return dfa;
+}
+
+
+DfaId PowersetConverter::dfaFromNfa(const std::vector<MultiChar> &multiChars,
+                                    const NfaStatesToTransitions &table,
+                                    const NfaStateToCount        &counts,
+                                    const NfaIdSet               &init,
+                                    DfaObj                       &dfa) {
+  NfaStatesToId map;
+  return dfaFromNfaRecurse(multiChars, table, counts, init, map, nfa_, dfa);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -131,34 +165,13 @@ NfaStateToCount countAcceptingStates(const NfaStatesToTransitions &table,
 }
 
 
-Result getResult(const NfaIdSet        &nis,
-                 const NfaStateToCount &counts,
-                 const NfaObj          &nfa) {
-  Result rv = -1;
-  size_t min = numeric_limits<size_t>::max();
-
-  for (NfaId id : nis) {
-    auto it = counts.find(id);
-    if (it != counts.end()) {
-      size_t num = it->second;
-      if (num < min) { // lowest number of accepting wins
-        min = num;
-        rv = nfa[id].result_;
-      }
-    }
-  }
-
-  return rv;
-}
-
-
-DfaId dfaFromNfa(const vector<MultiChar>      &multiChars,
-                 const NfaStatesToTransitions &table,
-                 const NfaStateToCount        &counts,
-                 const NfaIdSet               &stateSet,
-                 NfaStatesToId                &map,
-                 const NfaObj                 &nfa,
-                 DfaObj                       &dfa) {
+DfaId dfaFromNfaRecurse(const vector<MultiChar>      &multiChars,
+                        const NfaStatesToTransitions &table,
+                        const NfaStateToCount        &counts,
+                        const NfaIdSet               &stateSet,
+                        NfaStatesToId                &map,
+                        const NfaObj                 &nfa,
+                        DfaObj                       &dfa) {
   std::pair<NfaIdSet, DfaId> mapNode;
   mapNode.first = stateSet;
   auto [mapIter, novel] = map.emplace(std::move(mapNode));
@@ -175,7 +188,8 @@ DfaId dfaFromNfa(const vector<MultiChar>      &multiChars,
   DfaId ii = 0;
   for (const NfaIdSet &nis : tableIter->second) {
     if (nis.population() > 0) {
-      DfaId subId = dfaFromNfa(multiChars, table, counts, nis, map, nfa, dfa);
+      DfaId subId = dfaFromNfaRecurse(
+          multiChars, table, counts, nis, map, nfa, dfa);
       for (CharIdx ch : multiChars[ii]) // FIXME why is mc[ii] valid???
         dfa[dfaId].trans_.set(ch, subId);
     }
