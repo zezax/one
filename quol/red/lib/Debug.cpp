@@ -211,7 +211,7 @@ string toString(const Token &t) {
   case tFlags:   return "flags " + toHexString(t.flags_);
   case tChars:   return "chars " + toString(t.multiChar_);
   case tClosure: return "close " + to_string(t.min_) + ':' + to_string(t.max_);
-  case tBar:     return "bar";
+  case tUnion:   return "union";
   case tLeft:    return "left";
   case tRight:   return "right";
   }

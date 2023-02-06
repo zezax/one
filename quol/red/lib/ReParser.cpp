@@ -1,21 +1,5 @@
 // regular expression non-deterministic finite automaton parser implementation
 
-// expr = term
-// expr = term | term
-// term = factor
-// term = factor factor
-// factor = atom
-// factor = atom count
-// factor = atom flag
-// atom = lparen expr rparen
-// atom = charbits
-
-// TODO:
-// atom -> unit
-// factor -> poly (multi)
-// term -> part
-// count -> closure
-
 #include "ReParser.h"
 
 #include "Except.h"
@@ -107,29 +91,29 @@ void ReParser::freeAll() {
 ///////////////////////////////////////////////////////////////////////////////
 
 NfaId ReParser::parseExpr() {
-  NfaId state = parseTerm();
+  NfaId state = parsePart();
   if (!state)
     return gNfaNullId;
 
-  while (tok_.type_ == tBar) {
+  while (tok_.type_ == tUnion) {
     advance();
-    NfaId alt = parseTerm();
-    if (!alt)
+    NfaId other = parsePart();
+    if (!other)
       return gNfaNullId;
-    state = obj_.stateUnion(state, alt);
+    state = obj_.stateUnion(state, other);
   }
   return state;
 }
 
 
-NfaId ReParser::parseTerm() {
+NfaId ReParser::parsePart() {
   validated_ = false;
-  NfaId state = parseFactor();
+  NfaId state = parseMulti();
   if (!state)
     return gNfaNullId;
 
   while ((tok_.type_ == tChars) || (tok_.type_ == tLeft)) {
-    NfaId more = parseFactor();
+    NfaId more = parseMulti();
     if (!more)
       return gNfaNullId;
     state = obj_.stateConcat(state, more);
@@ -138,14 +122,14 @@ NfaId ReParser::parseTerm() {
 }
 
 
-NfaId ReParser::parseFactor() {
-  NfaId state = parseAtom();
+NfaId ReParser::parseMulti() {
+  NfaId state = parseUnit();
   if (!state)
     return gNfaNullId;
 
   switch (tok_.type_) {
   case tClosure:
-    state = obj_.stateCount(state, tok_.min_, tok_.max_);
+    state = obj_.stateClosure(state, tok_.min_, tok_.max_);
     break;
   case tFlags:
     flags_ |= tok_.flags_;
@@ -164,7 +148,7 @@ NfaId ReParser::parseFactor() {
 }
 
 
-NfaId ReParser::parseAtom() {
+NfaId ReParser::parseUnit() {
   while (tok_.type_ == tFlags) {
     flags_ |= tok_.flags_;
     advance();
@@ -181,7 +165,7 @@ NfaId ReParser::parseAtom() {
     validated_ = true;
     state = parseCharBits();
     break;
-  case tBar:
+  case tUnion:
     if (validated_)
       throw RedExceptParse("expected chars or (, got |", tok_.pos_);
     return obj_.newGoalState(); // empty matches all

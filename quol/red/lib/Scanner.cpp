@@ -108,7 +108,7 @@ Token Scanner::scanOne() {
   case '*': ++ptr_; return Token(pos(), 0, -1);
   case '+': ++ptr_; return Token(pos(), 1, -1);
   case '?': ++ptr_; return Token(pos(), 0, 1);
-  case '|': ++ptr_; return Token(tBar, pos());
+  case '|': ++ptr_; return Token(tUnion, pos());
 
   case '.': {
     ++ptr_;
@@ -124,7 +124,7 @@ Token Scanner::scanOne() {
 
   case '{':
     ++ptr_;
-    return scanCount();
+    return scanClosure();
 
   default:
     return scanOrdinary();
@@ -191,7 +191,7 @@ Token Scanner::scanSet() {
 }
 
 
-Token Scanner::scanCount() {
+Token Scanner::scanClosure() {
   Token rv(tClosure, pos());
   rv.min_ = -1;
   rv.max_ = 0;

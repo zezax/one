@@ -14,7 +14,7 @@ enum TokEnum {
   tFlags   = 2,
   tChars   = 3,
   tClosure = 4,
-  tBar     = 5,
+  tUnion   = 5,
   tLeft    = 6,
   tRight   = 7,
 };
@@ -50,7 +50,7 @@ public:
 
   // these are public for testing...
   Token scanSet();
-  Token scanCount();
+  Token scanClosure();
   Token scanOrdinary();
   int interpretSingleChar(bool &escape);
   Token doExpansion(int ch, bool escape);

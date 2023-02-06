@@ -213,7 +213,7 @@ TEST(Scanner, smoke) {
   EXPECT_EQ(tChars,   vec[ 9].type_);
   EXPECT_EQ(tChars,   vec[10].type_);
   EXPECT_EQ(tClosure, vec[11].type_);
-  EXPECT_EQ(tBar,     vec[12].type_);
+  EXPECT_EQ(tUnion,   vec[12].type_);
   EXPECT_EQ(tChars,   vec[13].type_);
   EXPECT_EQ(tChars,   vec[14].type_);
   EXPECT_EQ(tChars,   vec[15].type_);

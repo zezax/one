@@ -40,9 +40,9 @@ public:
 
 private:
   NfaId parseExpr();
-  NfaId parseTerm();
-  NfaId parseFactor();
-  NfaId parseAtom();
+  NfaId parsePart();
+  NfaId parseMulti();
+  NfaId parseUnit();
   NfaId parseCharBits();
 
   void advance() { tok_ = scanner_.scanOne(); }

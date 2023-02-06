@@ -12,6 +12,7 @@
 - consider ordered set/map
 - endian conversion
 - non-resetting match (save state/off across calls)
+- glob parser
 - make install/shared libs
 - mem hog: makeTable
 - cpu hog: makeTable

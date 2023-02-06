@@ -62,16 +62,20 @@ public:
   bool hasAccept(const NfaIdSet &nis) const;
 
   NfaIdSet allStates(NfaId id) const;
+  MultiCharSet allMultiChars(NfaId id) const;
   std::vector<NfaId> allAcceptingStates(NfaId id) const;
   std::vector<NfaStateTransition> allAcceptingTransitions(NfaId id) const;
-  MultiCharSet allMultiChars(NfaId id) const;
+  void allAcceptingStatesTransitions( // combines above two
+      NfaId                            id,
+      std::vector<NfaId>              &accStates,
+      std::vector<NfaStateTransition> &accTrans) const;
 
   NfaId stateUnion(NfaId xx, NfaId yy);
   NfaId stateConcat(NfaId xx, NfaId yy);
   NfaId stateOptional(NfaId id);
   NfaId stateKleenStar(NfaId id);
   NfaId stateOneOrMore(NfaId id);
-  NfaId stateCount(NfaId id, int min, int max);
+  NfaId stateClosure(NfaId id, int min, int max);
   NfaId stateIgnoreCase(NfaId id);
   NfaId stateWildcard(); // dot-star
   NfaId stateEndMark(CharIdx r);

@@ -138,12 +138,22 @@ NfaIdSet NfaObj::allStates(NfaId id) const {
 }
 
 
+MultiCharSet NfaObj::allMultiChars(NfaId id) const {
+  MultiCharSet rv;
+  NfaIdSet seen;
+  if (id) {
+    seen.set(id);
+    allMultiCharsRecurse(rv, seen, id, states_);
+  }
+  return rv;
+}
+
+
 vector<NfaId> NfaObj::allAcceptingStates(NfaId id) const {
   vector<NfaId> rv;
-  for (NfaId state : allStates(id)) {
+  for (NfaId state : allStates(id))
     if (accepts(state))
       rv.push_back(state);
-  }
   return rv;
 }
 
@@ -160,14 +170,20 @@ vector<NfaStateTransition> NfaObj::allAcceptingTransitions(NfaId id) const {
 }
 
 
-MultiCharSet NfaObj::allMultiChars(NfaId id) const {
-  MultiCharSet rv;
-  NfaIdSet seen;
-  if (id) {
-    seen.set(id);
-    allMultiCharsRecurse(rv, seen, id, states_);
+// combine both functions above with one call to allStates() and one iteration
+void NfaObj::allAcceptingStatesTransitions(
+    NfaId                       id,
+    vector<NfaId>              &accStates,
+    vector<NfaStateTransition> &accTrans) const {
+  for (NfaId state : allStates(id)) {
+    if (accepts(state))
+      accStates.push_back(state);
+    for (const NfaTransition &trans : states_[state].transitions_)
+      if (accepts(trans.next_)) {
+        NfaStateTransition nst{state, trans};
+        accTrans.emplace_back(std::move(nst));
+      }
   }
-  return rv;
 }
 
 
@@ -188,9 +204,9 @@ NfaId NfaObj::stateConcat(NfaId xx, NfaId yy) {
   if (!yy)
     return xx;
 
-  // FIXME: calls allStates() twice
-  vector<NfaStateTransition> accTrans = allAcceptingTransitions(xx);
-  vector<NfaId> accStates = allAcceptingStates(xx);
+  vector<NfaId> accStates;
+  vector<NfaStateTransition> accTrans;
+  allAcceptingStatesTransitions(xx, accStates, accTrans);
 
   for (NfaStateTransition &strans : accTrans) {
     NfaTransition tr{yy, strans.transition_.multiChar_}; // FIXME
@@ -239,7 +255,7 @@ NfaId NfaObj::stateOneOrMore(NfaId id) {
 }
 
 
-NfaId NfaObj::stateCount(NfaId id, int min, int max) {
+NfaId NfaObj::stateClosure(NfaId id, int min, int max) {
   if (min == 0) {
     if (max < 0)
       return stateKleenStar(id);
