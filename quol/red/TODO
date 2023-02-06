@@ -7,7 +7,6 @@
 - add test suite items from re2, pcre
 - .depend directory
 - make dfa.cpp unit test.  move stuff from minimize.cpp
-- move stuff into classes if clearer
 - add -> addAuto; addRaw -> add
 - matcher without shared_ptr
 - detail namespace
@@ -34,6 +33,11 @@
 - perf: 4698 words 1:50 0:54.189u check NFA/DFA IDs for overflow
 - perf: 4698 words 1:50 0:51.657u MultiChar 64 -> 32 bit
 - perf: 4698 words 1:50 0:51.482u 2.4g Powerset class
+- perf: 4698 words 1:50 0:51.518u 2.4g CappedVec 1.5x
+- perf: 9397 words 1:25 5:45.584u 7.1g same
+- mem: 4698 words 1:50 stats.allocated=2660586048 convert() vector
+- mem: 4698 words 1:50 stats.allocated=2592821344 convert() CappedVec 2x
+- mem: 4698 words 1:50 stats.allocated=2592474192 convert() CappedVec 1.5x
 - perf: bench 1000 0:24.488u matchLong, skip success
 - perf: bench 1000 0:23.825u matchLong, skip success, no state_, cur_
 - perf: bench 1000 0:27.262u matchLong, multi-format, auto-choose

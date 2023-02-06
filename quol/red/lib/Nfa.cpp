@@ -82,7 +82,7 @@ NfaObj &NfaObj::operator=(NfaObj &&rhs) {
 }
 
 
-size_t NfaObj::activeSize() const {
+size_t NfaObj::activeStates() const {
   NfaIdSet all = allStates(initId_);
   return all.population();
 }

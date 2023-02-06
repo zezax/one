@@ -7,6 +7,7 @@
 
 #include "BitSet.h"
 #include "DefMap.h"
+#include "CappedVec.h"
 
 namespace zezax::red {
 

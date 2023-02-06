@@ -12,6 +12,10 @@ else ifeq ($(MODE), jemalloc)
   OPT := -g
   LDLIBS += -ljemalloc
   CPPFLAGS += -I/usr/include/jemalloc -DUSE_JEMALLOC
+else ifeq ($(MODE), jemo)
+  OPT := -g -O3 -march=native
+  LDLIBS += -ljemalloc
+  CPPFLAGS += -I/usr/include/jemalloc -DUSE_JEMALLOC
 else
   OPT := -g -fsanitize=address
   LDLIBS += -lasan

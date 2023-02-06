@@ -11,7 +11,7 @@ namespace zezax::red {
 
 // sometimes called translation or transition table...
 typedef std::unordered_map<NfaIdSet,
-                           std::vector<NfaIdSet>> NfaStatesToTransitions;
+                           CappedVec<NfaIdSet>> NfaStatesToTransitions;
 
 typedef std::unordered_map<NfaId, size_t> NfaStateToCount;
 

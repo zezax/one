@@ -3,6 +3,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#ifdef USE_JEMALLOC
+# include <jemalloc.h>
+#endif
+
 #include <array>
 #include <system_error>
 
@@ -78,5 +82,43 @@ string readFileToString(const char *path) {
   str.shrink_to_fit();
   return str;
 }
+
+
+#ifdef USE_JEMALLOC
+
+size_t bytesUsed() {
+  mallctl("thread.tcache.flush", nullptr, nullptr, nullptr, 0);
+  uint64_t epoch = 1;
+  size_t elen = sizeof(epoch);
+  mallctl("epoch", &epoch, &elen, &epoch, elen);
+
+  size_t val;
+  size_t vlen = sizeof(val);
+  mallctl("stats.allocated", &val, &vlen, nullptr, 0);
+  return val;
+}
+
+#else /* USE_JEMALLOC */
+
+size_t bytesUsed() {
+  char buf[1024];
+  int fd = open("/proc/self/statm", O_RDONLY);
+  if (fd < 0)
+    return 0;
+  size_t rv = 0;
+  ssize_t got = read(fd, buf, sizeof(buf) - 1);
+  if (got > 0) {
+    buf[got] = '\0';
+    const char *p = buf;
+    for (; *p; ++p)
+      if (*p == ' ')
+        break;
+    rv = 4096 * strtol(p, nullptr, 0); // rss is second field
+  }
+  close(fd);
+  return rv;
+}
+
+#endif /* USE_JEMALLOC */
 
 } // namespace zezax::red

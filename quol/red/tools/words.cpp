@@ -8,7 +8,8 @@
 #include "ReParser.h"
 #include "Powerset.h"
 #include "Minimizer.h"
-#include "Debug.h"
+#include "Serializer.h"
+#include "Util.h"
 
 #ifdef USE_JEMALLOC
 # include <jemalloc.h>
@@ -71,23 +72,36 @@ int main(int argc, char **argv) {
       p.addRaw(word, ++res, fIgnoreCase);
     }
     NfaObj &nfa = p.getNfa();
-    std::cout << "NFA orig size " << nfa.activeSize() << std::endl;
+    std::cout << "NFA orig states " << nfa.activeStates() << std::endl;
     p.finish();
-    std::cout << "NFA live size " << nfa.activeSize() << std::endl;
+    std::cout << "NFA live states " << nfa.activeStates() << std::endl;
+    std::cout << "MEM " << bytesUsed() << std::endl;
 
-    DfaObj dfa;
+    string buf;
     {
-      PowersetConverter psc(nfa);
-      dfa = psc.convert();
-      p.freeAll();
-    }
-    std::cout << "Converted size " << dfa.numStates() << std::endl;
-    {
-      DfaMinimizer dm(dfa);
-      dm.minimize();
-    }
+      DfaObj dfa;
+      {
+        PowersetConverter psc(nfa);
+        dfa = psc.convert();
+        p.freeAll();
+      }
+      std::cout << "Converted states " << dfa.numStates() << std::endl;
+      std::cout << "MEM " << bytesUsed() << std::endl;
 
-    std::cout << "Total states " << dfa.numStates() << std::endl;
+      {
+        DfaMinimizer dm(dfa);
+        dm.minimize();
+      }
+      std::cout << "Minimized states " << dfa.numStates() << std::endl;
+      std::cout << "MEM " << bytesUsed() << std::endl;
+
+      {
+        Serializer ser(dfa);
+        buf = ser.serialize(fmtOffsetAuto);
+      }
+    }
+    std::cout << "Serialized bytes " << buf.size() << std::endl;
+    std::cout << "MEM " << bytesUsed() << std::endl;
 
     return 0;
   }

@@ -3,6 +3,11 @@
 
 #include <limits>
 
+#ifdef PRINT_MEM
+#define PRINT_MEM
+# include <iostream>
+#endif /* PRINT_MEM */
+
 #include "Except.h"
 #include "Util.h"
 #include "Powerset.h"
@@ -67,6 +72,11 @@ DfaObj PowersetConverter::convert() {
   id = dfaFromNfa(multiChars, table, counts, states, dfa);
   if (id != gDfaInitialId)
     throw RedExceptCompile("dfa initial state must be one");
+
+#ifdef PRINT_MEM
+  std::cout << "Powerset bytes used " << bytesUsed() << std::endl;
+#endif /* PRINT_MEM */
+
   dfa.chopEndMarks(); // end marks have done their job
   return dfa;
 }
@@ -122,6 +132,8 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
                                  const vector<MultiChar> &allMultiChars) {
   NfaStatesToTransitions table;
 
+  const size_t allSize = allMultiChars.size();
+
   NfaIdSet initialStates;
   initialStates.set(initial);
   unordered_set<NfaIdSet> todoSet;
@@ -131,17 +143,16 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
     auto todoNode = todoSet.extract(todoSet.begin());
     NfaIdSet &todo = todoNode.value();
 
-    std::pair<NfaIdSet, vector<NfaIdSet>> tableNode;
+    std::pair<NfaIdSet, CappedVec<NfaIdSet>> tableNode;
     tableNode.first = std::move(todo);
     auto [tableIt, novel] = table.emplace(std::move(tableNode));
     if (novel) {
-      size_t n = allMultiChars.size();
-      for (size_t idx = 0; idx < n; ++idx) {
+      for (size_t idx = 0; idx < allSize; ++idx) {
         const MultiChar &mc = allMultiChars[idx];
         for (NfaId id : tableIt->first)
           for (const NfaTransition &trans : nfa[id].transitions_)
             if (mc.hasIntersection(trans.multiChar_))
-              safeRef(tableIt->second, idx).set(trans.next_);
+              tableIt->second.safeRef(idx, allSize).set(trans.next_);
       }
       for (NfaIdSet &nis : tableIt->second)
         todoSet.insert(nis);
