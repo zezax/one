@@ -29,9 +29,9 @@ using testing::ValuesIn;
 // FIXME: move this to a matching test
 TEST(Omnibus, multi) {
   ReParser p;
-  p.addRaw("a", 1, 0);
-  p.addRaw("aa", 2, 0);
-  p.addRaw("aaa", 3, 0);
+  p.add("a", 1, 0);
+  p.add("aa", 2, 0);
+  p.add("aaa", 3, 0);
   p.finish();
   DfaObj dfa;
   {
@@ -238,7 +238,7 @@ TEST_P(Omnibus, parse) {
   Rec r = GetParam();
   try {
     ReParser p;
-    p.add(r.regex_, 1, 0);
+    p.addAuto(r.regex_, 1, 0);
     p.finish();
     p.freeAll();
     EXPECT_FALSE(r.text_ == nullptr);
@@ -253,7 +253,7 @@ TEST_P(Omnibus, convert) {
   Rec r = GetParam();
   try {
     ReParser p;
-    p.add(r.regex_, 1, 0);
+    p.addAuto(r.regex_, 1, 0);
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
     DfaObj dfa;
@@ -273,7 +273,7 @@ TEST_P(Omnibus, minimize) {
   Rec r = GetParam();
   try {
     ReParser p;
-    p.add(r.regex_, 1, 0);
+    p.addAuto(r.regex_, 1, 0);
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
     DfaObj dfa;
@@ -297,7 +297,7 @@ TEST_P(Omnibus, match) {
   Rec r = GetParam();
   try {
     ReParser p;
-    p.add(r.regex_, 1, 0);
+    p.addAuto(r.regex_, 1, 0);
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
     DfaObj dfa;
@@ -333,7 +333,7 @@ TEST_P(OmnibusFmt, matcher) {
     shared_ptr<const Executable> rex;
     {
       ReParser p;
-      p.add(r.regex_, 1, 0);
+      p.addAuto(r.regex_, 1, 0);
       p.finish();
       EXPECT_FALSE(r.text_ == nullptr);
       string buf;

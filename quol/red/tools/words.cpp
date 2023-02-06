@@ -68,9 +68,8 @@ int main(int argc, char **argv) {
   try {
     ReParser p;
     Result res = 0;
-    for (string &word : words) {
-      p.addRaw(word, ++res, fIgnoreCase);
-    }
+    for (string &word : words)
+      p.add(word, ++res, fIgnoreCase);
     NfaObj &nfa = p.getNfa();
     std::cout << "NFA orig states " << nfa.activeStates() << std::endl;
     p.finish();

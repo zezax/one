@@ -14,17 +14,22 @@ public:
   ReParser();
   ~ReParser() = default;
 
-  // This method implements a heuristic for caret and dollar.  Basically
-  // leading .* is removed and fLooseStart is added to flags.  Similarly,
-  // trailing .* is removed and fLooseEnd is added to flags.  Leading ^ and
-  // trailing $ are removed.  When fLooseStart is set, the resulting
-  // NFA acts like it started with .*.  Similarly for fLooseEnd.
-  // Note that this is not correct for something like ^a|b$
-  // Also note that ^ and $ are not sepcial characters anywhere else.
+  // Adds a regular expression to the automaton, to yield the specified
+  // positive result.  The following flags are honored:
+  //   fIgnoreCase - treats upper and lower case letters as equivalent
+  //   fLooseStart - effectively prefixes regex with .*
+  //   fLooseEnd   - effectively suffixes regex with .*
+  // The characters ^ and $ are matched as ordinary characters.
   void add(std::string_view regex, Result result, FlagsT flags);
 
-  // As above with no heuristics.
-  void addRaw(std::string_view regex, Result result, FlagsT flags);
+  // As above, but this method implements a heuristic for caret and dollar.
+  // Both fLooseStart and fLooseEnd are enabled by default.  Then,
+  // leading .* is removed.  Similarly, trailing .* is removed.  If a
+  // leading ^ is present, it is removed and fLooseStart is disabled.
+  // A trailing $ disables fLooseEnd and is removed.
+  // Note that this is not correct for something like ^a|b$
+  // Also note that ^ and $ are not sepcial characters anywhere else.
+  void addAuto(std::string_view regex, Result result, FlagsT flags);
 
   void finish();
 

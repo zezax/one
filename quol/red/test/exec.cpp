@@ -22,8 +22,8 @@ TEST_P(Exec, smoke) {
   shared_ptr<const Executable> rex;
   {
     ReParser p;
-    p.add("ab*c", 1, 0);
-    p.add("ca*b", 2, 0);
+    p.addAuto("ab*c", 1, 0);
+    p.addAuto("ca*b", 2, 0);
     rex = compile(p, fmt);
   }
   Matcher mat(rex);

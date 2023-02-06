@@ -10,8 +10,8 @@ using namespace zezax::red;
 
 TEST(Parser, smoke) {
   ReParser p;
-  p.add("^a(l|e)[X-x]{,3}$", 1, 0);
-  p.add("(meyer\\i)+", 2, 0);
+  p.addAuto("^a(l|e)[X-x]{,3}$", 1, 0);
+  p.addAuto("(meyer\\i)+", 2, 0);
   p.finish();
   NfaObj &nfa = p.getNfa();
   EXPECT_NE(gNfaNullId, nfa.getNfaInitial());

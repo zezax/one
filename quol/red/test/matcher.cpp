@@ -20,8 +20,8 @@ TEST(Matcher, checkStartEnd) {
   shared_ptr<const Executable> rex;
   {
     ReParser p;
-    p.addRaw("[^a]*ab*c",  1, 0);
-    p.addRaw("[^d]*dummy", 2, 0);
+    p.add("[^a]*ab*c",  1, 0);
+    p.add("[^d]*dummy", 2, 0);
     rex = compile(p);
   }
   Matcher mat(rex);
@@ -51,9 +51,9 @@ TEST(Matcher, checkLengths) {
   shared_ptr<const Executable> rex;
   {
     ReParser p;
-    p.addRaw("abc",     1, 0);
-    p.addRaw("abcd",    2, 0);
-    p.addRaw("abcdefg", 3, 0);
+    p.add("abc",     1, 0);
+    p.add("abcd",    2, 0);
+    p.add("abcdefg", 3, 0);
     rex = compile(p);
   }
   Matcher mat(rex);
@@ -117,7 +117,7 @@ TEST(Matcher, replace) {
   shared_ptr<const Executable> rex;
   {
     ReParser p;
-    p.addRaw("ab*c", 1, 0);
+    p.add("ab*c", 1, 0);
     rex = compile(p);
   }
   Matcher mat(rex);
@@ -130,9 +130,9 @@ TEST(Matcher, replaceLengths) {
   shared_ptr<const Executable> rex;
   {
     ReParser p;
-    p.addRaw("abc",     1, 0);
-    p.addRaw("abcd",    2, 0);
-    p.addRaw("abcdefg", 3, 0);
+    p.add("abc",     1, 0);
+    p.add("abcd",    2, 0);
+    p.add("abcdefg", 3, 0);
     rex = compile(p);
   }
   Matcher mat(rex);
@@ -151,8 +151,8 @@ TEST_P(MatcherTest, check) {
   shared_ptr<const Executable> rex;
   {
     ReParser p;
-    p.add("ab*c", 1, 0);
-    p.add("ca*b", 2, 0);
+    p.addAuto("ab*c", 1, 0);
+    p.addAuto("ca*b", 2, 0);
     rex = compile(p, fmt);
   }
   Matcher m0(rex);
@@ -174,8 +174,8 @@ TEST_P(MatcherTest, match) {
   shared_ptr<const Executable> rex;
   {
     ReParser p;
-    p.add("ab*c", 1, 0);
-    p.add("ca*b", 2, 0);
+    p.addAuto("ab*c", 1, 0);
+    p.addAuto("ca*b", 2, 0);
     rex = compile(p, fmt);
   }
   Matcher m0(rex);

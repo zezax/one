@@ -22,7 +22,7 @@ TEST_P(SerializerTest, smoke) {
   string buf;
   {
     ReParser p;
-    p.add("ab*c", 1, 0);
+    p.addAuto("ab*c", 1, 0);
     p.finish();
     {
       DfaObj dfa;
@@ -50,7 +50,7 @@ TEST_P(SerializerTest, file) {
   string fn = "/tmp/reda" + to_string(getpid());
   {
     ReParser p;
-    p.add("ab*c", 1, 0);
+    p.addAuto("ab*c", 1, 0);
     p.finish();
     {
       DfaObj dfa;

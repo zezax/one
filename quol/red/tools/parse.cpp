@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
   try {
     ReParser p;
     for (int ii = 1; ii < argc; ++ii)
-      p.add(argv[ii], ii, 0);
+      p.addAuto(argv[ii], ii, 0);
     p.finish();
     std::cout << toString(p.getNfa()) << std::flush;
     return 0;

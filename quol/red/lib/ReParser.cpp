@@ -32,36 +32,6 @@ ReParser::ReParser()
 
 
 void ReParser::add(string_view regex, Result result, FlagsT flags) {
-  flags |= fLooseStart | fLooseEnd; // generally expected default
-
-  if (regex.starts_with("\\i")) {
-    regex.remove_prefix(2);
-    flags |= fIgnoreCase;
-  }
-
-  if (regex.starts_with('^')) {
-    regex.remove_prefix(1);
-    flags &= ~fLooseStart;
-  }
-  else if (regex.starts_with(".*")) {
-    regex.remove_prefix(2);
-    flags |= fLooseStart;
-  }
-
-  if (regex.ends_with('$')) {
-    regex.remove_suffix(1);
-    flags &= ~fLooseEnd;
-  }
-  else if (regex.ends_with(".*")) {
-    regex.remove_suffix(2);
-    flags |= fLooseEnd;
-  }
-
-  addRaw(regex, result, flags);
-}
-
-
-void ReParser::addRaw(string_view regex, Result result, FlagsT flags) {
   if (result <= 0)
     throw RedExceptApi("result must be positive");
 
@@ -92,6 +62,36 @@ void ReParser::addRaw(string_view regex, Result result, FlagsT flags) {
 
   state = obj_.stateConcat(state, obj_.stateEndMark(result));
   obj_.selfUnion(state); // all added regexes are acceptable
+}
+
+
+void ReParser::addAuto(string_view regex, Result result, FlagsT flags) {
+  flags |= fLooseStart | fLooseEnd; // generally expected default
+
+  if (regex.starts_with("\\i")) {
+    regex.remove_prefix(2);
+    flags |= fIgnoreCase;
+  }
+
+  if (regex.starts_with('^')) {
+    regex.remove_prefix(1);
+    flags &= ~fLooseStart;
+  }
+  else if (regex.starts_with(".*")) {
+    regex.remove_prefix(2);
+    flags |= fLooseStart;
+  }
+
+  if (regex.ends_with('$')) {
+    regex.remove_suffix(1);
+    flags &= ~fLooseEnd;
+  }
+  else if (regex.ends_with(".*")) {
+    regex.remove_suffix(2);
+    flags |= fLooseEnd;
+  }
+
+  add(regex, result, flags);
 }
 
 

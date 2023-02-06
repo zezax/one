@@ -36,9 +36,9 @@ int main(int argc, char **argv) {
         else if (sv == "-4")
           fmt = fmtOffset4;
         else if (raw)
-          p.addRaw(sv, ++cur, 0);
-        else
           p.add(sv, ++cur, 0);
+        else
+          p.addAuto(sv, ++cur, 0);
       }
       p.finish();
       {
