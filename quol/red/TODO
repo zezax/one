@@ -34,6 +34,8 @@
 - perf: 4698 words 1:50 0:51.482u 2.4g Powerset class
 - perf: 4698 words 1:50 0:51.518u 2.4g CappedVec 1.5x
 - perf: 9397 words 1:25 5:45.584u 7.1g same
+- perf: 4698 words 1:50 0:06.575u 2.4g do bitset iteration just once
+- perf: 9397 words 1:25 0:26.830u 7.1g same
 - mem: 4698 words 1:50 stats.allocated=2660586048 convert() vector
 - mem: 4698 words 1:50 stats.allocated=2592821344 convert() CappedVec 2x
 - mem: 4698 words 1:50 stats.allocated=2592474192 convert() CappedVec 1.5x

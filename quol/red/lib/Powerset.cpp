@@ -147,13 +147,14 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
     tableNode.first = std::move(todo);
     auto [tableIt, novel] = table.emplace(std::move(tableNode));
     if (novel) {
-      for (size_t idx = 0; idx < allSize; ++idx) {
-        const MultiChar &mc = allMultiChars[idx];
-        for (NfaId id : tableIt->first)
+      // iterate bit-set once, as it's more expensive to do
+      for (NfaId id : tableIt->first)
+        for (size_t idx = 0; idx < allSize; ++idx) {
+          const MultiChar &mc = allMultiChars[idx];
           for (const NfaTransition &trans : nfa[id].transitions_)
             if (mc.hasIntersection(trans.multiChar_))
               tableIt->second.safeRef(idx, allSize).set(trans.next_);
-      }
+        }
       for (NfaIdSet &nis : tableIt->second)
         todoSet.insert(nis);
     }

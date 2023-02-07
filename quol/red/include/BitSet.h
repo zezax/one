@@ -202,7 +202,7 @@ template <> inline int popCount(unsigned long long x) {
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-// this is a performance-critical function
+// this was a performance-critical function
 template <class Index, class Tag, class Word>
 BitSetIter<Index, Tag, Word> &BitSetIter<Index, Tag, Word>::operator++() {
   Index bit = bit_ + 1;
