@@ -2,8 +2,13 @@
 
 .SUFFIXES:
 
+BUILD := $(ROOT)/_build
+BUILDSUB := $(BUILD)/$(SUB)
+
 ifeq ($(MODE), opt)
   OPT := -O3 -march=native
+else ifeq ($(MODE), pic)
+  OPT := -O3 -march=native -fPIC
 else ifeq ($(MODE), dbgo)
   OPT := -g -O3 -march=native
 else ifeq ($(MODE), dbg)
@@ -30,21 +35,26 @@ CPPFLAGS += -iquote ../include
 
 CXX := g++
 CXXFLAGS := -std=c++20 $(OPT) $(WARN)
-CXXDEPEND = -MMD -MT $*.o -MT $*.d
-CXXDEPENDONLY = -MM -MT $*.o -MT $*.d
+CXXDEPEND = -MMD -MT $(BUILDSUB)/$*.o -MT $(BUILDSUB)/$*.d
+CXXDEPENDONLY = -MM -MT $(BUILDSUB)/$*.o -MT $(BUILDSUB)/$*.d
 
-DEPLIBS := ../lib/libred.a
+ifeq ($(MODE), pic)
+  DEPLIBS := $(BUILD)/lib/libred.so
+else
+  DEPLIBS := $(BUILD)/lib/libred.a
+endif
 
-.PHONY: all sure clean
-.PRECIOUS: %.o
+.PHONY: all sure clean distclean
 
-%.o: %.cpp
+$(BUILDSUB)/%.o: %.cpp
+	mkdir -p $(BUILDSUB)
 	$(CXX) -c $(CXXDEPEND) $(CXXFLAGS) $(CPPFLAGS) $< -o $@
 
-%.d: %.cpp
+$(BUILDSUB)/%.d: %.cpp
+	mkdir -p $(BUILDSUB)
 	$(CXX) $(CXXDEPENDONLY) $(CPPFLAGS) $< > $@
 
-%: %.cpp
+$(BUILDSUB)/%: %.cpp
 
-%: %.o $(DEPLIBS)
-	$(CXX) $(LDFLAGS) $< $(DEPLIBS) $(LDLIBS) -o $@
+$(BUILDSUB)/%: $(BUILDSUB)/%.o $(DEPLIBS)
+	$(CXX) $(LDFLAGS) $< -L$(BUILD)/lib -lred $(LDLIBS) -o $@

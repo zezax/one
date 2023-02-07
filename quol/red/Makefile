@@ -1,5 +1,8 @@
 # red top-level Makefile
 
+ROOT := .
+SUB := .
+
 include red.gmake
 
 DIRS := lib tools test
@@ -10,23 +13,17 @@ all: $(DIRS:%=all-%)
 sure: lib
 	$(MAKE) -C test $@
 
-clean: $(DIRS:%=clean-%)
-	$(RM) perf.data
+clean:
+	$(RM) -r $(BUILD)
 
-depend: $(DIRS;%=depend-%)
-
-tools: lib
-
-test: lib
+distclean: clean
+	find $(ROOT) -type f | egrep '(/core|/a.out|/perf[.]data|[.][ado]|~)$$' | xargs -r $(RM)
 
 $(DIRS):
 	$(MAKE) -C $@
 
 all-%:
 	$(MAKE) -C $* all
-
-clean-%:
-	$(MAKE) -C $* clean
 
 all-tools: all-lib
 

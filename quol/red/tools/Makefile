@@ -1,15 +1,20 @@
 # red tools Makefile
 
+ROOT := ..
+SUB := tools
+
 include ../red.gmake
 
+.PRECIOUS: $(BUILDSUB)/%.o
+
 CPPS := $(wildcard *.cpp)
-EXES := $(CPPS:.cpp=)
+EXES := $(CPPS:%.cpp=$(BUILDSUB)/%)
 
 all: $(EXES)
 
 clean:
-	$(RM) $(EXES) *.o *.d
+	$(RM) -r $(BUILDSUB)
 
-ifneq ($(wildcard *.d), )
-  include *.d
+ifneq ($(wildcard $(BUILDSUB)/*.d), )
+  include $(BUILDSUB)/*.d
 endif

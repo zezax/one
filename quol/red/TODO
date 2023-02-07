@@ -5,7 +5,6 @@
 - compressed transition map
 - vertically align identifiers in .h and .cpp
 - add test suite items from re2, pcre
-- .depend directory
 - make dfa.cpp unit test.  move stuff from minimize.cpp
 - matcher without shared_ptr
 - detail namespace

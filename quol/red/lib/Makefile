@@ -1,18 +1,36 @@
 # red library Makefile
 
+ROOT := ..
+SUB := lib
+
 include ../red.gmake
 
-LIB := libred.a
+.PRECIOUS: $(BUILDSUB)/%.o
+
+LIB := $(BUILDSUB)/libred.a
+SO := $(BUILDSUB)/libred.so
 CPPS := $(wildcard *.cpp)
+OBJS := $(CPPS:%.cpp=$(BUILDSUB)/%.o)
+
+ifeq ($(MODE), pic)
+
+all: $(SO)
+
+else
 
 all: $(LIB)
 
-clean:
-	$(RM) $(LIB) *.o *.d
+endif
 
-$(LIB): $(CPPS:.cpp=.o)
+clean:
+	$(RM) -r $(BUILDSUB)
+
+$(LIB): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $?
 
-ifneq ($(wildcard *.d), )
-  include *.d
+$(SO): $(OBJS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $? -o $@
+
+ifneq ($(wildcard $(BUILDSUB)/*.d), )
+  include $(BUILDSUB)/*.d
 endif

@@ -1,10 +1,15 @@
 # red/test Makefile
 
+ROOT := ..
+SUB := test
+
 include ../red.gmake
 
+.PRECIOUS: $(BUILDSUB)/%.o
+
 CPPS := $(wildcard *.cpp)
-EXES := $(CPPS:.cpp=)
-TESTS := $(EXES:%=test-%)
+EXES := $(CPPS:%.cpp=$(BUILDSUB)/%)
+TESTS := $(CPPS:%.cpp=test-%)
 
 LDLIBS += -lgtest_main -lgtest
 
@@ -13,11 +18,11 @@ all: $(EXES)
 sure: $(TESTS)
 
 clean:
-	$(RM) $(EXES) *.o *.d
+	$(RM) -r $(BUILDSUB)
 
-test-%: %
-	./$*
+test-%: $(BUILDSUB)/%
+	$(BUILDSUB)/$*
 
-ifneq ($(wildcard *.d), )
-  include *.d
+ifneq ($(wildcard $(BUILDSUB)/*.d), )
+  include $(BUILDSUB)/*.d
 endif
