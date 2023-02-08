@@ -24,19 +24,21 @@ constexpr StealMalloc gStealMalloc;
 
 class Executable {
 public:
-  Executable() = delete;
+  Executable()
+    : buf_(nullptr), end_(nullptr), equivMap_(nullptr), base_(nullptr),
+      inStr_(false), usedMalloc_(false) {}
   Executable(Executable &&other);
 
   // these take a serialized dfa...
-  Executable(std::string &&buf); // move
-  Executable(const std::string &buf); // copy
-  Executable(std::string_view sv); // copy
+  explicit Executable(std::string &&buf); // move
+  explicit Executable(const std::string &buf); // copy
+  explicit Executable(std::string_view sv); // copy
   Executable(const CopyBuf &, const void *ptr, size_t len); // copy
   Executable(const StealNew &, const void *ptr, size_t len); // will delete[]
   Executable(const StealMalloc &, const void *ptr, size_t len); // will free()
 
   // load dfa from file
-  Executable(const char *path);
+  explicit Executable(const char *path);
 
   ~Executable();
 

@@ -10,7 +10,9 @@
 
 namespace zezax::red {
 
-std::shared_ptr<const Executable> compile(ReParser &rp,
-                                          Format fmt = fmtOffsetAuto);
+Executable compile(ReParser &rp, Format fmt = fmtOffsetAuto);
+
+std::shared_ptr<const Executable> compileShared(
+    ReParser &rp, Format fmt = fmtOffsetAuto);
 
 } // namespace zezax::red

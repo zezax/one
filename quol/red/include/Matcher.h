@@ -19,7 +19,8 @@ enum Length {
 
 class Matcher {
 public:
-  Matcher(std::shared_ptr<const Executable> exec);
+  explicit Matcher(std::shared_ptr<const Executable> exec);
+  explicit Matcher(const Executable *exec); // to avoid shared_ptr overhead
 
   explicit operator bool() const { return (result_ > 0); }
 
@@ -76,11 +77,12 @@ private:
                           DFAPROXY         dfap,
                           std::string_view repl);
 
-  std::shared_ptr<const Executable> exec_;
-  size_t                            matchStart_; // escape initial state
-  size_t                            matchEnd_;   // most recent accept
-  Result                            result_;
-  Format                            fmt_;
+  const Executable                  *exec_;
+  size_t                             matchStart_; // escape initial state
+  size_t                             matchEnd_;   // most recent accept
+  Result                             result_;
+  Format                             fmt_;
+  std::shared_ptr<const Executable>  shared_;     // only if supplied
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,10 +134,9 @@ ZEZAX_RED_FUNC_DEFS(match, it, proxy)
 ///////////////////////////////////////////////////////////////////////////////
 
 #define ZEZAX_RED_PREAMBLE                      \
-  const Executable *exec = exec_.get();         \
-  const FileHeader *hdr = exec->getHeader();    \
-  const char *base = exec->getBase();           \
-  const Byte *equivMap = exec->getEquivMap()
+  const FileHeader *hdr = exec_->getHeader();   \
+  const char *base = exec_->getBase();          \
+  const Byte *equivMap = exec_->getEquivMap()
 
 
 template <Length length, class InProxyT, class DfaProxyT>

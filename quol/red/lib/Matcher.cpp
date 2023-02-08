@@ -11,7 +11,13 @@ using std::string_view;
 
 
 Matcher::Matcher(std::shared_ptr<const Executable> exec)
-  : exec_(std::move(exec)) {
+  : exec_(exec.get()), shared_(std::move(exec)) {
+  reset();
+}
+
+
+Matcher::Matcher(const Executable *exec)
+  : exec_(exec) {
   reset();
 }
 
@@ -20,9 +26,8 @@ void Matcher::reset() {
   matchStart_ = 0;
   matchEnd_ = 0;
 
-  const Executable *exec = exec_.get();
-  const FileHeader *hdr = exec->getHeader();
-  const char *base = exec->getBase();
+  const FileHeader *hdr = exec_->getHeader();
+  const char *base = exec_->getBase();
   fmt_ = static_cast<Format>(hdr->format_);
   switch (fmt_) {
   case fmtOffset1:

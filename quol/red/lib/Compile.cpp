@@ -11,7 +11,9 @@ using std::make_shared;
 using std::shared_ptr;
 using std::string;
 
-shared_ptr<const Executable> compile(ReParser &rp, Format fmt) {
+namespace {
+
+string doCompile(ReParser &rp, Format fmt) {
   string buf;
   rp.finish(); // idempotent
   {
@@ -31,6 +33,19 @@ shared_ptr<const Executable> compile(ReParser &rp, Format fmt) {
     }
   }
 
+  return buf;
+}
+
+} // anonymous
+
+Executable compile(ReParser &rp, Format fmt) {
+  string buf = doCompile(rp, fmt);
+  return Executable(std::move(buf));
+}
+
+
+shared_ptr<const Executable> compileShared(ReParser &rp, Format fmt) {
+  string buf = doCompile(rp, fmt);
   return make_shared<const Executable>(std::move(buf));
 }
 

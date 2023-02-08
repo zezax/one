@@ -22,7 +22,7 @@ TEST(Matcher, checkStartEnd) {
     ReParser p;
     p.add("[^a]*ab*c",  1, 0);
     p.add("[^d]*dummy", 2, 0);
-    rex = compile(p);
+    rex = compileShared(p);
   }
   Matcher mat(rex);
   mat.match("abbc", lenLast);
@@ -54,7 +54,7 @@ TEST(Matcher, checkLengths) {
     p.add("abc",     1, 0);
     p.add("abcd",    2, 0);
     p.add("abcdefg", 3, 0);
-    rex = compile(p);
+    rex = compileShared(p);
   }
   Matcher mat(rex);
   string_view in = "abcdefg";
@@ -118,7 +118,7 @@ TEST(Matcher, replace) {
   {
     ReParser p;
     p.add("ab*c", 1, 0);
-    rex = compile(p);
+    rex = compileShared(p);
   }
   Matcher mat(rex);
   EXPECT_EQ("foobar", mat.replace("fooac", "bar", lenLast));
@@ -133,7 +133,7 @@ TEST(Matcher, replaceLengths) {
     p.add("abc",     1, 0);
     p.add("abcd",    2, 0);
     p.add("abcdefg", 3, 0);
-    rex = compile(p);
+    rex = compileShared(p);
   }
   Matcher mat(rex);
   EXPECT_EQ("1xyzdefg2", mat.replace("1abcdefg2", "xyz", lenShortest));
@@ -153,7 +153,7 @@ TEST_P(MatcherTest, check) {
     ReParser p;
     p.addAuto("ab*c", 1, 0);
     p.addAuto("ca*b", 2, 0);
-    rex = compile(p, fmt);
+    rex = compileShared(p, fmt);
   }
   Matcher m0(rex);
   Matcher m00(rex);
@@ -176,7 +176,7 @@ TEST_P(MatcherTest, match) {
     ReParser p;
     p.addAuto("ab*c", 1, 0);
     p.addAuto("ca*b", 2, 0);
-    rex = compile(p, fmt);
+    rex = compileShared(p, fmt);
   }
   Matcher m0(rex);
   Matcher m00(rex);

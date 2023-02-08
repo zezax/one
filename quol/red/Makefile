@@ -17,7 +17,7 @@ clean:
 	$(RM) -r $(BUILD)
 
 distclean: clean
-	find $(ROOT) -type f | egrep '(/core|/a.out|/perf[.]data|[.][ado]|~)$$' | xargs -r $(RM)
+	find $(ROOT) -type f | egrep '(/core|/a.out|/perf[.]data([.]old)?|[.][ado]|~)$$' | xargs -r $(RM)
 
 $(DIRS):
 	$(MAKE) -C $@

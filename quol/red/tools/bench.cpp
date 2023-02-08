@@ -11,7 +11,6 @@
 using namespace zezax::red;
 
 using std::make_shared;
-using std::shared_ptr;
 using std::string;
 using std::string_view;
 using std::vector;
@@ -23,7 +22,7 @@ int main(int argc, char **argv) {
   try {
     string words = readFileToString("/usr/share/dict/words");
 
-    shared_ptr<const Executable> rex;
+    Executable rex;
     {
       ReParser p;
       p.add("anticritique",   1, fIgnoreCase);
@@ -51,7 +50,7 @@ int main(int argc, char **argv) {
       p.add("waxily",        23, fIgnoreCase);
       rex = compile(p);
     }
-    Matcher mat(rex);
+    Matcher mat(&rex);
 
     int sum = 0;
     constexpr int iters = 1000;
