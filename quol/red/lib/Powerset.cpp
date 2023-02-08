@@ -149,12 +149,10 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
     if (novel) {
       // iterate bit-set once, as it's more expensive to do
       for (NfaId id : tableIt->first)
-        for (size_t idx = 0; idx < allSize; ++idx) {
-          const MultiChar &mc = allMultiChars[idx];
-          for (const NfaTransition &trans : nfa[id].transitions_)
-            if (mc.hasIntersection(trans.multiChar_))
+        for (const NfaTransition &trans : nfa[id].transitions_)
+          for (size_t idx = 0; idx < allSize; ++idx)
+            if (allMultiChars[idx].hasIntersection(trans.multiChar_))
               tableIt->second.safeRef(idx, allSize).set(trans.next_);
-        }
       for (NfaIdSet &nis : tableIt->second)
         todoSet.insert(nis);
     }
