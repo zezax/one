@@ -83,7 +83,7 @@ TEST(Powerset, stepwise) {
   nis13.set(s3);
 
   ASSERT_TRUE(tbl.contains(nis1));
-  CappedVec<NfaIdSet> &v = tbl[nis1];
+  IdxToNfaIdSet &v = tbl[nis1];
   EXPECT_EQ(2, v.size());
   EXPECT_TRUE(contains(v, nis1));
   EXPECT_TRUE(contains(v, nis12));

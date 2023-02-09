@@ -266,7 +266,7 @@ string toString(const NfaStatesToTransitions &tbl) {
   string rv = "map(\n";
   for (auto &[key, val] : tbl) {
     rv += "key:" + toString(key) + "val:[";
-    for (const NfaIdSet &nis : val)
+    for (const auto &[_, nis] : val)
       rv += toString(nis);
     rv += "]\n";
   }

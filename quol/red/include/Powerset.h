@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <map>
 #include <vector>
 
 #include "Nfa.h"
@@ -9,9 +10,10 @@
 
 namespace zezax::red {
 
+typedef std::map<size_t, NfaIdSet> IdxToNfaIdSet;
+
 // sometimes called translation or transition table...
-typedef std::unordered_map<NfaIdSet,
-                           CappedVec<NfaIdSet>> NfaStatesToTransitions;
+typedef std::unordered_map<NfaIdSet, IdxToNfaIdSet> NfaStatesToTransitions;
 
 typedef std::unordered_map<NfaId, size_t> NfaStateToCount;
 

@@ -147,7 +147,7 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
     auto todoNode = todoSet.extract(todoSet.begin());
     NfaIdSet &todo = todoNode.value();
 
-    std::pair<NfaIdSet, CappedVec<NfaIdSet>> tableNode;
+    std::pair<NfaIdSet, IdxToNfaIdSet> tableNode;
     tableNode.first = std::move(todo);
     auto [tableIt, novel] = table.emplace(std::move(tableNode));
     if (novel) {
@@ -156,8 +156,8 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
         for (const NfaTransition &trans : nfa[id].transitions_)
           for (size_t idx = 0; idx < allSize; ++idx)
             if (allMultiChars[idx].hasIntersection(trans.multiChar_))
-              tableIt->second.safeRef(idx, allSize).set(trans.next_);
-      for (NfaIdSet &nis : tableIt->second)
+              tableIt->second[idx].set(trans.next_);
+      for (const auto &[_, nis] : tableIt->second)
         todoSet.insert(nis);
     }
   }
@@ -199,15 +199,13 @@ DfaId dfaFromNfaRecurse(const vector<MultiChar>      &multiChars,
   if (tableIter == table.end())
     return dfaId; // FIXME can this happen? is it right?
 
-  DfaId ii = 0;
-  for (const NfaIdSet &nis : tableIter->second) {
+  for (const auto &[ii, nis] : tableIter->second) {
     if (nis.population() > 0) {
       DfaId subId = dfaFromNfaRecurse(
           multiChars, table, counts, nis, map, nfa, dfa);
       for (CharIdx ch : multiChars[ii]) // FIXME why is mc[ii] valid???
         dfa[dfaId].trans_.set(ch, subId);
     }
-    ++ii;
   }
 
   if (nfa.hasAccept(stateSet))

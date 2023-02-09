@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -34,10 +35,10 @@ bool contains(const std::vector<T> &vec, const T &want) {
 }
 
 
-template <class T>
-bool contains(const CappedVec<T> &vec, const T &want) {
-  for (const T &elem : vec)
-    if (elem == want)
+template <class K, class T>
+bool contains(const std::map<K, T> &map, const T &want) {
+  for (const auto &[key, val] : map)
+    if (val == want)
       return true;
   return false;
 }
