@@ -200,6 +200,7 @@ TEST(Scanner, smoke) {
     if (type <= tEnd)
       break;
   }
+  EXPECT_EQ(sc.numTokens(), vec.size());
   ASSERT_EQ(18, vec.size());
   EXPECT_EQ(tFlags,   vec[ 0].type_);
   EXPECT_EQ(tLeft,    vec[ 1].type_);

@@ -95,10 +95,12 @@ void Scanner::init(string_view source) {
   beg_ = reinterpret_cast<const Byte *>(source.data());
   ptr_ = beg_;
   end_ = beg_ + source.size();
+  nTok_ = 0;
 }
 
 
 Token Scanner::scanOne() {
+  ++nTok_;
   if (ptr_ >= end_)
     return Token(tEnd, pos());
 

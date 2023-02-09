@@ -52,7 +52,7 @@ struct StateOffset4 {
 
 class Serializer {
 public:
-  Serializer(const DfaObj &dfa);
+  explicit Serializer(const DfaObj &dfa, CompStats *stats = nullptr);
 
   std::string serialize(Format fmt);
   void serializeToFile(Format fmt, const char *path);
@@ -72,6 +72,7 @@ private:
   CharIdx             maxChar_;
   Result              maxResult_;
   std::vector<size_t> offsets_;
+  CompStats          *stats_;
 };
 
 

@@ -11,7 +11,7 @@ namespace zezax::red {
 
 class ReParser {
 public:
-  ReParser();
+  explicit ReParser(CompStats *stats = nullptr);
   ~ReParser() = default;
 
   // Adds a regular expression to the automaton, to yield the specified
@@ -53,6 +53,7 @@ private:
   Token          tok_;
   Scanner        scanner_;
   NfaObj         obj_;
+  CompStats     *stats_;
 };
 
 } // namespace zezax::red

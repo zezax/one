@@ -3,11 +3,6 @@
 
 #include <limits>
 
-#ifdef PRINT_MEM
-#define PRINT_MEM
-# include <iostream>
-#endif /* PRINT_MEM */
-
 #include "Except.h"
 #include "Util.h"
 #include "Powerset.h"
@@ -45,6 +40,9 @@ Result getResult(const NfaIdSet        &nis,
 ///////////////////////////////////////////////////////////////////////////////
 
 DfaObj PowersetConverter::convert() {
+  if (stats_)
+    stats_->preDfa_ = std::chrono::steady_clock::now();
+
   NfaId initial = nfa_.getNfaInitial();
 
   vector<MultiChar> multiChars;
@@ -73,11 +71,17 @@ DfaObj PowersetConverter::convert() {
   if (id != gDfaInitialId)
     throw RedExceptCompile("dfa initial state must be one");
 
-#ifdef PRINT_MEM
-  std::cout << "Powerset bytes used " << bytesUsed() << std::endl;
-#endif /* PRINT_MEM */
+  if (stats_)
+    stats_->powersetMemUsed_ = bytesUsed();
 
   dfa.chopEndMarks(); // end marks have done their job
+
+  if (stats_) {
+    DfaIdSet all = dfa.allStateIds();
+    stats_->origDfaStates_ = dfa.numStates();
+    stats_->transitionTableRows_ = table.size();
+    stats_->postDfa_ = std::chrono::steady_clock::now();
+  }
   return dfa;
 }
 

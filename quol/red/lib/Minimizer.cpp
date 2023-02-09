@@ -262,6 +262,9 @@ void improveDfa(DfaObj &dfa, CharIdx maxChar) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DfaMinimizer::minimize() {
+  if (stats_)
+    stats_->preMinimize_ = std::chrono::steady_clock::now();
+
   DfaObj work;
 
   setup();
@@ -269,6 +272,12 @@ void DfaMinimizer::minimize() {
   cleanup(work);
 
   src_.swap(work);
+
+  if (stats_) {
+    stats_->minimizedDfaStates_ = src_.numStates();
+    stats_->numDistinguishedSymbols_ = maxChar_ + 1;
+    stats_->postMinimize_ = std::chrono::steady_clock::now();
+  }
 }
 
 
@@ -313,7 +322,6 @@ void DfaMinimizer::cleanup(DfaObj &work) {
   blocks_.shrink_to_fit();
   work.copyEquivMap(src_);
   improveDfa(work, maxChar_);
-  maxChar_ = 0;
 }
 
 } // namespace zezax::red

@@ -42,6 +42,8 @@ std::string toString(const std::vector<CharIdx> &vec); // equiv map
 std::string toString(const FileHeader &hdr);
 std::string toString(const char *buf, size_t len); // serialized
 
+std::string toString(const CompStats *s); // stats
+
 char toHexDigit(Byte x);
 
 template <class T>

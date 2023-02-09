@@ -76,7 +76,8 @@ namespace zezax::red {
 // This is what you're looking for
 class DfaMinimizer {
 public:
-  DfaMinimizer(DfaObj &dfa) : src_(dfa) {} // dfa will be modified
+  explicit DfaMinimizer(DfaObj &dfa, CompStats *stats = nullptr)
+    : src_(dfa), stats_(stats) {} // dfa will be modified
 
   void minimize();
 
@@ -90,6 +91,7 @@ private:
   DfaEdgeToIds          inverse_;
   std::vector<DfaIdSet> blocks_;
   BlockRecSet           list_;
+  CompStats            *stats_;
 };
 
 

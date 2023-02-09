@@ -4,12 +4,18 @@
 
 #include <algorithm>
 #include <set>
+#include <ratio>
 #include <vector>
 
 #include "Proxy.h"
 
 namespace zezax::red {
 
+namespace chrono = std::chrono;
+
+using chrono::duration_cast;
+using chrono::nanoseconds;
+using chrono::steady_clock;
 using std::ostream;
 using std::string;
 using std::to_string;
@@ -39,6 +45,15 @@ string visibleChar(CharIdx ch) {
     rv += ']';
   }
   return rv;
+}
+
+
+string timeDiff(steady_clock::time_point aa, steady_clock::time_point bb) {
+  auto xx = duration_cast<nanoseconds>(aa.time_since_epoch()).count();
+  auto yy = duration_cast<nanoseconds>(bb.time_since_epoch()).count();
+  double dd = static_cast<double>(yy - xx);
+  dd /= std::nano::den;
+  return to_string(dd);
 }
 
 
@@ -478,6 +493,29 @@ string toString(const char *buf, size_t len) { // serialized
   }
 
   return rv + "END\n";
+}
+
+
+string toString(const CompStats *s) {
+  string rv = "CompStats:\n";
+  if (!s)
+    return rv;
+  rv += "totalTime   " + timeDiff(s->preNfa_, s->postSerialize_) + '\n';
+  rv += "parseNfa    " + timeDiff(s->preNfa_, s->postNfa_) + '\n';
+  rv += "buildDfa    " + timeDiff(s->preDfa_, s->postDfa_) + '\n';
+  rv += "minimizeDfa " + timeDiff(s->preMinimize_, s->postMinimize_) + '\n';
+  rv += "serialize   " + timeDiff(s->preSerialize_, s->postSerialize_) + '\n';
+  rv += "tokens               " + to_string(s->numTokens_) + '\n';
+  rv += "patterns             " + to_string(s->numPatterns_) + '\n';
+  rv += "origNfaStates        " + to_string(s->origNfaStates_) + '\n';
+  rv += "usefulNfaStates      " + to_string(s->usefulNfaStates_) + '\n';
+  rv += "origDfaStates        " + to_string(s->origDfaStates_) + '\n';
+  rv += "minimizedDfaStates   " + to_string(s->minimizedDfaStates_) + '\n';
+  rv += "serializedBytes      " + to_string(s->serializedBytes_) + '\n';
+  rv += "distinguishedSymbols " + to_string(s->numDistinguishedSymbols_) + '\n';
+  rv += "transitionTableRows  " + to_string(s->transitionTableRows_) + '\n';
+  rv += "powersetMemUsed      " + to_string(s->powersetMemUsed_) + '\n';
+  return rv;
 }
 
 

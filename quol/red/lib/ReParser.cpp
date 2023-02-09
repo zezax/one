@@ -8,11 +8,18 @@ namespace zezax::red {
 
 using std::string_view;
 
-ReParser::ReParser()
+ReParser::ReParser(CompStats *stats)
 : flags_(0),
   level_(0),
   validated_(false),
-  tok_(tError, gNoPos) {}
+  tok_(tError, gNoPos),
+  stats_(stats) {
+  if (stats_) {
+    stats_->preNfa_ = std::chrono::steady_clock::now();
+    stats_->numTokens_ = 0;
+    stats_->numPatterns_ = 0;
+  }
+}
 
 
 void ReParser::add(string_view regex, Result result, FlagsT flags) {
@@ -46,6 +53,11 @@ void ReParser::add(string_view regex, Result result, FlagsT flags) {
 
   state = obj_.stateConcat(state, obj_.stateEndMark(result));
   obj_.selfUnion(state); // all added regexes are acceptable
+
+  if (stats_) {
+    stats_->numTokens_ += scanner_.numTokens();
+    stats_->numPatterns_ += 1;
+  }
 }
 
 
@@ -80,7 +92,13 @@ void ReParser::addAuto(string_view regex, Result result, FlagsT flags) {
 
 
 void ReParser::finish() {
+  if (stats_)
+    stats_->origNfaStates_ = obj_.activeStates();
   obj_.dropUselessTransitions();
+  if (stats_) {
+    stats_->usefulNfaStates_ = obj_.activeStates();
+    stats_->postNfa_ = std::chrono::steady_clock::now();
+  }
 }
 
 

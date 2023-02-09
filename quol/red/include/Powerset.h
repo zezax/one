@@ -22,7 +22,9 @@ typedef std::unordered_map<NfaIdSet, DfaId> NfaStatesToId;
 // converts nfa to dfa via rabin-scott
 class PowersetConverter {
 public:
-  PowersetConverter(const NfaObj &input) : nfa_(input) {}
+  explicit PowersetConverter(
+      const NfaObj &input, CompStats *stats = nullptr)
+    : nfa_(input), stats_(stats) {}
 
   DfaObj convert();
 
@@ -34,6 +36,7 @@ private:
                    DfaObj                       &dfa);
 
   const NfaObj &nfa_;
+  CompStats    *stats_;
 };
 
 

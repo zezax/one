@@ -6,10 +6,10 @@
 
 #include "Except.h"
 #include "ReParser.h"
-#include "Powerset.h"
-#include "Minimizer.h"
-#include "Serializer.h"
+#include "Compile.h"
+#include "Exec.h"
 #include "Util.h"
+#include "Debug.h"
 
 #ifdef USE_JEMALLOC
 # include <jemalloc.h>
@@ -66,41 +66,17 @@ int main(int argc, char **argv) {
   std::cout << "Total words " << words.size() << std::endl;
 
   try {
-    ReParser p;
-    Result res = 0;
-    for (string &word : words)
-      p.add(word, ++res, fIgnoreCase);
-    NfaObj &nfa = p.getNfa();
-    std::cout << "NFA orig states " << nfa.activeStates() << std::endl;
-    p.finish();
-    std::cout << "NFA live states " << nfa.activeStates() << std::endl;
-    std::cout << "MEM " << bytesUsed() << std::endl;
-
-    string buf;
+    CompStats stats;
+    Executable rex;
     {
-      DfaObj dfa;
-      {
-        PowersetConverter psc(nfa);
-        dfa = psc.convert();
-        p.freeAll();
-      }
-      std::cout << "Converted states " << dfa.numStates() << std::endl;
-      std::cout << "MEM " << bytesUsed() << std::endl;
-
-      {
-        DfaMinimizer dm(dfa);
-        dm.minimize();
-      }
-      std::cout << "Minimized states " << dfa.numStates() << std::endl;
-      std::cout << "MEM " << bytesUsed() << std::endl;
-
-      {
-        Serializer ser(dfa);
-        buf = ser.serialize(fmtOffsetAuto);
-      }
+      ReParser p(&stats);
+      Result res = 0;
+      for (string &word : words)
+        p.add(word, ++res, fIgnoreCase);
+      rex = compile(p, fmtOffsetAuto, &stats);
     }
-    std::cout << "Serialized bytes " << buf.size() << std::endl;
-    std::cout << "MEM " << bytesUsed() << std::endl;
+
+    std::cout << toString(&stats) << std::endl;
 
     return 0;
   }

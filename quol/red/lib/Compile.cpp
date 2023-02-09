@@ -13,22 +13,22 @@ using std::string;
 
 namespace {
 
-string doCompile(ReParser &rp, Format fmt) {
+string doCompile(ReParser &rp, Format fmt, CompStats *stats) {
   string buf;
-  rp.finish(); // idempotent
+  rp.finish(); // idempotent, except for stats
   {
     DfaObj dfa;
     {
-      PowersetConverter psc(rp.getNfa());
+      PowersetConverter psc(rp.getNfa(), stats);
       dfa = psc.convert();
       rp.freeAll();
     }
     {
-      DfaMinimizer dm(dfa);
+      DfaMinimizer dm(dfa, stats);
       dm.minimize();
     }
     {
-      Serializer ser(dfa);
+      Serializer ser(dfa, stats);
       buf = ser.serialize(fmt);
     }
   }
@@ -38,14 +38,16 @@ string doCompile(ReParser &rp, Format fmt) {
 
 } // anonymous
 
-Executable compile(ReParser &rp, Format fmt) {
-  string buf = doCompile(rp, fmt);
+Executable compile(ReParser &rp, Format fmt, CompStats *stats) {
+  string buf = doCompile(rp, fmt, stats);
   return Executable(std::move(buf));
 }
 
 
-shared_ptr<const Executable> compileShared(ReParser &rp, Format fmt) {
-  string buf = doCompile(rp, fmt);
+shared_ptr<const Executable> compileShared(ReParser  &rp,
+                                           Format     fmt,
+                                           CompStats *stats) {
+  string buf = doCompile(rp, fmt, stats);
   return make_shared<const Executable>(std::move(buf));
 }
 

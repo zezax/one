@@ -48,6 +48,8 @@ public:
   void init(std::string_view source);
   Token scanOne();
 
+  size_t numTokens() const { return nTok_; }
+
   // these are public for testing...
   Token scanSet();
   Token scanClosure();
@@ -61,6 +63,7 @@ private:
   const Byte *beg_;
   const Byte *ptr_;
   const Byte *end_;
+  size_t      nTok_;
 };
 
 } // namespace zezax::red

@@ -22,22 +22,40 @@ void append(string &s, const void *p, size_t n) {
 
 } // anonymous
 
-Serializer::Serializer(const DfaObj &dfa)
-: dfa_(dfa) {}
+Serializer::Serializer(const DfaObj &dfa, CompStats *stats)
+  : dfa_(dfa), stats_(stats) {}
 
 
 string Serializer::serialize(Format fmt) {
+  if (stats_)
+    stats_->preSerialize_ = std::chrono::steady_clock::now();
+
   prepareToSerialize();
   fmt = validatedFormat(fmt);
-  return serializeToString(fmt);
+  string buf = serializeToString(fmt);
+
+  if (stats_) {
+    stats_->serializedBytes_ = buf.size();
+    stats_->postSerialize_ = std::chrono::steady_clock::now();
+  }
+
+  return buf;
 }
 
 
 void Serializer::serializeToFile(Format fmt, const char *path) {
+  if (stats_)
+    stats_->preSerialize_ = std::chrono::steady_clock::now();
+
   prepareToSerialize();
   fmt = validatedFormat(fmt);
   string buf = serializeToString(fmt);
   writeStringToFile(buf, path);
+
+  if (stats_) {
+    stats_->serializedBytes_ = buf.size();
+    stats_->postSerialize_ = std::chrono::steady_clock::now();
+  }
 }
 
 
