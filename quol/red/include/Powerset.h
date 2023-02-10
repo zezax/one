@@ -10,7 +10,7 @@
 
 namespace zezax::red {
 
-typedef std::map<size_t, NfaIdSet> IdxToNfaIdSet;
+typedef SparseVec<NfaIdSet> IdxToNfaIdSet;
 
 // sometimes called translation or transition table...
 typedef std::unordered_map<NfaIdSet, IdxToNfaIdSet> NfaStatesToTransitions;

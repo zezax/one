@@ -43,4 +43,13 @@ bool contains(const std::map<K, T> &map, const T &want) {
   return false;
 }
 
+
+template <class T>
+bool contains(const SparseVec<T> &vec, const T &want) {
+  for (const auto &[idx, elem] : vec)
+    if (elem == want)
+      return true;
+  return false;
+}
+
 } // namespace zezax::red

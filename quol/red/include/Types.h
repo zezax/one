@@ -9,6 +9,7 @@
 
 #include "BitSet.h"
 #include "DefMap.h"
+#include "SparseVec.h"
 
 namespace zezax::red {
 

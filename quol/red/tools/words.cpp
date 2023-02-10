@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
   string line;
   int ii = 0;
   while (std::getline(file, line))
-    if ((++ii % 50) == 0)
+    if ((++ii % 25) == 0)
       words.push_back(line);
   std::cout << "Total words " << words.size() << std::endl;
 
