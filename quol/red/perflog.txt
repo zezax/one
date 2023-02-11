@@ -1,0 +1,132 @@
+Performance Optimization Log
+============================
+
+Testing Platform:
+  Lenovo T560 laptop, 16GB RAM
+  Intel(R) Core(TM) i7-6600U CPU @ 2.60GHz (2 cores * 2 hyperthreads)
+  Gentoo Linux 5.15.75
+  GCC 11.3.0 (g++ -std=c++20)
+
+COMPILATION:
+------------
+  N words from /usr/dict/words compiled into DFA, with unique result values.
+  Matching is strict at start and end of word.
+
+COMMIT 10b9ab4
+  Initial benchmark.
+  TEST: words ratio 1:500 (469)
+  RESULT: ucpu 3:30.473 rss 3.863GB
+EDIT
+  Don't add empty multi-chars to basis set.
+  TEST: words ratio 1:500 (469)
+  RESULT: ucpu 3:30.069 rss 3.864GB
+EDIT
+  Convert alphabet via equivalence map before minimization.
+  TEST: words ratio 1:500 (469)
+  RESULT: ucpu 1:06.945 rss 1008MB
+COMMIT 9a78649
+  Above edits, plus...
+  Chop off end-marks prior to minimization.
+  TEST: words ratio 1:500 (469)
+  RESULT: ucpu 0:00:907 rss 46MB
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 0:46:630 rss 4.115GB
+COMMIT af8c17b
+  Use NFA state IDs instead of pointers; store in vector, not new/delete.
+  This is a major CPU regression, but attributable to bitset iteration.
+  Below at commit 62a6c3b this will be corrected.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 4:51.924 rss 2.697GB
+COMMIT cdcda96
+  Trim useless NFA transitions/states before powerset conversion.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 4:49.935 rss 2.667GB
+COMMIT 76ab895
+  Increase BitSet Word from 32 to 64 bits by default.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 2:22.315 rss 2.429GB
+COMMIT ec094d2
+  Remove reserve() from powerset makeTable().
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 2:22.865 rss 2.241GB
+COMMIT a48dec5
+  Use __builtin_ctz() to count trailing zeros in BitSet iterator.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 2:07.049 rss 2.241GB
+COMMIT 1dd5976
+  Move unneeded work out of the loop in BitSet iterator.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 1:31.422 rss 2.242GB
+COMMIT 2fdea40
+  Free NFA memory as soon as we're done with it.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 1:31.242u rss 2.240GB
+COMMIT 103f388
+  Choose smaller piece of initial work for DFA minimizer.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 0:53.703 rss 2.240GB
+COMMIT d70960b
+  Decrease BitSet Word from 64 to 32 for MultiChar only.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 0:51.907 rss 2.448GB
+COMMIT 1e639d7
+  Use range-for where possible.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 0:51.610 rss 2.450GB
+COMMIT 1e6d032
+  Use CappedVec in powerset makeTable() to allocate less memory.
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 0:51.616 rss 2.448GB
+COMMIT 62a6c3b
+  Move expensive bit-set iteration to outer loop in powerset makeTable().
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 0:06.664 rss 2.446GB
+COMMIT 2aa3740
+  Reorder inner loops in powerset makeTable()
+  TEST: words ratio 1:50 (4698)
+  RESULT: ucpu 0:06.456 rss 2.446GB
+  TEST: words ratio 1:25 (9397)
+  RESULT: ucpu 0:26.246 rss 7.050GB
+COMMIT 60bbebc
+  Use SparseVec of bitsets in powerset makeTable()
+  TEST: words ratio 1:25 (9397)
+  RESULT: ucpu 0:21.806 rss 2.562GB
+  TEST: words ratio 1:10 (23493)
+  RESULT: ucpu 3:36.694 rss 14.090GB
+
+MATCHING:
+---------
+  23 words from /usr/dict/words
+
+COMMIT 8312d66
+  Initial benchmark, 4-byte, no state, slide by 1
+  TEST: bench 1000 checkWhole
+  RESULT: ucpu 17.768
+COMMIT 1589536
+  Matcher class, 4-byte, with state, slide over match
+  TEST: bench 1000 matchLong
+  RESULT: ucpu 23.706
+COMMIT 2fdc2f5
+  Auto-choose format
+  TEST: bench 1000 matchLong
+  RESULT: ucpu 27.033
+COMMIT 3c42729
+  Proxy template for DFA access
+  TEST: bench 1000 matchLong
+  RESULT: ucpu 26.220
+COMMIT f29f76c
+  Moved initial-state-escape test inside condition
+  TEST: bench 1000 matchLast (rename)
+  RESULT: ucpu 25.777
+COMMIT a781502
+  Use match function templatized by match-length
+  TEST: bench 1000 matchLast
+  RESULT: ucpu 25.224
+COMMIT 1e639d7
+  No changes to matching path.  Use range-for in compile.
+  TEST: bench 1000 matchLast
+  RESULT: ucpu 21.327 ???
+COMMIT 8c139cf
+  Use __builtin_expect(..., 0) for accept test in matchCore()
+  TEST: bench 1000 matchLast
+  RESULT: ucpu 19.866
