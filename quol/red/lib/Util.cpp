@@ -44,12 +44,15 @@ void writeStringToFile(const std::string &str, const char *path) {
     if (did < 0) {
       if (errno == EINTR)
         continue;
+      close(fd);
       throw std::system_error(errno, std::generic_category(),
                               "Failed to write file");
     }
     ptr += did;
     nbytes -= did;
   }
+
+  close(fd);
 }
 
 
@@ -70,6 +73,7 @@ string readFileToString(const char *path) {
       if (got < 0) {
         if (errno == EINTR)
           continue;
+        close(fd);
         throw std::system_error(errno, std::generic_category(),
                                 "Failed to read file");
       }
@@ -79,6 +83,7 @@ string readFileToString(const char *path) {
     str.append(buf.data(), got);
   }
 
+  close(fd);
   str.shrink_to_fit();
   return str;
 }

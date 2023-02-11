@@ -57,12 +57,14 @@ int main(int argc, char **argv) {
 #endif
 
   vector<string> words;
-  std::ifstream file("/usr/share/dict/words");
-  string line;
-  int ii = 0;
-  while (std::getline(file, line))
-    if ((++ii % 25) == 0)
-      words.push_back(line);
+  {
+    std::ifstream file("/usr/share/dict/words");
+    string line;
+    int ii = 0;
+    while (std::getline(file, line))
+      if ((++ii % 25) == 0)
+        words.push_back(line);
+  }
   std::cout << "Total words " << words.size() << std::endl;
 
   try {
