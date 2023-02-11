@@ -42,22 +42,27 @@ TEST(SparseVec, smoke) {
   vec[5] = 69;
   EXPECT_EQ(3, vec.size());
   vec[10] = 666;
-  ASSERT_EQ(3, vec.size());
+  EXPECT_EQ(3, vec.size());
+  vec[99] = 999;
+  ASSERT_EQ(4, vec.size());
   EXPECT_EQ(13,  vec[0]);
   EXPECT_EQ(69,  vec[5]);
   EXPECT_EQ(666, vec[10]);
+  EXPECT_EQ(999, vec[99]);
 
   SparseVec<Elem> v1 = vec;
-  ASSERT_EQ(3, v1.size());
+  ASSERT_EQ(4, v1.size());
   EXPECT_EQ(13,  v1[0]);
   EXPECT_EQ(69,  v1[5]);
   EXPECT_EQ(666, v1[10]);
+  EXPECT_EQ(999, v1[99]);
 
   SparseVec<Elem> v2(std::move(vec));
-  ASSERT_EQ(3, v2.size());
+  ASSERT_EQ(4, v2.size());
   EXPECT_EQ(13,  v2[0]);
   EXPECT_EQ(69,  v2[5]);
   EXPECT_EQ(666, v2[10]);
+  EXPECT_EQ(999, v2[99]);
 }
 
 
