@@ -63,7 +63,7 @@ DfaObj PowersetConverter::convert() {
     throw RedExceptCompile("dfa error state must be zero");
 
   NfaIdSet states;
-  states.set(initial);
+  states.insert(initial);
   auto it = table.find(states);
   if (it == table.end())
     throw RedExceptCompile("cannot find initial nfa states");
@@ -102,7 +102,7 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
   // 1. arrange multi-chars by number of chars
   vector<MultiCharSet> sets;
   for (const MultiChar &mc : mcs) {
-    CharIdx pop = mc.population();
+    CharIdx pop = mc.size();
     safeRef(sets, pop).insert(mc);
   }
 
@@ -122,7 +122,7 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
     for (const MultiChar &mc : sets[ii]) {
       MultiChar copy = mc;
       copy.subtract(unions[ii]);
-      if (copy.population() > 0)
+      if (copy.size() > 0)
         rv.emplace(std::move(copy));
     }
 
@@ -139,7 +139,7 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
   const size_t allSize = allMultiChars.size();
 
   NfaIdSet initialStates;
-  initialStates.set(initial);
+  initialStates.insert(initial);
   unordered_set<NfaIdSet> todoSet;
   todoSet.emplace(std::move(initialStates));
 
@@ -156,7 +156,7 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
         for (const NfaTransition &trans : nfa[id].transitions_)
           for (size_t idx = 0; idx < allSize; ++idx)
             if (allMultiChars[idx].hasIntersection(trans.multiChar_))
-              tableIt->second[idx].set(trans.next_);
+              tableIt->second[idx].insert(trans.next_);
       for (const auto &[_, nis] : tableIt->second)
         todoSet.insert(nis);
     }
@@ -200,7 +200,7 @@ DfaId dfaFromNfaRecurse(const vector<MultiChar>      &multiChars,
     return dfaId; // FIXME can this happen? is it right?
 
   for (const auto &[ii, nis] : tableIter->second) {
-    if (nis.population() > 0) {
+    if (nis.size() > 0) {
       DfaId subId = dfaFromNfaRecurse(
           multiChars, table, counts, nis, map, nfa, dfa);
       for (CharIdx ch : multiChars[ii]) // FIXME why is mc[ii] valid???

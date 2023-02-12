@@ -41,7 +41,7 @@ TEST(BitSet, setGetClearEach) {
   MultiChar mc;
   mc.clearAll();
   EXPECT_EQ(0, mc.population());
-  for (CharIdx ii = 0; ii < mc.size(); ++ii) {
+  for (CharIdx ii = 0; ii < mc.bitSize(); ++ii) {
     mc.set(ii);
     EXPECT_TRUE(mc.get(ii));
     EXPECT_EQ(1, mc.population());
@@ -61,10 +61,10 @@ TEST(BitSet, allOps) {
   mc.clearAll();
   EXPECT_EQ(0, mc.population());
   mc.setAll();
-  EXPECT_EQ(mc.size(), mc.population());
+  EXPECT_EQ(mc.bitSize(), mc.population());
   mc.clearAll();
   mc.flipAll();
-  EXPECT_EQ(mc.size(), mc.population());
+  EXPECT_EQ(mc.bitSize(), mc.population());
   mc.flipAll();
   EXPECT_EQ(0, mc.population());
 }
@@ -73,24 +73,24 @@ TEST(BitSet, allOps) {
 TEST(BitSet, patternOps) {
   MultiChar aa;
   aa.resize(gAlphabetSize);
-  for (CharIdx ii = 0; ii < aa.size(); ii += 2)
+  for (CharIdx ii = 0; ii < aa.bitSize(); ii += 2)
     aa.set(ii);
-  EXPECT_EQ(aa.population(), aa.size() / 2);
+  EXPECT_EQ(aa.population(), aa.bitSize() / 2);
   MultiChar bb;
   bb.resize(gAlphabetSize);
-  for (CharIdx ii = 1; ii < bb.size(); ii += 2)
+  for (CharIdx ii = 1; ii < bb.bitSize(); ii += 2)
     bb.set(ii);
-  EXPECT_EQ(bb.population(), bb.size() / 2);
+  EXPECT_EQ(bb.population(), bb.bitSize() / 2);
 
   aa.unionWith(bb);
-  EXPECT_EQ(aa.population(), aa.size());
+  EXPECT_EQ(aa.population(), aa.bitSize());
   aa.xorWith(bb);
-  EXPECT_EQ(aa.population(), aa.size() / 2);
+  EXPECT_EQ(aa.population(), aa.bitSize() / 2);
   aa.intersectWith(bb);
   EXPECT_EQ(0, aa.population());
   aa.setAll();
   aa.intersectWith(bb);
-  EXPECT_EQ(aa.population(), aa.size() / 2);
+  EXPECT_EQ(aa.population(), aa.bitSize() / 2);
 }
 
 
@@ -156,7 +156,7 @@ TEST(BitSet, varySizes) {
   bb.setSpan(0, 255);
   bb.intersectWith(aa);
   EXPECT_EQ(37, bb.population());
-  EXPECT_EQ(64, bb.size());
+  EXPECT_EQ(64, bb.bitSize());
 
   bb.setSpan(0, 255);
   bb.resize(100);

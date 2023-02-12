@@ -17,7 +17,7 @@ namespace {
 void addTrans(NfaObj &nfa, NfaId from, NfaId to, CharIdx ch) {
   NfaTransition x;
   x.next_ = to;
-  x.multiChar_.set(ch);
+  x.multiChar_.insert(ch);
   nfa[from].transitions_.emplace_back(std::move(x));
 }
 
@@ -74,13 +74,13 @@ TEST(Powerset, stepwise) {
   EXPECT_EQ(3, tbl.size());
 
   NfaIdSet nis1;
-  nis1.set(s1);
+  nis1.insert(s1);
   NfaIdSet nis12;
-  nis12.set(s1);
-  nis12.set(s2);
+  nis12.insert(s1);
+  nis12.insert(s2);
   NfaIdSet nis13;
-  nis13.set(s1);
-  nis13.set(s3);
+  nis13.insert(s1);
+  nis13.insert(s3);
 
   ASSERT_TRUE(tbl.contains(nis1));
   IdxToNfaIdSet &v = tbl[nis1];

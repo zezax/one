@@ -59,7 +59,7 @@ TEST(Minimizer, invert) {
   std::cout << toString(dfa) << std::endl;
 
   DfaIdSet states = dfa.allStateIds();
-  EXPECT_EQ(4, states.population());
+  EXPECT_EQ(4, states.size());
   DfaEdgeToIds rev = invert(states, vec, maxChar);
   EXPECT_EQ(6, rev.size());
   std::cout << toString(rev) << std::endl;
@@ -69,11 +69,11 @@ TEST(Minimizer, invert) {
   ASSERT_EQ(2, blocks.size());
   DfaIdSet &normal = blocks[0];
   DfaIdSet &accept = blocks[1];
-  ASSERT_EQ(3, normal.population());
+  ASSERT_EQ(3, normal.size());
   EXPECT_TRUE(normal.get(s0));
   EXPECT_TRUE(normal.get(s1));
   EXPECT_TRUE(normal.get(s2));
-  ASSERT_EQ(1, accept.population());
+  ASSERT_EQ(1, accept.size());
   EXPECT_TRUE(accept.get(s3));
 
   BlockRecSet list = makeList(maxChar, blocks);

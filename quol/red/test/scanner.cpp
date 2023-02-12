@@ -36,7 +36,7 @@ MultiChar mkMulti(const char *str) {
     ++ptr;
   }
   for (; *ptr; ++ptr) {
-    rv.set(*ptr);
+    rv.insert(*ptr);
   }
   if (flip) {
     rv.resize(gAlphabetSize);
@@ -87,7 +87,7 @@ TEST(Scanner, expansion) {
   Token tok(tError, 0);
   for (int ii = 0; ii < static_cast<int>(gAlphabetSize); ++ii) {
     tok = sc.doExpansion(ii, false);
-    EXPECT_EQ(1, tok.multiChar_.population());
+    EXPECT_EQ(1, tok.multiChar_.size());
     EXPECT_TRUE(tok.multiChar_.get(ii));
   }
 
@@ -95,24 +95,24 @@ TEST(Scanner, expansion) {
   EXPECT_THROW(sc.doExpansion('9', true), RedExcept);
 
   tok = sc.doExpansion('d', true);
-  EXPECT_EQ(10, tok.multiChar_.population());
+  EXPECT_EQ(10, tok.multiChar_.size());
   EXPECT_TRUE(tok.multiChar_.get('0'));
   tok = sc.doExpansion('D', true);
-  EXPECT_EQ(246, tok.multiChar_.population());
+  EXPECT_EQ(246, tok.multiChar_.size());
   EXPECT_FALSE(tok.multiChar_.get('0'));
 
   tok = sc.doExpansion('s', true);
-  EXPECT_EQ(6, tok.multiChar_.population());
+  EXPECT_EQ(6, tok.multiChar_.size());
   EXPECT_TRUE(tok.multiChar_.get(' '));
   tok = sc.doExpansion('S', true);
-  EXPECT_EQ(250, tok.multiChar_.population());
+  EXPECT_EQ(250, tok.multiChar_.size());
   EXPECT_FALSE(tok.multiChar_.get(' '));
 
   tok = sc.doExpansion('w', true);
-  EXPECT_EQ(63, tok.multiChar_.population());
+  EXPECT_EQ(63, tok.multiChar_.size());
   EXPECT_TRUE(tok.multiChar_.get('a'));
   tok = sc.doExpansion('W', true);
-  EXPECT_EQ(193, tok.multiChar_.population());
+  EXPECT_EQ(193, tok.multiChar_.size());
   EXPECT_FALSE(tok.multiChar_.get('a'));
 
   tok = sc.doExpansion('i', true);

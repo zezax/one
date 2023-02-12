@@ -94,7 +94,8 @@ public:
   bool operator==(const BitSet& rhs) const;
   bool operator!=(const BitSet& rhs) const { return !operator==(rhs); }
 
-  Index size() const { return wordBits_ * rawSize(); } // rounded up
+  Index size() const { return population(); } // to act like set
+  Index bitSize() const { return wordBits_ * rawSize(); } // rounded up
 
   void resize(Index bits); // will round up
 
@@ -102,6 +103,7 @@ public:
     ensure(idx);
     vec_[idx / wordBits_] |= one_ << (idx % wordBits_);
   }
+  void insert(Index idx) { set(idx); } // for set compatibility
 
   void setSpan(Index first, Index last);
 
@@ -111,7 +113,7 @@ public:
   }
 
   bool get(Index idx) const {
-    if (size() > idx)
+    if (idx < bitSize())
       return ((vec_[idx / wordBits_] & (one_ << (idx % wordBits_))) != 0);
     return false;
   }

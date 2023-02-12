@@ -84,7 +84,7 @@ NfaObj &NfaObj::operator=(NfaObj &&rhs) {
 
 size_t NfaObj::activeStates() const {
   NfaIdSet all = allStates(initId_);
-  return all.population();
+  return all.size();
 }
 
 
@@ -131,7 +131,7 @@ bool NfaObj::hasAccept(const NfaIdSet &nis) const {
 NfaIdSet NfaObj::allStates(NfaId id) const {
   NfaIdSet rv;
   if (id) {
-    rv.set(id);
+    rv.insert(id);
     allStatesRecurse(rv, id, states_);
   }
   return rv;
@@ -142,7 +142,7 @@ MultiCharSet NfaObj::allMultiChars(NfaId id) const {
   MultiCharSet rv;
   NfaIdSet seen;
   if (id) {
-    seen.set(id);
+    seen.insert(id);
     allMultiCharsRecurse(rv, seen, id, states_);
   }
   return rv;
@@ -289,10 +289,10 @@ NfaId NfaObj::stateIgnoreCase(NfaId id) {
     for (NfaTransition &trans : states_[state].transitions_) {
       for (Byte uc = 'A'; uc <= 'Z'; ++uc)
         if (trans.multiChar_.get(uc))
-          trans.multiChar_.set(uc + 32); // lower-case in ascii
+          trans.multiChar_.insert(uc + 32); // lower-case in ascii
       for (Byte uc = 'a'; uc <= 'z'; ++uc)
         if (trans.multiChar_.get(uc))
-          trans.multiChar_.set(uc - 32); // upper-case in ascii
+          trans.multiChar_.insert(uc - 32); // upper-case in ascii
     }
   }
   return id;
@@ -316,7 +316,7 @@ NfaId NfaObj::stateEndMark(CharIdx res) {
   if ((x < res) || (x < gAlphabetSize))
     throw RedExceptLimit("end-mark overflow");
   MultiChar mc;
-  mc.set(x);
+  mc.insert(x);
   NfaId init = newState(0);
   NfaId goal = newGoalState();
   NfaTransition tr{goal, mc}; // FIXME constructor
@@ -339,7 +339,7 @@ void NfaObj::dropUselessTransitions() { // also de-dup transitions
   for (NfaId id = 1; id < num; ++id) {
     NfaState &ns = states_[id];
     if ((ns.result_ <= 0) && ns.transitions_.empty())
-      useless.set(id);
+      useless.insert(id);
   }
 
   // rewrite transitions without useless ones

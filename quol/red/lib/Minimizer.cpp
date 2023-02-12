@@ -45,7 +45,7 @@ DfaEdgeToIds invert(const DfaIdSet         &stateSet,
       node.first.id_ = ds.trans_[ch];
       node.first.char_ = ch;
       auto [it, _] = rv.emplace(std::move(node));
-      it->second.set(did);
+      it->second.insert(did);
     }
   }
 
@@ -57,9 +57,9 @@ void partition(const DfaIdSet         &stateSet,
                const vector<DfaState> &stateVec,
                vector<DfaIdSet>       &blocks) {
   ResultSet resultSet;
-  resultSet.set(0); // make sure non-accepting result is present
+  resultSet.insert(0); // make sure non-accepting result is present
   for (DfaId did : stateSet)
-    resultSet.set(stateVec[did].result_);
+    resultSet.insert(stateVec[did].result_);
 
   // states with different results must be differentiated into different blocks
   std::map<Result, BlockId> result2block;
@@ -69,19 +69,19 @@ void partition(const DfaIdSet         &stateSet,
 
   for (DfaId did : stateSet) {
     block = result2block[stateVec[did].result_];
-    safeRef(blocks, block).set(did);
+    safeRef(blocks, block).insert(did);
   }
 }
 
 
 BlockRecSet makeList(CharIdx                 maxChar,
                      const vector<DfaIdSet> &blocks) {
-  DfaId zeroPop = blocks[0].population();
+  DfaId zeroPop = blocks[0].size();
   DfaId restPop = 0;
 
   BlockId num = static_cast<BlockId>(blocks.size());
   for (BlockId bid = 1; bid < num; ++bid)
-    restPop += blocks[bid].population();
+    restPop += blocks[bid].size();
 
   BlockId start = 0;
   BlockId end = 1;
@@ -168,7 +168,7 @@ void handleTwins(DfaId             stateId,
   }
 
   blocks[blockId].clear(stateId);
-  blocks[twin].set(stateId);
+  blocks[twin].insert(stateId);
   patches.emplace(blockId, twin);
 }
 
@@ -193,7 +193,7 @@ void patchPair(BlockId                 ii,
   BlockRec bjj;
   bjj.block_ = jj;
   BlockRec bmin;
-  bmin.block_ = (blocks[ii].population() < blocks[jj].population()) ? ii : jj;
+  bmin.block_ = (blocks[ii].size() < blocks[jj].size()) ? ii : jj;
 
   for (CharIdx ch = 0; ch <= maxChar; ++ch) {
     bii.char_ = ch;
@@ -306,7 +306,7 @@ void DfaMinimizer::iterate() {
     auto node = list_.extract(list_.begin());
     BlockRec &br = node.value();
     DfaIdSet splits = locateSplits(br, blocks_, inverse_);
-    if (splits.population() > 0) {
+    if (splits.size() > 0) {
       performSplits(br, splits, twins, patches, src_.getStates(), blocks_);
       patchBlocks(patches, list_, maxChar_, blocks_);
     }

@@ -13,7 +13,7 @@ namespace {
 
 void charToSet(MultiChar &mc, int ch, bool escape) {
   if (!escape) {
-    mc.set(ch);
+    mc.insert(ch);
     return;
   }
 
@@ -31,22 +31,22 @@ void charToSet(MultiChar &mc, int ch, bool escape) {
   }
 
   case 's':
-    mc.set('\t');
-    mc.set('\n');
-    mc.set('\v');
-    mc.set('\f');
-    mc.set('\r');
-    mc.set(' ');
+    mc.insert('\t');
+    mc.insert('\n');
+    mc.insert('\v');
+    mc.insert('\f');
+    mc.insert('\r');
+    mc.insert(' ');
     break;
   case 'S': {
     MultiChar inv;
     inv.resize(gAlphabetSize);
-    inv.set('\t');
-    inv.set('\n');
-    inv.set('\v');
-    inv.set('\f');
-    inv.set('\r');
-    inv.set(' ');
+    inv.insert('\t');
+    inv.insert('\n');
+    inv.insert('\v');
+    inv.insert('\f');
+    inv.insert('\r');
+    inv.insert(' ');
     inv.flipAll();
     mc.unionWith(inv);
     break;
@@ -56,7 +56,7 @@ void charToSet(MultiChar &mc, int ch, bool escape) {
     mc.setSpan('0', '9');
     mc.setSpan('A', 'Z');
     mc.setSpan('a', 'z');
-    mc.set('_');
+    mc.insert('_');
     break;
   case 'W': {
     MultiChar inv;
@@ -64,14 +64,14 @@ void charToSet(MultiChar &mc, int ch, bool escape) {
     inv.setSpan('0', '9');
     inv.setSpan('A', 'Z');
     inv.setSpan('a', 'z');
-    inv.set('_');
+    inv.insert('_');
     inv.flipAll();
     mc.unionWith(inv);
     break;
   }
 
   default:
-    mc.set(ch);
+    mc.insert(ch);
     break;
   }
 }
@@ -153,7 +153,7 @@ Token Scanner::scanSet() {
   rv.multiChar_.clearAll();
 
   if (!escape && ((ch == '-') || (ch == ']'))) {
-    rv.multiChar_.set(ch);
+    rv.multiChar_.insert(ch);
     ch = interpretSingleChar(escape);
     if (ch < 0)
       throw RedExceptParse("unfinished character class", pos());
@@ -166,8 +166,8 @@ Token Scanner::scanSet() {
       if ((ch2 = interpretSingleChar(escape2)) < 0)
         throw RedExceptParse("unfinished character class range", pos());
       if (!escape2 && (ch2 == ']')) {
-        rv.multiChar_.set(ch);
-        rv.multiChar_.set('-');
+        rv.multiChar_.insert(ch);
+        rv.multiChar_.insert('-');
         ch = ch2;
         escape = escape2;
         continue;

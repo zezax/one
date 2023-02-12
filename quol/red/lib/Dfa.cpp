@@ -88,7 +88,7 @@ bool shareFate(const vector<DfaState> &states, CharIdx aa, CharIdx bb) {
 DfaObj transcribeDfa(const DfaObj &src) {
   DfaObj rv;
   DfaIdSet states = src.allStateIds();
-  rv.reserve(states.population());
+  rv.reserve(states.size());
 
   StateToStateMap oldToNew;
   DfaId errId = rv.newState();
@@ -191,8 +191,8 @@ DfaId DfaObj::newState() {
 
 DfaIdSet DfaObj::allStateIds() const {
   DfaIdSet seen;
-  seen.set(gDfaErrorId);
-  seen.set(gDfaInitialId);
+  seen.insert(gDfaErrorId);
+  seen.insert(gDfaInitialId);
   allStatesRecurse(seen, states_, gDfaInitialId);
   return seen;
 }
@@ -200,14 +200,14 @@ DfaIdSet DfaObj::allStateIds() const {
 
 CharIdx DfaObj::findMaxChar() const {
   DfaIdSet seen;
-  seen.set(gDfaInitialId);
+  seen.insert(gDfaInitialId);
   return maxCharRecurse(seen, states_, gDfaInitialId);
 }
 
 
 Result DfaObj::findMaxResult() const {
   DfaIdSet seen;
-  seen.set(gDfaInitialId);
+  seen.insert(gDfaInitialId);
   return maxResultRecurse(seen, states_, gDfaInitialId);
 }
 
