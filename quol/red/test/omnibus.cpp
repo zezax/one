@@ -223,7 +223,9 @@ Rec{"^a.b$", "a\nb", true},
 Rec{"^(((((llx((-3)|(4)))(;(llx((-3)|(4))))*))))$", "llx-3;llx4", true},
 Rec{"(|a)*", "aaaaa", true},
 Rec{"(|a)+", "aaaaa", true},
-Rec{"^[abc]+$", "def", false}
+Rec{"^[abc]+$", "def", false},
+Rec{"(a|((a|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen) hundred( and ((one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)|(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)))?)|((twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety) (one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen))|((one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)|(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)))",
+    "nineteen hundred and seventy", true}
 };
 
 // These tests are disabled by default for speed.  Any errors they would
