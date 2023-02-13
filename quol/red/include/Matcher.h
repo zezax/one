@@ -90,14 +90,14 @@ private:
 // runtime dispatch to template functions based on format
 #define ZEZAX_RED_FMT_SWITCH(A_func, A_len, ...)        \
   switch (fmt_) {                                       \
-  case fmtOffset1: {                                    \
-    DfaProxy<fmtOffset1> proxy;                         \
+  case fmtDirect1: {                                    \
+    DfaProxy<fmtDirect1> proxy;                         \
     return A_func<A_len>(__VA_ARGS__); }                \
-  case fmtOffset2: {                                    \
-    DfaProxy<fmtOffset2> proxy;                         \
+  case fmtDirect2: {                                    \
+    DfaProxy<fmtDirect2> proxy;                         \
     return A_func<A_len>(__VA_ARGS__); }                \
-  case fmtOffset4: {                                    \
-    DfaProxy<fmtOffset4> proxy;                         \
+  case fmtDirect4: {                                    \
+    DfaProxy<fmtDirect4> proxy;                         \
     return A_func<A_len>(__VA_ARGS__); }                \
   default:                                              \
     throw RedExceptExec("unsupported format");          \

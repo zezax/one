@@ -72,18 +72,18 @@ void Serializer::prepareToSerialize() {
 
 
 Format Serializer::validatedFormat(Format fmt) {
-  if (fmt == fmtOffsetAuto)
+  if (fmt == fmtDirectAuto)
     fmt = optimalFormat();
 
   switch (fmt) {
-  case fmtOffset1:
-    DfaProxy<fmtOffset1>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
+  case fmtDirect1:
+    DfaProxy<fmtDirect1>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
     break;
-  case fmtOffset2:
-    DfaProxy<fmtOffset2>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
+  case fmtDirect2:
+    DfaProxy<fmtDirect2>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
     break;
-  case fmtOffset4:
-    DfaProxy<fmtOffset4>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
+  case fmtDirect4:
+    DfaProxy<fmtDirect4>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
     break;
   default:
     throw RedExceptSerialize("unsuitable DFA format requested");
@@ -95,26 +95,26 @@ Format Serializer::validatedFormat(Format fmt) {
 
 Format Serializer::optimalFormat() {
   Format res;
-  if (!DfaProxy<fmtOffset4>::resultFits(maxResult_))
+  if (!DfaProxy<fmtDirect4>::resultFits(maxResult_))
     throw RedExceptLimit("max result too big for any format");
-  else if (!DfaProxy<fmtOffset2>::resultFits(maxResult_))
-    res = fmtOffset4;
-  else if (!DfaProxy<fmtOffset1>::resultFits(maxResult_))
-    res = fmtOffset2;
+  else if (!DfaProxy<fmtDirect2>::resultFits(maxResult_))
+    res = fmtDirect4;
+  else if (!DfaProxy<fmtDirect1>::resultFits(maxResult_))
+    res = fmtDirect2;
   else
-    res = fmtOffset1;
+    res = fmtDirect1;
 
-  Format off;
-  if (!DfaProxy<fmtOffset4>::offsetFits(maxChar_, dfa_.numStates()))
+  Format dir;
+  if (!DfaProxy<fmtDirect4>::offsetFits(maxChar_, dfa_.numStates()))
     throw RedExceptLimit("num states too many for any format");
-  else if (!DfaProxy<fmtOffset2>::offsetFits(maxChar_, dfa_.numStates()))
-    off = fmtOffset4;
-  else if (!DfaProxy<fmtOffset1>::offsetFits(maxChar_, dfa_.numStates()))
-    off = fmtOffset2;
+  else if (!DfaProxy<fmtDirect2>::offsetFits(maxChar_, dfa_.numStates()))
+    dir = fmtDirect4;
+  else if (!DfaProxy<fmtDirect1>::offsetFits(maxChar_, dfa_.numStates()))
+    dir = fmtDirect2;
   else
-    off = fmtOffset1;
+    dir = fmtDirect1;
 
-  return std::max(res, off);
+  return std::max(res, dir);
 }
 
 
@@ -159,9 +159,9 @@ void Serializer::populateHeader(FileHeader &hdr, Format fmt) {
 void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
   switch (fmt) {
 
-  case fmtOffset1:
+  case fmtDirect1:
     {
-      DfaProxy<fmtOffset1> proxy;
+      DfaProxy<fmtDirect1> proxy;
       typename decltype(proxy)::State rec;
       rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
       append(buf, &rec, sizeof(rec));
@@ -173,9 +173,9 @@ void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
     }
     break;
 
-  case fmtOffset2:
+  case fmtDirect2:
     {
-      DfaProxy<fmtOffset2> proxy;
+      DfaProxy<fmtDirect2> proxy;
       typename decltype(proxy)::State rec;
       rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
       append(buf, &rec, sizeof(rec));
@@ -187,9 +187,9 @@ void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
     }
     break;
 
-  case fmtOffset4:
+  case fmtDirect4:
     {
-      DfaProxy<fmtOffset4> proxy;
+      DfaProxy<fmtDirect4> proxy;
       typename decltype(proxy)::State rec;
       rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
       append(buf, &rec, sizeof(rec));
@@ -221,12 +221,12 @@ void Serializer::tabulateOffsets(Format fmt) {
 size_t Serializer::measureState(Format fmt, const DfaState &ds) {
   (void) ds;
   switch (fmt) {
-  case fmtOffset1:
-    return DfaProxy<fmtOffset1>::stateSize(maxChar_);
-  case fmtOffset2:
-    return DfaProxy<fmtOffset2>::stateSize(maxChar_);
-  case fmtOffset4:
-    return DfaProxy<fmtOffset4>::stateSize(maxChar_);
+  case fmtDirect1:
+    return DfaProxy<fmtDirect1>::stateSize(maxChar_);
+  case fmtDirect2:
+    return DfaProxy<fmtDirect2>::stateSize(maxChar_);
+  case fmtDirect4:
+    return DfaProxy<fmtDirect4>::stateSize(maxChar_);
   default:
     throw RedExceptSerialize("bad format in measureState");
   }
@@ -276,9 +276,9 @@ const char *checkHeader(const void *ptr, size_t len) {
   }
 
   switch (hdr->format_) {
-  case fmtOffset1:
-  case fmtOffset2:
-  case fmtOffset4:
+  case fmtDirect1:
+  case fmtDirect2:
+  case fmtDirect4:
     break;
   default:
     return "Serialized DFA: unsupported format";

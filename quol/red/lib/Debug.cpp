@@ -410,9 +410,9 @@ string toString(const char *buf, size_t len) { // serialized
 
   Format fmt = static_cast<Format>(hdr->format_);
   switch (fmt) {
-  case fmtOffset1:
-  case fmtOffset2:
-  case fmtOffset4:
+  case fmtDirect1:
+  case fmtDirect2:
+  case fmtDirect4:
     break;
   default:
     rv = "format not recognized";
@@ -426,14 +426,14 @@ string toString(const char *buf, size_t len) { // serialized
 
   size_t inc;
   switch (fmt) {
-  case fmtOffset1:
-    inc = DfaProxy<fmtOffset1>::stateSize(hdr->maxChar_);
+  case fmtDirect1:
+    inc = DfaProxy<fmtDirect1>::stateSize(hdr->maxChar_);
     break;
-  case fmtOffset2:
-    inc = DfaProxy<fmtOffset2>::stateSize(hdr->maxChar_);
+  case fmtDirect2:
+    inc = DfaProxy<fmtDirect2>::stateSize(hdr->maxChar_);
     break;
-  case fmtOffset4:
-    inc = DfaProxy<fmtOffset4>::stateSize(hdr->maxChar_);
+  case fmtDirect4:
+    inc = DfaProxy<fmtDirect4>::stateSize(hdr->maxChar_);
     break;
   default:
     throw RedExceptInternal("corrupted format");
@@ -442,9 +442,9 @@ string toString(const char *buf, size_t len) { // serialized
   for (const char *ptr = base; ptr < end; ptr += inc) {
     size_t off = static_cast<size_t>(ptr - base);
     switch (fmt) {
-    case fmtOffset1:
+    case fmtDirect1:
       {
-        DfaProxy<fmtOffset1> proxy;
+        DfaProxy<fmtDirect1> proxy;
         proxy.init(ptr, 0);
         Result result = proxy.result();
         bool deadEnd = proxy.deadEnd();
@@ -457,9 +457,9 @@ string toString(const char *buf, size_t len) { // serialized
         }
       }
       break;
-    case fmtOffset2:
+    case fmtDirect2:
       {
-        DfaProxy<fmtOffset2> proxy;
+        DfaProxy<fmtDirect2> proxy;
         proxy.init(ptr, 0);
         Result result = proxy.result();
         bool deadEnd = proxy.deadEnd();
@@ -472,9 +472,9 @@ string toString(const char *buf, size_t len) { // serialized
         }
       }
       break;
-    case fmtOffset4:
+    case fmtDirect4:
       {
-        DfaProxy<fmtOffset4> proxy;
+        DfaProxy<fmtDirect4> proxy;
         proxy.init(ptr, 0);
         Result result = proxy.result();
         bool deadEnd = proxy.deadEnd();

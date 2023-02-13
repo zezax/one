@@ -9,12 +9,12 @@
 
 namespace zezax::red {
 
-//FIXME: 3-byte, rename offset -> direct/location/address
+//FIXME: 3-byte
 enum Format : uint8_t {
-  fmtOffsetAuto = 10,
-  fmtOffset1    = 11,
-  fmtOffset2    = 12,
-  fmtOffset4    = 14,
+  fmtDirectAuto = 10,
+  fmtDirect1    = 11,
+  fmtDirect2    = 12,
+  fmtDirect4    = 14,
 };
 
 struct FileHeader {
@@ -32,19 +32,19 @@ struct FileHeader {
 };
 
 
-struct StateOffset1 {
+struct StateDirect1 {
   uint8_t resultAndDeadEnd_; // low 7 bits are result
   uint8_t offsets_[0]; // gcc-ism
 };
 
 
-struct StateOffset2 {
+struct StateDirect2 {
   uint16_t resultAndDeadEnd_; // low 15 bits are result
   uint16_t offsets_[0]; // gcc-ism
 };
 
 
-struct StateOffset4 {
+struct StateDirect4 {
   uint32_t resultAndDeadEnd_; // low 31 bits are result
   uint32_t offsets_[0]; // gcc-ism
 };

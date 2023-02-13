@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
       Result res = 0;
       for (string &word : words)
         p.add(word, ++res, fIgnoreCase);
-      rex = compile(p, fmtOffsetAuto, &stats);
+      rex = compile(p, fmtDirectAuto, &stats);
     }
 
     std::cout << toString(&stats) << std::endl;

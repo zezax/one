@@ -373,4 +373,4 @@ TEST_P(OmnibusFmt, matcher) {
 
 INSTANTIATE_TEST_SUITE_P(A, OmnibusFmt, Combine(
   ValuesIn(testRecs),
-  Values(fmtOffsetAuto, fmtOffset1, fmtOffset2, fmtOffset4)));
+  Values(fmtDirectAuto, fmtDirect1, fmtDirect2, fmtDirect4)));

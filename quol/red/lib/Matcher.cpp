@@ -30,23 +30,23 @@ void Matcher::reset() {
   const char *base = exec_->getBase();
   fmt_ = static_cast<Format>(hdr->format_);
   switch (fmt_) {
-  case fmtOffset1:
+  case fmtDirect1:
     {
-      DfaProxy<fmtOffset1> proxy;
+      DfaProxy<fmtDirect1> proxy;
       proxy.init(base, hdr->initialOff_);
       result_ = proxy.result();
     }
     break;
-  case fmtOffset2:
+  case fmtDirect2:
     {
-      DfaProxy<fmtOffset2> proxy;
+      DfaProxy<fmtDirect2> proxy;
       proxy.init(base, hdr->initialOff_);
       result_ = proxy.result();
     }
     break;
-  case fmtOffset4:
+  case fmtDirect4:
     {
-      DfaProxy<fmtOffset4> proxy;
+      DfaProxy<fmtDirect4> proxy;
       proxy.init(base, hdr->initialOff_);
       result_ = proxy.result();
     }

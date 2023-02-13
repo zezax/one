@@ -57,8 +57,8 @@ template <Format fmt>
 struct DfaDefs {};
 
 template <>
-struct DfaDefs<fmtOffset1> {
-  typedef StateOffset1 State;
+struct DfaDefs<fmtDirect1> {
+  typedef StateDirect1 State;
   typedef uint8_t      Value;
 
   static constexpr Value  resultMask_   = 0x7f;
@@ -69,8 +69,8 @@ struct DfaDefs<fmtOffset1> {
 
 
 template <>
-struct DfaDefs<fmtOffset2> {
-  typedef StateOffset2 State;
+struct DfaDefs<fmtDirect2> {
+  typedef StateDirect2 State;
   typedef uint16_t     Value;
 
   static constexpr Value  resultMask_   = 0x7fff;
@@ -81,8 +81,8 @@ struct DfaDefs<fmtOffset2> {
 
 
 template <>
-struct DfaDefs<fmtOffset4> {
-  typedef StateOffset4 State;
+struct DfaDefs<fmtDirect4> {
+  typedef StateDirect4 State;
   typedef uint32_t     Value;
 
   static constexpr Value  resultMask_   = 0x7fffffff;
