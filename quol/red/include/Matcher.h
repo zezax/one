@@ -13,7 +13,7 @@ enum Length {
   lenShortest   = 1,
   lenContiguous = 2,
   lenLast       = 3,
-  lenWhole      = 4,
+  lenFull       = 4,
 };
 
 
@@ -30,29 +30,29 @@ public:
   size_t start() const { return matchStart_; }
   size_t end() const { return matchEnd_; }
 
-  Result check(const void *ptr, size_t len, Length mlen = lenWhole);
-  Result check(const char *str, Length mlen = lenWhole);
-  Result check(const std::string &s, Length mlen = lenWhole);
-  Result check(std::string_view sv, Length mlen = lenWhole);
+  Result check(const void *ptr, size_t len, Length mlen = lenFull);
+  Result check(const char *str, Length mlen = lenFull);
+  Result check(const std::string &s, Length mlen = lenFull);
+  Result check(std::string_view sv, Length mlen = lenFull);
 
-  Result match(const void *ptr, size_t len, Length mlen = lenWhole);
-  Result match(const char *str, Length mlen = lenWhole);
-  Result match(const std::string &s, Length mlen = lenWhole);
-  Result match(std::string_view sv, Length mlen = lenWhole);
+  Result match(const void *ptr, size_t len, Length mlen = lenFull);
+  Result match(const char *str, Length mlen = lenFull);
+  Result match(const std::string &s, Length mlen = lenFull);
+  Result match(std::string_view sv, Length mlen = lenFull);
 
   std::string replace(const void       *ptr,
                       size_t            len,
                       std::string_view  repl,
-                      Length            mlen = lenWhole);
+                      Length            mlen = lenFull);
   std::string replace(const char       *str,
                       std::string_view  repl,
-                      Length            mlen = lenWhole);
+                      Length            mlen = lenFull);
   std::string replace(const std::string &src,
                       std::string_view   repl,
-                      Length             mlen = lenWhole);
+                      Length             mlen = lenFull);
   std::string replace(std::string_view  src,
                       std::string_view  repl,
-                      Length            mlen = lenWhole);
+                      Length            mlen = lenFull);
 
   // these versions skip the run-time dispatch based on match-length
   template <Length length> Result check(const void *ptr, size_t len);
@@ -237,7 +237,7 @@ std::string Matcher::replaceCore(InProxyT         in,
           break;
       }
       else {
-        if (length == lenWhole)
+        if (length == lenFull)
           found = nullptr;
         if (((length == lenContiguous) && found) ||
             dproxy.pureDeadEnd())

@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 
     string line;
     while (std::getline(std::cin, line))
-      std::cout << dfa.matchWhole(line) << std::endl;
+      std::cout << dfa.matchFull(line) << std::endl;
 
     return 0;
   }

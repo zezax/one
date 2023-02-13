@@ -43,12 +43,12 @@ TEST(Omnibus, multi) {
     DfaMinimizer dm(dfa);
     dm.minimize();
   }
-  EXPECT_EQ(0, dfa.matchWhole(""));
-  EXPECT_EQ(0, dfa.matchWhole("0"));
-  EXPECT_EQ(1, dfa.matchWhole("a"));
-  EXPECT_EQ(2, dfa.matchWhole("aa"));
-  EXPECT_EQ(3, dfa.matchWhole("aaa"));
-  EXPECT_EQ(0, dfa.matchWhole("aaaa"));
+  EXPECT_EQ(0, dfa.matchFull(""));
+  EXPECT_EQ(0, dfa.matchFull("0"));
+  EXPECT_EQ(1, dfa.matchFull("a"));
+  EXPECT_EQ(2, dfa.matchFull("aa"));
+  EXPECT_EQ(3, dfa.matchFull("aaa"));
+  EXPECT_EQ(0, dfa.matchFull("aaaa"));
 }
 
 
@@ -312,7 +312,7 @@ TEST_P(Omnibus, match) {
       DfaMinimizer dm(dfa);
       dm.minimize();
     }
-    Result res = dfa.matchWhole(r.text_);
+    Result res = dfa.matchFull(r.text_);
     EXPECT_EQ(r.match_, (res == 1));
   }
   catch (const RedExceptParse &ex) {
@@ -358,7 +358,7 @@ TEST_P(OmnibusFmt, matcher) {
       rex = make_shared<const Executable>(std::move(buf));
     }
     Matcher mat(rex);
-    Result res = mat.check(r.text_, lenWhole);
+    Result res = mat.check(r.text_, lenFull);
     EXPECT_EQ(r.match_, (res == 1));
   }
   catch (const RedExceptLimit &lim) {

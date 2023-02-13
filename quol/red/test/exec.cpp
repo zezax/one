@@ -26,9 +26,9 @@ TEST_P(Exec, smoke) {
     rex = compile(p, fmt);
   }
   Matcher mat(&rex);
-  EXPECT_EQ(0, mat.match("bca", lenWhole));
-  EXPECT_EQ(1, mat.match("bac", lenWhole));
-  EXPECT_EQ(2, mat.match("cab", lenWhole));
+  EXPECT_EQ(0, mat.match("bca", lenFull));
+  EXPECT_EQ(1, mat.match("bac", lenFull));
+  EXPECT_EQ(2, mat.match("cab", lenFull));
 }
 
 

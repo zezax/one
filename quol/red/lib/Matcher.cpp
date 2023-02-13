@@ -73,7 +73,7 @@ void Matcher::reset() {
     A_pfx ## A_suf(A_name, lenShortest,   __VA_ARGS__)   \
     A_pfx ## A_suf(A_name, lenContiguous, __VA_ARGS__)   \
     A_pfx ## A_suf(A_name, lenLast,       __VA_ARGS__)   \
-    A_pfx ## A_suf(A_name, lenWhole,      __VA_ARGS__)   \
+    A_pfx ## A_suf(A_name, lenFull,       __VA_ARGS__)   \
   default:                                               \
     throw RedExceptExec("unsupported length");           \
   }

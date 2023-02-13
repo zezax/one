@@ -100,7 +100,7 @@ MATCHING:
 
 COMMIT 8312d66
   Initial benchmark, 4-byte, no state, slide by 1
-  TEST: bench 1000 checkWhole
+  TEST: bench 1000 checkFull
   RESULT: ucpu 17.768
 COMMIT 1589536
   Matcher class, 4-byte, with state, slide over match

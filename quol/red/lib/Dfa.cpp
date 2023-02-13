@@ -237,7 +237,7 @@ void DfaObj::installEquivalenceMap() {
 }
 
 
-Result DfaObj::matchWhole(string_view s) {
+Result DfaObj::matchFull(string_view s) {
   DfaState *cur = &states_[gDfaInitialId];
   for (char c : s) {
     CharIdx ch = static_cast<CharIdx>(c);

@@ -62,7 +62,7 @@ TEST(Matcher, checkLengths) {
   EXPECT_EQ(1, mat.check(in, lenShortest));
   EXPECT_EQ(2, mat.check(in, lenContiguous));
   EXPECT_EQ(3, mat.check(in, lenLast));
-  EXPECT_EQ(3, mat.check(in, lenWhole));
+  EXPECT_EQ(3, mat.check(in, lenFull));
 
   EXPECT_EQ(1, mat.match(in, lenShortest));
   EXPECT_EQ(1, mat.result());
@@ -79,7 +79,7 @@ TEST(Matcher, checkLengths) {
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(7, mat.end());
 
-  EXPECT_EQ(3, mat.match(in, lenWhole));
+  EXPECT_EQ(3, mat.match(in, lenFull));
   EXPECT_EQ(3, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(7, mat.end());
@@ -89,7 +89,7 @@ TEST(Matcher, checkLengths) {
   EXPECT_EQ(1, mat.check(in, lenShortest));
   EXPECT_EQ(2, mat.check(in, lenContiguous));
   EXPECT_EQ(3, mat.check(in, lenLast));
-  EXPECT_EQ(0, mat.check(in, lenWhole));
+  EXPECT_EQ(0, mat.check(in, lenFull));
 
   EXPECT_EQ(1, mat.match(in, lenShortest));
   EXPECT_EQ(1, mat.result());
@@ -106,7 +106,7 @@ TEST(Matcher, checkLengths) {
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(7, mat.end());
 
-  EXPECT_EQ(0, mat.match(in, lenWhole));
+  EXPECT_EQ(0, mat.match(in, lenFull));
   EXPECT_EQ(0, mat.result());
   EXPECT_EQ(0, mat.start());
   EXPECT_EQ(0, mat.end());
@@ -139,8 +139,8 @@ TEST(Matcher, replaceLengths) {
   EXPECT_EQ("1xyzdefg2", mat.replace("1abcdefg2", "xyz", lenShortest));
   EXPECT_EQ("1xyzefg2", mat.replace("1abcdefg2", "xyz", lenContiguous));
   EXPECT_EQ("1xyz2", mat.replace("1abcdefg2", "xyz", lenLast));
-  EXPECT_EQ("1abcdefg2", mat.replace("1abcdefg2", "xyz", lenWhole));
-  EXPECT_EQ("1xyz", mat.replace("1abcdefg", "xyz", lenWhole));
+  EXPECT_EQ("1abcdefg2", mat.replace("1abcdefg2", "xyz", lenFull));
+  EXPECT_EQ("1xyz", mat.replace("1abcdefg", "xyz", lenFull));
 }
 
 
@@ -162,10 +162,10 @@ TEST_P(MatcherTest, check) {
   const char *in0 = "bca";
   string in1 = "bac";
   string_view in2 = "cab";
-  EXPECT_EQ(0, m0.check(in0, lenWhole));
-  EXPECT_EQ(0, m00.check(in0, 3, lenWhole));
-  EXPECT_EQ(1, m1.check(in1, lenWhole));
-  EXPECT_EQ(2, m2.check(in2, lenWhole));
+  EXPECT_EQ(0, m0.check(in0, lenFull));
+  EXPECT_EQ(0, m00.check(in0, 3, lenFull));
+  EXPECT_EQ(1, m1.check(in1, lenFull));
+  EXPECT_EQ(2, m2.check(in2, lenFull));
 }
 
 
@@ -185,10 +185,10 @@ TEST_P(MatcherTest, match) {
   const char *in0 = "bca";
   string in1 = "bac";
   string_view in2 = "cab";
-  m0.match(in0, lenWhole);
-  m00.match(in0, 3, lenWhole);
-  m1.match(in1, lenWhole);
-  m2.match(in2, lenWhole);
+  m0.match(in0, lenFull);
+  m00.match(in0, 3, lenFull);
+  m1.match(in1, lenFull);
+  m2.match(in2, lenFull);
   EXPECT_EQ(0, m0.result());
   EXPECT_EQ(0, m00.result());
   EXPECT_EQ(1, m1.result());

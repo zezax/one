@@ -115,10 +115,10 @@ TEST(Minimizer, obj) {
 
   std::cout << toString(dfa) << std::endl;
 
-  EXPECT_EQ(0, dfa.matchWhole(""));
-  EXPECT_EQ(1, dfa.matchWhole("ab"));
-  EXPECT_EQ(0, dfa.matchWhole("aba"));
-  EXPECT_EQ(1, dfa.matchWhole("baab"));
+  EXPECT_EQ(0, dfa.matchFull(""));
+  EXPECT_EQ(1, dfa.matchFull("ab"));
+  EXPECT_EQ(0, dfa.matchFull("aba"));
+  EXPECT_EQ(1, dfa.matchFull("baab"));
 }
 
 
@@ -140,16 +140,16 @@ TEST(Minimizer, results) {
   (void) s4;
   (void) s7;
   dfa.chopEndMarks();
-  EXPECT_EQ(0, dfa.matchWhole("ab"));
-  EXPECT_EQ(1, dfa.matchWhole("ac"));
-  EXPECT_EQ(2, dfa.matchWhole("cb"));
+  EXPECT_EQ(0, dfa.matchFull("ab"));
+  EXPECT_EQ(1, dfa.matchFull("ac"));
+  EXPECT_EQ(2, dfa.matchFull("cb"));
   {
     DfaMinimizer dm(dfa);
     dm.minimize();
   }
-  EXPECT_EQ(0, dfa.matchWhole("ab"));
-  EXPECT_EQ(1, dfa.matchWhole("ac"));
-  EXPECT_EQ(2, dfa.matchWhole("cb"));
+  EXPECT_EQ(0, dfa.matchFull("ab"));
+  EXPECT_EQ(1, dfa.matchFull("ac"));
+  EXPECT_EQ(2, dfa.matchFull("cb"));
 }
 
 
