@@ -28,3 +28,6 @@ all-%:
 all-tools: all-lib
 
 all-test: all-lib
+
+cov:
+	$(MAKE) -C lib $@

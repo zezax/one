@@ -13,6 +13,9 @@ else ifeq ($(MODE), dbgo)
   OPT := -g -O3 -march=native
 else ifeq ($(MODE), dbg)
   OPT := -g
+else ifeq ($(MODE), cov)
+  OPT := -g -fprofile-arcs -ftest-coverage
+  LDLIBS += -lgcov
 else ifeq ($(MODE), jemalloc)
   OPT := -g
   LDLIBS += -ljemalloc
