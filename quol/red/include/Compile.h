@@ -19,4 +19,8 @@ std::shared_ptr<const Executable> compileShared(
     Format     fmt = fmtDirectAuto,
     CompStats *stats = nullptr);
 
+std::string compileToSerialized(ReParser  &rp,
+                                Format     fmt = fmtDirectAuto,
+                                CompStats *stats = nullptr);
+
 } // namespace zezax::red

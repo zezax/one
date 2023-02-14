@@ -3,6 +3,7 @@
 #include "Debug.h"
 
 #include <algorithm>
+#include <limits>
 #include <set>
 #include <ratio>
 #include <vector>
@@ -16,6 +17,7 @@ namespace chrono = std::chrono;
 using chrono::duration_cast;
 using chrono::nanoseconds;
 using chrono::steady_clock;
+using std::numeric_limits;
 using std::ostream;
 using std::string;
 using std::to_string;
@@ -57,26 +59,42 @@ string timeDiff(steady_clock::time_point aa, steady_clock::time_point bb) {
 }
 
 
-void toStringAppend(string &out, const NfaIdSet &nis) {
+template <class Index, class Tag, class Word>
+void toStringAppend(string &out, const BitSet<Index, Tag, Word> &bs) {
+  Index start = 0;
+  Index prev = numeric_limits<Index>::max();
   bool first = true;
-  for (NfaId id : nis) {
-    if (first)
-      first = false;
-    else
-      out += ',';
-    out += to_string(id);
+  for (Index cur : bs) {
+    if (cur != (prev + 1)) {
+      if (prev != numeric_limits<Index>::max()) {
+        if (first)
+          first = false;
+        else
+          out += ',';
+        out += to_string(start);
+        if (prev > start) {
+          if (prev > (start + 1))
+            out += '-';
+          else
+            out += ',';
+          out += to_string(prev);
+        }
+      }
+      start = cur;
+    }
+    prev = cur;
   }
-}
-
-
-void toStringAppend(string &out, const DfaIdSet &dis) {
-  bool first = true;
-  for (DfaId id : dis) {
-    if (first)
-      first = false;
-    else
+  if (prev != numeric_limits<Index>::max()) {
+    if (!first)
       out += ',';
-    out += to_string(id);
+    out += to_string(start);
+    if (prev > start) {
+      if (prev > (start + 1))
+        out += '-';
+      else
+        out += ',';
+      out += to_string(prev);
+    }
   }
 }
 
@@ -109,10 +127,11 @@ void toStringAppendEquivMap(string &out, const T *ptr, size_t len) {
     size_t ch = ptr[idx];
     if (ch != prev) {
       if (prev != nval) {
-        out += "  " + to_string(prev) + " <- " + to_string(start);
+        out += "  " + to_string(prev) + " <- " +
+          visibleChar(static_cast<CharIdx>(start));
         if ((idx - 1) > start) {
           out += '-';
-          out += to_string(idx - 1);
+          out += visibleChar(static_cast<CharIdx>(idx - 1));
         }
         out += '\n';
       }
@@ -122,10 +141,11 @@ void toStringAppendEquivMap(string &out, const T *ptr, size_t len) {
   }
   if (prev != nval) {
     --idx;
-    out += "  " + to_string(prev) + " <- " + to_string(start);
+    out += "  " + to_string(prev) + " <- " +
+      visibleChar(static_cast<CharIdx>(start));
     if (idx > start) {
       out += '-';
-      out += to_string(idx);
+      out += visibleChar(static_cast<CharIdx>(idx));
     }
     out += '\n';
   }
@@ -185,8 +205,12 @@ string toString(const MultiChar &mc) {
 
 
 string toString(const MultiCharSet &mcs) {
-  string rv;
+  vector<MultiChar> vec;
   for (const MultiChar &mc : mcs)
+    vec.push_back(mc);
+  std::sort(vec.begin(), vec.end());
+  string rv;
+  for (const MultiChar &mc : vec)
     rv += toString(mc) + '\n';
   return rv;
 }
@@ -263,11 +287,23 @@ string toString(const NfaIdSet &nis, const NfaObj &nfa) {
 
 
 string toString(const NfaStatesToTransitions &tbl) {
+  vector<NfaIdSet> vec;
+  for (auto &[key, _] : tbl)
+    vec.emplace_back(key);
+  std::sort(vec.begin(), vec.end());
+
   string rv = "map(\n";
-  for (auto &[key, val] : tbl) {
-    rv += "key:" + toString(key) + "val:[";
-    for (const auto &[_, nis] : val)
+  for (const NfaIdSet &key : vec) {
+    const IdxToNfaIdSet &val = tbl.at(key);
+    rv += "key=" + toString(key) + " val=[";
+    bool first = true;
+    for (const auto &[_, nis] : val) {
+      if (first)
+        first = false;
+      else
+        rv += ';';
       rv += toString(nis);
+    }
     rv += "]\n";
   }
   return rv + ")\n";
@@ -275,9 +311,14 @@ string toString(const NfaStatesToTransitions &tbl) {
 
 
 string toString(const NfaStateToCount &c) {
-  string rv = "counts(\n";
+  vector<std::pair<NfaId, size_t>> vec;
   for (auto [key, val] : c)
-    rv += "key:" + to_string(key) + "val:" + to_string(val);
+    vec.emplace_back(key, val);
+  std::sort(vec.begin(), vec.end());
+
+  string rv = "counts(\n";
+  for (auto [key, val] : vec)
+    rv += "key=" + to_string(key) + " val=" + to_string(val) + '\n';
   return rv + ")\n";
 }
 

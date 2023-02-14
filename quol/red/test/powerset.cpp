@@ -140,7 +140,8 @@ TEST(Powerset, convert) {
 
   DfaObj dfa;
   {
-    PowersetConverter psc(nfa);
+    CompStats stats;
+    PowersetConverter psc(nfa, &stats);
     dfa = psc.convert();
     nfa.freeAll();
   }

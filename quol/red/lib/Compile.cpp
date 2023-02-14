@@ -11,9 +11,22 @@ using std::make_shared;
 using std::shared_ptr;
 using std::string;
 
-namespace {
 
-string doCompile(ReParser &rp, Format fmt, CompStats *stats) {
+Executable compile(ReParser &rp, Format fmt, CompStats *stats) {
+  string buf = compileToSerialized(rp, fmt, stats);
+  return Executable(std::move(buf));
+}
+
+
+shared_ptr<const Executable> compileShared(ReParser  &rp,
+                                           Format     fmt,
+                                           CompStats *stats) {
+  string buf = compileToSerialized(rp, fmt, stats);
+  return make_shared<const Executable>(std::move(buf));
+}
+
+
+string compileToSerialized(ReParser &rp, Format fmt, CompStats *stats) {
   string buf;
   rp.finish(); // idempotent, except for stats
   {
@@ -34,21 +47,6 @@ string doCompile(ReParser &rp, Format fmt, CompStats *stats) {
   }
 
   return buf;
-}
-
-} // anonymous
-
-Executable compile(ReParser &rp, Format fmt, CompStats *stats) {
-  string buf = doCompile(rp, fmt, stats);
-  return Executable(std::move(buf));
-}
-
-
-shared_ptr<const Executable> compileShared(ReParser  &rp,
-                                           Format     fmt,
-                                           CompStats *stats) {
-  string buf = doCompile(rp, fmt, stats);
-  return make_shared<const Executable>(std::move(buf));
 }
 
 } // namespace zezax::red

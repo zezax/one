@@ -21,6 +21,10 @@ TEST(Util, fromHexDigit) {
   EXPECT_EQ(10, fromHexDigit('A'));
   EXPECT_EQ(15, fromHexDigit('f'));
   EXPECT_EQ(15, fromHexDigit('F'));
+  EXPECT_EQ(-1, fromHexDigit('\0'));
+  EXPECT_EQ(-1, fromHexDigit(' '));
+  EXPECT_EQ(-1, fromHexDigit('g'));
+  EXPECT_EQ(-1, fromHexDigit('~'));
 }
 
 
@@ -53,4 +57,17 @@ TEST(Util, file) {
   string two = readFileToString(fn.c_str());
   unlink(fn.c_str());
   EXPECT_EQ(one, two);
+}
+
+
+TEST(Util, fileFail) {
+  string fn = "/proc/nonexistent8675309";
+  EXPECT_THROW(readFileToString(fn.c_str()), std::system_error);
+  EXPECT_THROW(writeStringToFile("foobar", fn.c_str()), std::system_error);
+}
+
+
+TEST(Util, bytesUsed) {
+  // silly test just to exercise the code
+  EXPECT_GT(bytesUsed(), 0);
 }
