@@ -74,7 +74,6 @@ public:
   NfaId stateConcat(NfaId xx, NfaId yy);
   NfaId stateOptional(NfaId id);
   NfaId stateKleenStar(NfaId id);
-  NfaId stateOneOrMore(NfaId id);
   NfaId stateClosure(NfaId id, int min, int max);
   NfaId stateIgnoreCase(NfaId id);
   NfaId stateWildcard(); // dot-star

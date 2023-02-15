@@ -122,7 +122,7 @@ TEST(Matcher, replace) {
   }
   Matcher mat(rex);
   EXPECT_EQ("foobar", mat.replace("fooac", "bar", lenLast));
-  EXPECT_EQ("foobarz", mat.replace("fooacz", "bar", lenLast));
+  EXPECT_EQ("foobarz", mat.replace(string("fooacz"), "bar", lenLast));
 }
 
 

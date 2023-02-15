@@ -15,6 +15,13 @@ using testing::TestWithParam;
 using testing::Values;
 
 
+TEST(Serializer, header) {
+  char buf[1024];
+  memset(buf, 0, sizeof(buf));
+  EXPECT_NE(nullptr, checkHeader(buf, sizeof(buf)));
+}
+
+
 class SerializerTest : public TestWithParam<Format> {};
 
 TEST_P(SerializerTest, smoke) {

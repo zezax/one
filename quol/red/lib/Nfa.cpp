@@ -250,11 +250,6 @@ NfaId NfaObj::stateKleenStar(NfaId id) {
 }
 
 
-NfaId NfaObj::stateOneOrMore(NfaId id) {
-  return stateConcat(id, stateKleenStar(deepCopyState(id)));
-}
-
-
 NfaId NfaObj::stateClosure(NfaId id, int min, int max) {
   if (min == 0) {
     if (max < 0)

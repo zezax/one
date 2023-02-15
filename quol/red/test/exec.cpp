@@ -73,17 +73,29 @@ class ExecTest : public TestWithParam<Format> {};
 
 TEST_P(ExecTest, smoke) {
   Format fmt = GetParam();
+  CompStats stats;
   Executable rex;
   {
-    ReParser p;
+    ReParser p(&stats);;
     p.addAuto("ab*c", 1, 0);
     p.addAuto("ca*b", 2, 0);
-    rex = compile(p, fmt);
+    rex = compile(p, fmt, &stats);
   }
   Matcher mat(&rex);
   EXPECT_EQ(0, mat.match("bca", lenFull));
   EXPECT_EQ(1, mat.match("bac", lenFull));
   EXPECT_EQ(2, mat.match("cab", lenFull));
+
+  EXPECT_EQ(10, stats.numTokens_);
+  EXPECT_EQ(2, stats.numPatterns_);
+  EXPECT_LT(0, stats.origNfaStates_);
+  EXPECT_LT(0, stats.usefulNfaStates_);
+  EXPECT_LT(0, stats.origDfaStates_);
+  EXPECT_EQ(7, stats.minimizedDfaStates_);
+  EXPECT_LT(0, stats.serializedBytes_);
+  EXPECT_EQ(4, stats.numDistinguishedSymbols_);
+  EXPECT_LT(0, stats.transitionTableRows_);
+  EXPECT_LT(0, stats.powersetMemUsed_);
 }
 
 
