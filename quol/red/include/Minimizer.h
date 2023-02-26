@@ -23,15 +23,22 @@ struct BlockRec {
   CharIdx char_;
 };
 
+struct Patch {
+  BlockId block_;
+  BlockId twin_;
+};
+
 typedef std::unordered_set<DfaEdge>           DfaEdgeSet;
 typedef std::unordered_map<DfaEdge, DfaIdSet> DfaEdgeToIds;
 typedef std::unordered_set<BlockRec>          BlockRecSet;
-typedef std::pair<BlockId, BlockId>           Patch;
 typedef std::unordered_set<Patch>             PatchSet;
 
 } // namespace zezax::red
 
-// for use in std::unordered map
+
+// A brief interlude in the top-level namespace so that we can use various
+// structs defined above in std::unordered_map and std::unordered_set.
+
 template<> struct std::equal_to<zezax::red::DfaEdge> {
   bool operator()(const zezax::red::DfaEdge &aa,
                   const zezax::red::DfaEdge &bb) const {
@@ -64,10 +71,18 @@ template<> struct std::hash<zezax::red::BlockRec> {
 };
 
 
+template<> struct std::equal_to<zezax::red::Patch> {
+  bool operator()(const zezax::red::Patch &aa,
+                  const zezax::red::Patch &bb) const {
+    return ((aa.block_ == bb.block_) && (aa.twin_ == bb.twin_));
+  }
+};
+
+
 template<> struct std::hash<zezax::red::Patch> {
   size_t operator()(const zezax::red::Patch &p) const {
-    size_t h = zezax::red::fnv1a<size_t>(&p.first, sizeof(p.first));
-    return zezax::red::fnv1aInc<size_t>(h, &p.second, sizeof(p.second));
+    size_t h = zezax::red::fnv1a<size_t>(&p.block_, sizeof(p.block_));
+    return zezax::red::fnv1aInc<size_t>(h, &p.twin_, sizeof(p.twin_));
   }
 };
 
@@ -95,14 +110,14 @@ private:
 };
 
 
-// implementation functions
+// constituent functions, public unit tests
 DfaEdgeToIds invert(const DfaIdSet              &stateSet,
                     const std::vector<DfaState> &stateVec,
                     CharIdx                      maxChar);
 
 void partition(const DfaIdSet              &stateSet,
                const std::vector<DfaState> &stateVec,
-               std::vector<DfaIdSet>       &blocks);
+               std::vector<DfaIdSet>       &blockVec);
 
 BlockRecSet makeList(CharIdx                      maxChar,
                      const std::vector<DfaIdSet> &blocks);
@@ -116,16 +131,16 @@ void performSplits(const BlockRec              &blockRec,
                    std::vector<BlockId>        &twins,
                    PatchSet                    &patches,
                    const std::vector<DfaState> &stateVec,
-                   std::vector<DfaIdSet>       &blocks);
+                   std::vector<DfaIdSet>       &blockVec);
 
 bool containedIn(BlockId                      needleId,
                  BlockId                      haystackId,
                  CharIdx                      ch,
                  const std::vector<DfaState> &stateVec,
-                 const std::vector<DfaIdSet> &blocks);
+                 const std::vector<DfaIdSet> &blockVec);
 
-void handleTwins(DfaId                  src,
-                 BlockId                dst,
+void handleTwins(DfaId                  stateId,
+                 BlockId                blockId,
                  std::vector<DfaIdSet> &blocks,
                  std::vector<DfaId>    &twins,
                  PatchSet              &patches);
@@ -144,7 +159,5 @@ void patchPair(BlockId                      ii,
 void makeDfaFromBlocks(const DfaObj                &srcDfa,
                        DfaObj                      &outDfa,
                        const std::vector<DfaIdSet> &blocks);
-
-void improveDfa(DfaObj &dfa);
 
 } // namespace zezax::red

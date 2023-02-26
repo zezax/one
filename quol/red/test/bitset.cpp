@@ -15,6 +15,7 @@ void checkSpan(MultiChar &mc, CharIdx beg, CharIdx end) {
   for (CharIdx ii = beg; ii <= end; ++ii)
     EXPECT_TRUE(mc.get(ii));
   EXPECT_EQ(mc.population(), end - beg + 1);
+  EXPECT_FALSE(mc.empty());
 }
 
 } // anonymous
@@ -41,13 +42,16 @@ TEST(BitSet, setGetClearEach) {
   MultiChar mc;
   mc.clearAll();
   EXPECT_EQ(0, mc.population());
+  EXPECT_TRUE(mc.empty());
   for (CharIdx ii = 0; ii < mc.bitSize(); ++ii) {
     mc.set(ii);
     EXPECT_TRUE(mc.get(ii));
     EXPECT_EQ(1, mc.population());
+    EXPECT_FALSE(mc.empty());
     mc.clear(ii);
     EXPECT_FALSE(mc.get(ii));
     EXPECT_EQ(0, mc.population());
+    EXPECT_TRUE(mc.empty());
     EXPECT_FALSE(mc.testAndSet(ii));
     EXPECT_TRUE(mc.testAndSet(ii));
     mc.clear(ii);
@@ -60,13 +64,22 @@ TEST(BitSet, allOps) {
   mc.resize(gAlphabetSize);
   mc.clearAll();
   EXPECT_EQ(0, mc.population());
+  EXPECT_TRUE(mc.empty());
   mc.setAll();
   EXPECT_EQ(mc.bitSize(), mc.population());
+  EXPECT_FALSE(mc.empty());
   mc.clearAll();
   mc.flipAll();
   EXPECT_EQ(mc.bitSize(), mc.population());
+  EXPECT_FALSE(mc.empty());
   mc.flipAll();
   EXPECT_EQ(0, mc.population());
+  EXPECT_TRUE(mc.empty());
+  mc.flipAll();
+  mc.truncate();
+  EXPECT_EQ(0, mc.population());
+  EXPECT_TRUE(mc.empty());
+  EXPECT_EQ(0, mc.bitSize());
 }
 
 
@@ -76,21 +89,27 @@ TEST(BitSet, patternOps) {
   for (CharIdx ii = 0; ii < aa.bitSize(); ii += 2)
     aa.set(ii);
   EXPECT_EQ(aa.population(), aa.bitSize() / 2);
+  EXPECT_FALSE(aa.empty());
   MultiChar bb;
   bb.resize(gAlphabetSize);
   for (CharIdx ii = 1; ii < bb.bitSize(); ii += 2)
     bb.set(ii);
   EXPECT_EQ(bb.population(), bb.bitSize() / 2);
+  EXPECT_FALSE(bb.empty());
 
   aa.unionWith(bb);
   EXPECT_EQ(aa.population(), aa.bitSize());
+  EXPECT_FALSE(aa.empty());
   aa.xorWith(bb);
   EXPECT_EQ(aa.population(), aa.bitSize() / 2);
+  EXPECT_FALSE(aa.empty());
   aa.intersectWith(bb);
   EXPECT_EQ(0, aa.population());
+  EXPECT_TRUE(aa.empty());
   aa.setAll();
   aa.intersectWith(bb);
   EXPECT_EQ(aa.population(), aa.bitSize() / 2);
+  EXPECT_FALSE(aa.empty());
 }
 
 
@@ -123,6 +142,7 @@ TEST(BitSet, subsets) {
   EXPECT_TRUE(bb.contains(aa));
   bb.subtract(bb);
   EXPECT_EQ(0, bb.population());
+  EXPECT_TRUE(bb.empty());
   aa.setSpan(0,255);
   bb.setSpan(0,127);
   EXPECT_TRUE(aa.hasIntersection(bb));
@@ -130,8 +150,10 @@ TEST(BitSet, subsets) {
   EXPECT_TRUE(aa.contains(bb));
   EXPECT_FALSE(bb.contains(aa));
   EXPECT_EQ(256, aa.population());
+  EXPECT_FALSE(aa.empty());
   aa.subtract(bb);
   EXPECT_EQ(128, aa.population());
+  EXPECT_FALSE(aa.empty());
 }
 
 
@@ -156,18 +178,22 @@ TEST(BitSet, varySizes) {
   bb.setSpan(0, 255);
   bb.intersectWith(aa);
   EXPECT_EQ(37, bb.population());
+  EXPECT_FALSE(bb.empty());
   EXPECT_EQ(64, bb.bitSize());
 
   bb.setSpan(0, 255);
   bb.resize(100);
   EXPECT_EQ(100, bb.population());
+  EXPECT_FALSE(bb.empty());
 
   aa.unionWith(bb);
   EXPECT_EQ(100, aa.population());
+  EXPECT_FALSE(aa.empty());
 
   bb.setSpan(0, 149);
   aa.xorWith(bb);
   EXPECT_EQ(50, aa.population());
+  EXPECT_FALSE(aa.empty());
 }
 
 
@@ -233,11 +259,14 @@ TEST(BitSet, assign) {
   cc.set(63);
   bb = std::move(cc);
   EXPECT_EQ(3, bb.population());
+  EXPECT_FALSE(bb.empty());
   EXPECT_TRUE(bb.get(63));
 
   // moved-from should be empty, but does it matter?
   EXPECT_EQ(0, aa.population());
+  EXPECT_TRUE(aa.empty());
   EXPECT_EQ(0, cc.population());
+  EXPECT_TRUE(cc.empty());
 }
 
 

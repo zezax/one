@@ -1,4 +1,4 @@
-// deterministic finite automaton header
+// deterministic finite automaton object header
 
 #pragma once
 
@@ -62,7 +62,6 @@ private:
 
 
 // useful functions
-CharIdx findMaxChar(const std::vector<DfaState> &states);
 DfaObj transcribeDfa(const DfaObj &src);
 void flagDeadEnds(std::vector<DfaState> &states, CharIdx maxChar);
 

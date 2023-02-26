@@ -93,6 +93,10 @@ COMMIT 60bbebc
   RESULT: ucpu 0:21.806 rss 2.562GB
   TEST: words ratio 1:10 (23493)
   RESULT: ucpu 3:36.694 rss 14.090GB
+COMMIT 2023/02/26
+  Proofreading pass through all files
+  TEST: words ratio 1:25 (9397)
+  RESULT: ucpu 0:21.649 peak rss 2.565GB one-sec rss 2.562GB
 
 MATCHING:
 ---------
@@ -130,3 +134,7 @@ COMMIT 8c139cf
   Use __builtin_expect(..., 0) for accept test in matchCore()
   TEST: bench 1000 matchLast
   RESULT: ucpu 19.866
+COMMIT 2023/02/26
+  Proofreading pass through all files
+  TEST: bench 1000 matchLast
+  RESULT: ucpu 19.128

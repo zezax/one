@@ -17,6 +17,7 @@ TEST(Debug, toHexDigit) {
   EXPECT_EQ('9', toHexDigit(9));
   EXPECT_EQ('a', toHexDigit(10));
   EXPECT_EQ('f', toHexDigit(15));
+  EXPECT_THROW(toHexDigit(16), RedExceptInternal);
 }
 
 
@@ -27,6 +28,7 @@ TEST(Debug, toHexString) {
   EXPECT_EQ("f", toHexString(15));
   EXPECT_EQ("ff", toHexString(255));
   EXPECT_EQ("ffff", toHexString(65535));
+  EXPECT_EQ("ffffffff", toHexString(-1));
 }
 
 
@@ -52,7 +54,7 @@ TEST(Debug, idsets) {
   dis.set(8);
   dis.set(6);
   dis.set(9);
-  EXPECT_EQ("0,6,8,9", toString(dis));
+  EXPECT_EQ("0,6,8-9", toString(dis));
 }
 
 
@@ -94,7 +96,7 @@ TEST(Debug, nfa) {
   NfaObj nfa;
   NfaId one = nfa.newState(1);
   EXPECT_EQ(1, one);
-  nfa.setNfaInitial(one);
+  nfa.setInitial(one);
   NfaTransition tr;
   tr.next_ = one;
   tr.multiChar_.set('a');
@@ -114,12 +116,12 @@ TEST(Debug, nstt) {
   val[1] = NfaIdSet(1,2);
   val[3] = NfaIdSet(5);
   tbl[key] = val;
-  EXPECT_EQ("map(\nkey=2-4 val=[1,2;5]\n)\n", toString(tbl));
+  EXPECT_EQ("map(\nkey=2-4 val=[1-2;5]\n)\n", toString(tbl));
 }
 
 
 TEST(Debug, nstc) {
-  NfaStateToCount tbl;
+  NfaIdToCount tbl;
   tbl[1] = 13;
   tbl[3] = 69;
   EXPECT_EQ("counts(\nkey=1 val=13\nkey=3 val=69\n)\n", toString(tbl));

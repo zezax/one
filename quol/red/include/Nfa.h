@@ -1,4 +1,4 @@
-// non-deterministic finite automaton header
+// non-deterministic finite automaton object header
 
 #pragma once
 
@@ -28,13 +28,18 @@ struct NfaStateTransition {
 };
 
 
+inline bool operator==(const NfaTransition &aa, const NfaTransition &bb) {
+  return ((aa.next_ == bb.next_) && (aa.multiChar_ == bb.multiChar_));
+}
+
+
 typedef std::unordered_set<MultiChar> MultiCharSet;
 
 
 class NfaObj {
 public:
-  NfaObj() { reset(); }
-  ~NfaObj() { freeAll(); }
+  NfaObj() : initId_(gNfaNullId), goal_(0) {}
+  ~NfaObj() = default;
   NfaObj(const NfaObj &rhs) = delete;
   NfaObj(NfaObj &&rhs);
   NfaObj &operator=(const NfaObj &rhs) = delete;
@@ -48,8 +53,8 @@ public:
 
   void freeAll();
 
-  void setNfaInitial(NfaId id) { initId_ = id; }
-  NfaId getNfaInitial() const { return initId_; }
+  void setInitial(NfaId id) { initId_ = id; }
+  NfaId getInitial() const { return initId_; }
 
   void setGoal(Result g) { goal_ = g; }
   Result getGoal() const { return goal_; }
@@ -84,7 +89,6 @@ public:
   void dropUselessTransitions();
 
 private:
-  void reset();
   NfaId copyRecurse(std::unordered_map<NfaId, NfaId> &map, NfaId id);
 
   std::vector<NfaState> states_;

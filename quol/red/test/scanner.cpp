@@ -16,12 +16,12 @@ namespace {
 
 void failScan(string_view sv) {
   Scanner sc(sv);
-  EXPECT_THROW(sc.scanOne(), RedExcept);
+  EXPECT_THROW(sc.scanNext(), RedExcept);
 }
 
 void checkKleen(const char *str, int goodMin, int goodMax) {
   Scanner sc(str);
-  Token tok = sc.scanOne();
+  Token tok = sc.scanNext();
   EXPECT_EQ(tClosure, tok.type_);
   EXPECT_EQ(tok.min_, goodMin);
   EXPECT_EQ(tok.max_, goodMax);
@@ -47,7 +47,7 @@ MultiChar mkMulti(const char *str) {
 
 void checkMulti(const char *input, const char *answer) {
   Scanner sc(input);
-  Token tok = sc.scanOne();
+  Token tok = sc.scanNext();
   EXPECT_EQ(tChars, tok.type_);
   EXPECT_EQ(tok.multiChar_, mkMulti(answer));
 }
@@ -172,7 +172,7 @@ TEST(Scanner, except) {
   bool threw = false;
   try {
     Scanner sc("[foo");
-    sc.scanOne();
+    sc.scanNext();
   }
   catch (RedExceptParse &ex) {
     threw = true;
@@ -185,7 +185,7 @@ TEST(Scanner, except) {
 TEST(Scanner, empty) {
   string_view nul;
   Scanner sc(nul);
-  Token tok = sc.scanOne();
+  Token tok = sc.scanNext();
   EXPECT_EQ(tEnd, tok.type_);
 }
 
@@ -194,7 +194,7 @@ TEST(Scanner, smoke) {
   vector<Token> vec;
   Scanner sc("\\i([Aa]lex?)[^]w-]uz{3,7}|here");
   for (;;) {
-    Token tok = sc.scanOne();
+    Token tok = sc.scanNext();
     TokEnum type = tok.type_;
     vec.emplace_back(std::move(tok));
     if (type <= tEnd)

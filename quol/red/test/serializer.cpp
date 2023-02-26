@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+
 #include "ReParser.h"
 #include "Powerset.h"
 #include "Minimizer.h"
@@ -16,9 +18,9 @@ using testing::Values;
 
 
 TEST(Serializer, header) {
-  char buf[1024];
-  memset(buf, 0, sizeof(buf));
-  EXPECT_NE(nullptr, checkHeader(buf, sizeof(buf)));
+  std::array<char, 1024> buf;
+  memset(buf.data(), 0, buf.size());
+  EXPECT_NE(nullptr, checkHeader(buf.data(), buf.size()));
 }
 
 
@@ -44,7 +46,7 @@ TEST_P(SerializerTest, smoke) {
       }
       {
         Serializer ser(dfa);
-        buf = ser.serialize(fmt);
+        buf = ser.serializeToString(fmt);
       }
     }
   }

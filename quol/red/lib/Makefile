@@ -31,6 +31,11 @@ cov:
 	gcov -f -o $(BUILDSUB) -r -m $(CPPS) | sed -nEe '/^Function/ {s/^Function .(.*)./\1/; h}; /^Lines/ {H; x; s/(.*)\nLines executed:(.*)% of (.*)/\2\t\3\t\1/; p; s/.*/unknown/; x}' | sed -ne '/\tzezax::red::/p' | sed -e 's/zezax::red:://g' | sort | sort -k1,1n -k2,2nr -k3,3 > $(BUILD)/funccov.tsv
 	$(RM) *.gcov
 
+tidy: $(CPPS:%.cpp=tidy-%)
+
+tidy-%: %.cpp
+	-clang-tidy $^ -- --std=c++20 -Wall -Wextra -iquote $(ROOT)/include
+
 $(LIB): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $?
 

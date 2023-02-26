@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
         }
         {
           Serializer ser(dfa);
-          buf = ser.serialize(fmt);
+          buf = ser.serializeToString(fmt);
         }
       }
     }

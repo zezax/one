@@ -28,7 +28,7 @@ shared_ptr<const Executable> compileShared(ReParser  &rp,
 
 string compileToSerialized(ReParser &rp, Format fmt, CompStats *stats) {
   string buf;
-  rp.finish(); // idempotent, except for stats
+  rp.finish(); // idempotent
   {
     DfaObj dfa;
     {
@@ -42,7 +42,7 @@ string compileToSerialized(ReParser &rp, Format fmt, CompStats *stats) {
     }
     {
       Serializer ser(dfa, stats);
-      buf = ser.serialize(fmt);
+      buf = ser.serializeToString(fmt);
     }
   }
 

@@ -1,5 +1,5 @@
 // powerset nfa to dfa converter implementation
-// Rabin-Scott method
+// rabin-scott method
 
 #include <limits>
 
@@ -15,9 +15,9 @@ using std::vector;
 
 namespace {
 
-Result getResult(const NfaIdSet        &nis,
-                 const NfaStateToCount &counts,
-                 const NfaObj          &nfa) {
+Result getResult(const NfaIdSet     &nis,
+                 const NfaIdToCount &counts,
+                 const NfaObj       &nfa) {
   Result rv = -1;
   size_t min = numeric_limits<size_t>::max();
 
@@ -43,7 +43,7 @@ DfaObj PowersetConverter::convert() {
   if (stats_)
     stats_->preDfa_ = std::chrono::steady_clock::now();
 
-  NfaId initial = nfa_.getNfaInitial();
+  NfaId initial = nfa_.getInitial();
 
   vector<MultiChar> multiChars;
   {
@@ -51,11 +51,11 @@ DfaObj PowersetConverter::convert() {
     MultiCharSet basisMcs = basisMultiChars(allMcs);
     allMcs.clear(); // save memory
     for (const MultiChar &mc : basisMcs)
-      multiChars.emplace_back(std::move(mc));
+      multiChars.emplace_back(mc); // copy faster than move here
   }
 
   NfaStatesToTransitions table = makeTable(initial, nfa_, multiChars);
-  NfaStateToCount counts = countAcceptingStates(table, nfa_);
+  NfaIdToCount counts = countAcceptingStates(table, nfa_);
 
   DfaObj dfa;
   DfaId id = dfa.newState();
@@ -77,10 +77,9 @@ DfaObj PowersetConverter::convert() {
   dfa.chopEndMarks(); // end marks have done their job
 
   if (stats_) {
-    DfaIdSet all = dfa.allStateIds();
-    stats_->origDfaStates_ = dfa.numStates();
+    stats_->origDfaStates_       = dfa.numStates();
     stats_->transitionTableRows_ = table.size();
-    stats_->postDfa_ = std::chrono::steady_clock::now();
+    stats_->postDfa_             = std::chrono::steady_clock::now();
   }
   return dfa;
 }
@@ -88,11 +87,11 @@ DfaObj PowersetConverter::convert() {
 
 DfaId PowersetConverter::dfaFromNfa(const std::vector<MultiChar> &multiChars,
                                     const NfaStatesToTransitions &table,
-                                    const NfaStateToCount        &counts,
-                                    const NfaIdSet               &init,
+                                    const NfaIdToCount           &counts,
+                                    const NfaIdSet               &states,
                                     DfaObj                       &dfa) {
   NfaStatesToId map;
-  return dfaFromNfaRecurse(multiChars, table, counts, init, map, nfa_, dfa);
+  return dfaFromNfaRecurse(multiChars, table, counts, states, map, nfa_, dfa);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,10 +100,8 @@ DfaId PowersetConverter::dfaFromNfa(const std::vector<MultiChar> &multiChars,
 MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
   // 1. arrange multi-chars by number of chars
   vector<MultiCharSet> sets;
-  for (const MultiChar &mc : mcs) {
-    CharIdx pop = mc.size();
-    safeRef(sets, pop).insert(mc);
-  }
+  for (const MultiChar &mc : mcs)
+    safeRef(sets, mc.size()).insert(mc);
 
   CharIdx mostBits = static_cast<CharIdx>(sets.size());
 
@@ -122,7 +119,7 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
     for (const MultiChar &mc : sets[ii]) {
       MultiChar copy = mc;
       copy.subtract(unions[ii]);
-      if (copy.size() > 0)
+      if (!copy.empty())
         rv.emplace(std::move(copy));
     }
 
@@ -166,9 +163,9 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
 }
 
 
-NfaStateToCount countAcceptingStates(const NfaStatesToTransitions &table,
-                                     const NfaObj                 &nfa) {
-  NfaStateToCount rv;
+NfaIdToCount countAcceptingStates(const NfaStatesToTransitions &table,
+                                  const NfaObj                 &nfa) {
+  NfaIdToCount rv;
   for (const auto &[states, _] : table)
     for (NfaId id : states)
       if (nfa.accepts(id)) {
@@ -181,7 +178,7 @@ NfaStateToCount countAcceptingStates(const NfaStatesToTransitions &table,
 
 DfaId dfaFromNfaRecurse(const vector<MultiChar>      &multiChars,
                         const NfaStatesToTransitions &table,
-                        const NfaStateToCount        &counts,
+                        const NfaIdToCount           &counts,
                         const NfaIdSet               &stateSet,
                         NfaStatesToId                &map,
                         const NfaObj                 &nfa,
@@ -197,13 +194,13 @@ DfaId dfaFromNfaRecurse(const vector<MultiChar>      &multiChars,
 
   auto tableIter = table.find(stateSet);
   if (tableIter == table.end())
-    return dfaId; // FIXME can this happen? is it right?
+    return dfaId; // FIXME: can this happen? is it right?
 
   for (const auto &[ii, nis] : tableIter->second) {
-    if (nis.size() > 0) {
+    if (!nis.empty()) {
       DfaId subId = dfaFromNfaRecurse(
           multiChars, table, counts, nis, map, nfa, dfa);
-      for (CharIdx ch : multiChars[ii]) // FIXME why is mc[ii] valid???
+      for (CharIdx ch : multiChars[ii]) // FIXME: why is mc[ii] valid?
         dfa[dfaId].trans_.set(ch, subId);
     }
   }

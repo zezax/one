@@ -14,7 +14,7 @@ TEST(Parser, smoke) {
   p.addAuto("(meyer\\i)+", 2, 0);
   p.finish();
   NfaObj &nfa = p.getNfa();
-  EXPECT_NE(gNfaNullId, nfa.getNfaInitial());
+  EXPECT_NE(gNfaNullId, nfa.getInitial());
   EXPECT_EQ(toString(nfa),
             R"raw(1 NfaState -> 0
   3 <- a

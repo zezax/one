@@ -6,7 +6,7 @@
 
 namespace zezax::red {
 
-enum Flags : FlagsT {
+enum FlagsE : Flags {
   fIgnoreCase = 0x01,
   fLooseStart = 0x02,
   fLooseEnd   = 0x04,

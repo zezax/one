@@ -52,6 +52,19 @@ TEST(Omnibus, multi) {
 }
 
 
+TEST(Omnibus, null) {
+  ReParser p;
+  p.finish();
+  PowersetConverter psc(p.getNfa());
+  DfaObj dfa = psc.convert();
+  DfaMinimizer dm(dfa);
+  dm.minimize();
+  EXPECT_EQ(2, dfa.numStates());
+  EXPECT_EQ(0, dfa[0].result_);
+  EXPECT_EQ(1, dfa[1].result_);
+}
+
+
 struct Rec {
   const char *regex_;
   const char *text_;
@@ -352,7 +365,7 @@ TEST_P(OmnibusFmt, matcher) {
         }
         {
           Serializer ser(dfa);
-          buf = ser.serialize(fmt);
+          buf = ser.serializeToString(fmt);
         }
       }
       rex = make_shared<const Executable>(std::move(buf));

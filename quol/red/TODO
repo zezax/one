@@ -2,15 +2,26 @@
 - document empty string matches: ()* etc.
 - document lots of .*foo.* .*bar.* patterns cause memory explosion
 - document start() is where we escape initial state
+- document null regex matches null
+- document keep results low
+- document ascii
+- public api
+- check for self-assignment
+- optional line prefix arg in debug strings
+- executable dump to file
+- work out shared ptr usage
+- consider allowing non-accepting patterns
+- length -> kind and shortest -> first
 - compressed transition map
-- explicit constructors
 - vertically align identifiers in .h and .cpp
 - add test suite items from re2, pcre
 - make dfa.cpp unit test.  move stuff from minimize.cpp
 - try NfaIdSet as map or unordered_map
+- test w/o restrict
 - detail namespace
 - consider ordered set/map
 - endian conversion
 - non-resetting match (save state/off across calls)
 - glob parser
+- 3-byte direct format
 - make install/shared libs

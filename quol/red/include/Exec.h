@@ -30,11 +30,11 @@ public:
   Executable(Executable &&other);
 
   // these take a serialized dfa...
-  explicit Executable(std::string &&buf); // move
+  explicit Executable(std::string &&buf);      // move
   explicit Executable(const std::string &buf); // copy
-  explicit Executable(std::string_view sv); // copy
-  Executable(const CopyBuf &, const void *ptr, size_t len); // copy
-  Executable(const StealNew &, const void *ptr, size_t len); // will delete[]
+  explicit Executable(std::string_view sv);    // copy
+  Executable(const CopyBuf &, const void *ptr, size_t len);     // copy
+  Executable(const StealNew &, const void *ptr, size_t len);    // will delete[]
   Executable(const StealMalloc &, const void *ptr, size_t len); // will free()
 
   // load dfa from file

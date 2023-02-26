@@ -5,6 +5,16 @@
 BUILD := $(ROOT)/_build
 BUILDSUB := $(BUILD)/$(SUB)
 
+# MODE options:
+# opt       = optimized for speed
+# pic       = position-independent and optimized, for shared library
+# dbgo      = debugging symbols and optimized
+# dbg       = debugging symbols, no optimization
+# cov       = code coverage build, with symbols, no optimization
+# jemalloc  = use jemalloc library, with symbols, no optimization
+# jemo      = use jemalloc, with symbols and optimized
+# <default> = debugging symbols and address sanitized, no optimization
+
 ifeq ($(MODE), opt)
   OPT := -O3 -march=native
 else ifeq ($(MODE), pic)
@@ -61,3 +71,11 @@ $(BUILDSUB)/%: %.cpp
 
 $(BUILDSUB)/%: $(BUILDSUB)/%.o $(DEPLIBS)
 	$(CXX) $(LDFLAGS) $< -L$(BUILD)/lib -lred $(LDLIBS) -o $@
+
+%.ii: %.cpp
+	mkdir -p $(BUILDSUB)
+	$(CXX) -E $(CXXFLAGS) $(CPPFLAGS) $< -o $@
+
+%.s: %.cpp
+	mkdir -p $(BUILDSUB)
+	$(CXX) -S $(CXXFLAGS) $(CPPFLAGS) $< -o $@

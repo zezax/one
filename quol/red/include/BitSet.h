@@ -36,9 +36,9 @@ public:
   : ptr_(other.ptr_), limit_(other.limit_), bit_(other.bit_) {}
 
   BitSetIter &operator=(const BitSetIter &rhs) {
-    ptr_ = rhs.ptr_;
+    ptr_   = rhs.ptr_;
     limit_ = rhs.limit_;
-    bit_ = rhs.bit_;
+    bit_   = rhs.bit_;
     return *this;
   }
 
@@ -80,9 +80,9 @@ public:
   static_assert(std::is_integral_v<Index>);
   static_assert(std::is_unsigned_v<Word>);
 
-  static constexpr Index wordBits_  = std::numeric_limits<Word>::digits;
-  static constexpr Word  wordFFFF_  = static_cast<Word>(0) - 1;
-  static constexpr Word  one_       = static_cast<Word>(1);
+  static constexpr Index wordBits_ = std::numeric_limits<Word>::digits;
+  static constexpr Word  wordFFFF_ = static_cast<Word>(0) - 1;
+  static constexpr Word  one_      = static_cast<Word>(1);
 
   typedef BitSetIter<Index, Tag, Word> Iter;
 
@@ -94,7 +94,7 @@ public:
   bool operator==(const BitSet& rhs) const;
   bool operator!=(const BitSet& rhs) const { return !operator==(rhs); }
 
-  Index size() const { return population(); } // to act like set
+  Index size() const { return population(); } // to act like std::set
   Index bitSize() const { return wordBits_ * rawSize(); } // rounded up
 
   void resize(Index bits); // will round up
@@ -103,7 +103,7 @@ public:
     ensure(idx);
     vec_[idx / wordBits_] |= one_ << (idx % wordBits_);
   }
-  void insert(Index idx) { set(idx); } // for set compatibility
+  void insert(Index idx) { set(idx); } // for std::set compatibility
 
   void setSpan(Index first, Index last);
 
@@ -127,7 +127,12 @@ public:
     return rv;
   }
 
-  void clearAll() { vec_.clear(); }
+  void truncate() { vec_.clear(); }
+
+  void clearAll() {
+    for (Word &ref : vec_)
+      ref = 0;
+  }
 
   void setAll() {
     for (Word &ref : vec_)
@@ -148,6 +153,7 @@ public:
   bool contains(const BitSet &other) const;
 
   Index population() const;
+  bool empty() const;
   size_t hash() const;
 
   Iter begin() const { return Iter(vec_.data(), rawSize()); }
@@ -231,8 +237,9 @@ BitSetIter<Index, Tag, Word> &BitSetIter<Index, Tag, Word>::operator++() {
       return *this;
     }
   }
-  ptr_ = nullptr;
-  bit_ = indexFFFF_;
+  ptr_   = nullptr;
+  limit_ = nullptr;
+  bit_   = indexFFFF_;
   return *this;
 }
 
@@ -416,6 +423,15 @@ Index BitSet<Index, Tag, Word>::population() const {
   for (Word x : vec_)
     rv += popCount(x);
   return rv;
+}
+
+
+template <class Index, class Tag, class Word>
+bool BitSet<Index, Tag, Word>::empty() const {
+  for (Word x : vec_)
+    if (x)
+      return false;
+  return true;
 }
 
 

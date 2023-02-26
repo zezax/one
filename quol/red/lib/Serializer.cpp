@@ -11,13 +11,30 @@
 
 namespace zezax::red {
 
-using std::numeric_limits;
 using std::string;
+using std::vector;
 
 namespace {
 
 void append(string &s, const void *p, size_t n) {
   s.append(static_cast<const char *>(p), n);
+}
+
+
+template <Format fmt>
+void appendStateImpl(std::string          &buf,
+                     const DfaState       &ds,
+                     CharIdx               maxChar,
+                     const vector<size_t> &offsets) {
+  DfaProxy<fmt> proxy;
+  typename DfaProxy<fmt>::State rec;
+  rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
+  append(buf, &rec, sizeof(rec));
+  for (CharIdx ch = 0; ch <= maxChar; ++ch) {
+    DfaId id = ds.trans_[ch];
+    size_t off = offsets[id];
+    proxy.appendOffset(buf, off);
+  }
 }
 
 } // anonymous
@@ -26,17 +43,18 @@ Serializer::Serializer(const DfaObj &dfa, CompStats *stats)
   : dfa_(dfa), stats_(stats) {}
 
 
-string Serializer::serialize(Format fmt) {
+string Serializer::serializeToString(Format fmt) {
   if (stats_)
     stats_->preSerialize_ = std::chrono::steady_clock::now();
 
   prepareToSerialize();
   fmt = validatedFormat(fmt);
-  string buf = serializeToString(fmt);
+  string buf = serialize(fmt);
+  buf.shrink_to_fit();
 
   if (stats_) {
     stats_->serializedBytes_ = buf.size();
-    stats_->postSerialize_ = std::chrono::steady_clock::now();
+    stats_->postSerialize_   = std::chrono::steady_clock::now();
   }
 
   return buf;
@@ -47,14 +65,15 @@ void Serializer::serializeToFile(Format fmt, const char *path) {
   if (stats_)
     stats_->preSerialize_ = std::chrono::steady_clock::now();
 
+  // we serialize to memory first, so we can populate the checksum
   prepareToSerialize();
   fmt = validatedFormat(fmt);
-  string buf = serializeToString(fmt);
+  string buf = serialize(fmt);
   writeStringToFile(buf, path);
 
   if (stats_) {
     stats_->serializedBytes_ = buf.size();
-    stats_->postSerialize_ = std::chrono::steady_clock::now();
+    stats_->postSerialize_   = std::chrono::steady_clock::now();
   }
 }
 
@@ -86,7 +105,7 @@ Format Serializer::validatedFormat(Format fmt) {
     DfaProxy<fmtDirect4>::checkCapacity(dfa_.numStates(), maxChar_, maxResult_);
     break;
   default:
-    throw RedExceptSerialize("unsuitable DFA format requested");
+    throw RedExceptSerialize("unsuitable dfa format requested");
   }
 
   return fmt;
@@ -97,7 +116,7 @@ Format Serializer::optimalFormat() {
   Format res;
   if (!DfaProxy<fmtDirect4>::resultFits(maxResult_))
     throw RedExceptLimit("max result too big for any format");
-  else if (!DfaProxy<fmtDirect2>::resultFits(maxResult_))
+  if (!DfaProxy<fmtDirect2>::resultFits(maxResult_))
     res = fmtDirect4;
   else if (!DfaProxy<fmtDirect1>::resultFits(maxResult_))
     res = fmtDirect2;
@@ -107,7 +126,7 @@ Format Serializer::optimalFormat() {
   Format dir;
   if (!DfaProxy<fmtDirect4>::offsetFits(maxChar_, dfa_.numStates()))
     throw RedExceptLimit("num states too many for any format");
-  else if (!DfaProxy<fmtDirect2>::offsetFits(maxChar_, dfa_.numStates()))
+  if (!DfaProxy<fmtDirect2>::offsetFits(maxChar_, dfa_.numStates()))
     dir = fmtDirect4;
   else if (!DfaProxy<fmtDirect1>::offsetFits(maxChar_, dfa_.numStates()))
     dir = fmtDirect2;
@@ -118,22 +137,23 @@ Format Serializer::optimalFormat() {
 }
 
 
-string Serializer::serializeToString(Format fmt) {
+string Serializer::serialize(Format fmt) {
+  string buf;
   tabulateOffsets(fmt);
 
-  FileHeader hdr;
-  populateHeader(hdr, fmt);
-
-  string buf;
-  append(buf, &hdr, sizeof(hdr));
+  {
+    FileHeader hdr;
+    populateHeader(hdr, fmt);
+    append(buf, &hdr, sizeof(hdr));
+  }
 
   for (const DfaState &ds : dfa_.getStates())
     appendState(fmt, buf, ds);
 
+  // patch up checksum
   FileHeader *hdrp = reinterpret_cast<FileHeader *>(buf.data());
   hdrp->checksum_ = calcChecksum(buf.data(), buf.size());
 
-  buf.shrink_to_fit();
   return buf;
 }
 
@@ -145,11 +165,11 @@ void Serializer::populateHeader(FileHeader &hdr, Format fmt) {
 
   memset(&hdr, 0, sizeof(hdr));
   memcpy(hdr.magic_, "REDA", 4);
-  hdr.majVer_ = 1;
-  hdr.minVer_ = 0;
-  hdr.format_ = fmt;
-  hdr.maxChar_ = static_cast<uint8_t>(maxChar_);
-  hdr.stateCnt_ = static_cast<uint32_t>(dfa_.numStates());
+  hdr.majVer_     = 1;
+  hdr.minVer_     = 0;
+  hdr.format_     = fmt;
+  hdr.maxChar_    = static_cast<uint8_t>(maxChar_);
+  hdr.stateCnt_   = static_cast<uint32_t>(dfa_.numStates());
   hdr.initialOff_ = static_cast<uint32_t>(initOff);
   for (size_t ii = 0; ii < gAlphabetSize; ++ii)
     hdr.equivMap_[ii] = static_cast<uint8_t>(dfa_.getEquivMap()[ii]);
@@ -158,49 +178,15 @@ void Serializer::populateHeader(FileHeader &hdr, Format fmt) {
 
 void Serializer::appendState(Format fmt, string &buf, const DfaState &ds) {
   switch (fmt) {
-
   case fmtDirect1:
-    {
-      DfaProxy<fmtDirect1> proxy;
-      typename decltype(proxy)::State rec;
-      rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
-      append(buf, &rec, sizeof(rec));
-      for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
-        DfaId id = ds.trans_[ch];
-        size_t off = offsets_[id];
-        proxy.appendOff(buf, off);
-      }
-    }
+    appendStateImpl<fmtDirect1>(buf, ds, maxChar_, offsets_);
     break;
-
   case fmtDirect2:
-    {
-      DfaProxy<fmtDirect2> proxy;
-      typename decltype(proxy)::State rec;
-      rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
-      append(buf, &rec, sizeof(rec));
-      for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
-        DfaId id = ds.trans_[ch];
-        size_t off = offsets_[id];
-        proxy.appendOff(buf, off);
-      }
-    }
+    appendStateImpl<fmtDirect2>(buf, ds, maxChar_, offsets_);
     break;
-
   case fmtDirect4:
-    {
-      DfaProxy<fmtDirect4> proxy;
-      typename decltype(proxy)::State rec;
-      rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
-      append(buf, &rec, sizeof(rec));
-      for (CharIdx ch = 0; ch <= maxChar_; ++ch) {
-        DfaId id = ds.trans_[ch];
-        size_t off = offsets_[id];
-        proxy.appendOff(buf, off);
-      }
-    }
+    appendStateImpl<fmtDirect4>(buf, ds, maxChar_, offsets_);
     break;
-
   default:
     throw RedExceptSerialize("bad format in appendState");
   }
@@ -218,7 +204,7 @@ void Serializer::tabulateOffsets(Format fmt) {
 }
 
 
-size_t Serializer::measureState(Format fmt, const DfaState &ds) {
+size_t Serializer::measureState(Format fmt, const DfaState &ds) const {
   (void) ds;
   switch (fmt) {
   case fmtDirect1:
@@ -246,7 +232,7 @@ void Serializer::findMaxChar() {
 string loadFromFile(const char *path) {
   string str = readFileToString(path);
   if (str.empty())
-    throw RedExceptApi("Serialized DFA file is empty");
+    throw RedExceptApi("serialized dfa file is empty");
 
   const char *msg = checkHeader(str.data(), str.size());
   if (msg)
@@ -259,9 +245,8 @@ string loadFromFile(const char *path) {
 const char *checkHeader(const void *ptr, size_t len) {
   if (len < sizeof(FileHeader))
     return "Serialized DFA: header too short";
-  const char *buf = reinterpret_cast<const char *>(ptr);
 
-  const FileHeader *hdr = reinterpret_cast<const FileHeader *>(buf);
+  const FileHeader *hdr = reinterpret_cast<const FileHeader *>(ptr);
   if ((hdr->magic_[0] != 'R') || (hdr->magic_[1] != 'E') ||
       (hdr->magic_[2] != 'D') || (hdr->magic_[3] != 'A'))
     return "Serialized DFA: bad magic number";
@@ -289,11 +274,10 @@ const char *checkHeader(const void *ptr, size_t len) {
 
 
 uint32_t calcChecksum(const void *ptr, size_t len) {
-  const char *buf = reinterpret_cast<const char *>(ptr);
-  const char *end = buf + len;
-  const FileHeader *hdr = reinterpret_cast<const FileHeader *>(buf);
-  const char *start = reinterpret_cast<const char *>(&hdr->format_);
-  return fnv1a<uint32_t>(start, end - start);
+  const FileHeader *hdr = reinterpret_cast<const FileHeader *>(ptr);
+  const char *beg = reinterpret_cast<const char *>(&hdr->format_);
+  const char *end = reinterpret_cast<const char *>(ptr) + len;
+  return fnv1a<uint32_t>(beg, end - beg);
 }
 
 } // namespace zezax::red

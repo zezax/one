@@ -4,8 +4,8 @@
 
 #include <string_view>
 
-#include "Nfa.h"
 #include "Scanner.h"
+#include "Nfa.h"
 
 namespace zezax::red {
 
@@ -20,7 +20,7 @@ public:
   //   fLooseStart - effectively prefixes regex with .*
   //   fLooseEnd   - effectively suffixes regex with .*
   // The characters ^ and $ are matched as ordinary characters.
-  void add(std::string_view regex, Result result, FlagsT flags);
+  void add(std::string_view regex, Result result, Flags flags);
 
   // As above, but this method implements a heuristic for caret and dollar.
   // Both fLooseStart and fLooseEnd are enabled by default.  Then,
@@ -29,14 +29,15 @@ public:
   // A trailing $ disables fLooseEnd and is removed.
   // Note that this is not correct for something like ^a|b$
   // Also note that ^ and $ are not sepcial characters anywhere else.
-  void addAuto(std::string_view regex, Result result, FlagsT flags);
+  void addAuto(std::string_view regex, Result result, Flags flags);
 
+  // Must call this after all adds, before conversion to DFA.
   void finish();
 
-  void freeAll();
+  void freeAll(); // free parsed nfa
 
-  NfaObj &getNfa() { return obj_; }
-  NfaId getNfaInitial() { return obj_.getNfaInitial(); }
+  NfaObj &getNfa() { return nfa_; }
+  NfaId getInitial() { return nfa_.getInitial(); }
 
 private:
   NfaId parseExpr();
@@ -45,15 +46,13 @@ private:
   NfaId parseUnit();
   NfaId parseCharBits();
 
-  void advance() { tok_ = scanner_.scanOne(); }
-
-  FlagsT         flags_;
-  int            level_;
-  bool           validated_;
-  Token          tok_;
-  Scanner        scanner_;
-  NfaObj         obj_;
-  CompStats     *stats_;
+  Flags      flags_;
+  int        level_;
+  bool       begun_;
+  Token      tok_;
+  Scanner    scanner_;
+  NfaObj     nfa_;
+  CompStats *stats_;
 };
 
 } // namespace zezax::red

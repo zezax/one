@@ -26,16 +26,16 @@ struct Token {
   Token(TokEnum type, size_t pos) : type_(type), pos_(pos) {}
 
   Token(size_t pos, int min, int max)
-  : type_(tClosure), pos_(pos), min_(min), max_(max) {}
+    : type_(tClosure), pos_(pos), min_(min), max_(max) {}
 
-  Token(const TokFlag &, FlagsT f, size_t pos)
+  Token(const TokFlag &, Flags f, size_t pos)
     : type_(tFlags), pos_(pos), flags_(f) {}
 
   TokEnum   type_;
   size_t    pos_;
   int       min_;
   int       max_;
-  FlagsT    flags_;
+  Flags     flags_;
   MultiChar multiChar_;
 };
 
@@ -43,10 +43,10 @@ struct Token {
 class Scanner {
 public:
   Scanner();
-  Scanner(std::string_view source);
+  explicit Scanner(std::string_view source);
 
   void init(std::string_view source);
-  Token scanOne();
+  Token scanNext();
 
   size_t numTokens() const { return nTok_; }
 
@@ -58,7 +58,8 @@ public:
   Token doExpansion(int ch, bool escape);
 
 private:
-  size_t pos() { return ptr_ - beg_; }
+  size_t pos() const { return ptr_ - beg_; }
+  Token makeDot() const;
 
   const Byte *beg_;
   const Byte *ptr_;

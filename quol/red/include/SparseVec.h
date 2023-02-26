@@ -23,6 +23,8 @@ template <class T>
 class SparseVec {
 public:
   typedef std::vector<SparseRec<T>> Vec;
+  typedef typename Vec::iterator Iterator;
+  typedef typename Vec::const_iterator CIterator;
 
   T &operator[](size_t idx);
 
@@ -30,10 +32,10 @@ public:
 
   size_t size() const { return vec_.size(); }
 
-  Vec::iterator begin() { return vec_.begin(); }
-  Vec::iterator end() { return vec_.end(); }
-  Vec::const_iterator begin() const { return vec_.begin(); }
-  Vec::const_iterator end() const { return vec_.end(); }
+  Iterator begin() { return vec_.begin(); }
+  Iterator end() { return vec_.end(); }
+  CIterator begin() const { return vec_.begin(); }
+  CIterator end() const { return vec_.end(); }
 
 private:
   Vec vec_;

@@ -17,18 +17,18 @@ void charToSet(MultiChar &mc, int ch, bool escape) {
     return;
   }
 
+  MultiChar inv;
+
   switch (ch) {
   case 'd':
     mc.setSpan('0', '9');
     break;
-  case 'D': {
-    MultiChar inv;
+  case 'D':
     inv.resize(gAlphabetSize);
     inv.setSpan('0', '9');
     inv.flipAll();
     mc.unionWith(inv);
     break;
-  }
 
   case 's':
     mc.insert('\t');
@@ -38,8 +38,7 @@ void charToSet(MultiChar &mc, int ch, bool escape) {
     mc.insert('\r');
     mc.insert(' ');
     break;
-  case 'S': {
-    MultiChar inv;
+  case 'S':
     inv.resize(gAlphabetSize);
     inv.insert('\t');
     inv.insert('\n');
@@ -50,7 +49,6 @@ void charToSet(MultiChar &mc, int ch, bool escape) {
     inv.flipAll();
     mc.unionWith(inv);
     break;
-  }
 
   case 'w':
     mc.setSpan('0', '9');
@@ -58,8 +56,7 @@ void charToSet(MultiChar &mc, int ch, bool escape) {
     mc.setSpan('a', 'z');
     mc.insert('_');
     break;
-  case 'W': {
-    MultiChar inv;
+  case 'W':
     inv.resize(gAlphabetSize);
     inv.setSpan('0', '9');
     inv.setSpan('A', 'Z');
@@ -68,7 +65,6 @@ void charToSet(MultiChar &mc, int ch, bool escape) {
     inv.flipAll();
     mc.unionWith(inv);
     break;
-  }
 
   default:
     mc.insert(ch);
@@ -99,7 +95,7 @@ void Scanner::init(string_view source) {
 }
 
 
-Token Scanner::scanOne() {
+Token Scanner::scanNext() {
   ++nTok_;
   if (ptr_ >= end_)
     return Token(tEnd, pos());
@@ -112,13 +108,9 @@ Token Scanner::scanOne() {
   case '?': ++ptr_; return Token(pos(), 0, 1);
   case '|': ++ptr_; return Token(tUnion, pos());
 
-  case '.': {
+  case '.':
     ++ptr_;
-    Token rv(tChars, pos());
-    rv.multiChar_.resize(gAlphabetSize);
-    rv.multiChar_.setAll();
-    return rv;
-  }
+    return makeDot();
 
   case '[':
     ++ptr_;
@@ -136,52 +128,56 @@ Token Scanner::scanOne() {
 
 Token Scanner::scanSet() {
   Token rv(tChars, pos());
-  int ch;
-  int ch2;
+  int xx;             // primary char being parsed, start or only char
+  int yy;             // secondary char being parsed, end of range
+  bool xxEsc = false; // escape status for xx
+  bool yyEsc = false; // escape status for yy
   bool invert = false;
-  bool escape = false;
-  bool escape2 = false;
 
-  if ((ch = interpretSingleChar(escape)) < 0)
+  xx = interpretSingleChar(xxEsc);
+  if (xx < 0)
     throw RedExceptParse("incomplete character class", pos());
-  if (!escape && (ch == '^')) {
+  if (!xxEsc && (xx == '^')) {
     invert = true;
-    ch = interpretSingleChar(escape);
-    if (ch < 0)
+    xx = interpretSingleChar(xxEsc);
+    if (xx < 0)
       throw RedExceptParse("incomplete inverted character class", pos());
   }
-  rv.multiChar_.clearAll();
+  rv.multiChar_.truncate();
 
-  if (!escape && ((ch == '-') || (ch == ']'))) {
-    rv.multiChar_.insert(ch);
-    ch = interpretSingleChar(escape);
-    if (ch < 0)
+  if (!xxEsc && ((xx == '-') || (xx == ']'))) {
+    rv.multiChar_.insert(xx);
+    xx = interpretSingleChar(xxEsc);
+    if (xx < 0)
       throw RedExceptParse("unfinished character class", pos());
   }
 
-  while (escape || (ch != ']')) {
-    if ((ch2 = interpretSingleChar(escape2)) < 0)
+  while (xxEsc || (xx != ']')) {
+    yy = interpretSingleChar(yyEsc);
+    if (yy < 0)
       throw RedExceptParse("unexpected end of character class", pos());
-    if (!escape2 && (ch2 == '-')) {
-      if ((ch2 = interpretSingleChar(escape2)) < 0)
+    if (!yyEsc && (yy == '-')) {
+      yy = interpretSingleChar(yyEsc);
+      if (yy < 0)
         throw RedExceptParse("unfinished character class range", pos());
-      if (!escape2 && (ch2 == ']')) {
-        rv.multiChar_.insert(ch);
+      if (!yyEsc && (yy == ']')) {
+        rv.multiChar_.insert(xx);
         rv.multiChar_.insert('-');
-        ch = ch2;
-        escape = escape2;
+        xx = yy;
+        xxEsc = yyEsc;
         continue;
       }
-      if (ch > ch2)
+      if (xx > yy)
         throw RedExceptParse("backward range", pos());
-      rv.multiChar_.setSpan(ch, ch2);
-      if ((ch = interpretSingleChar(escape)) < 0)
+      rv.multiChar_.setSpan(xx, yy);
+      xx = interpretSingleChar(xxEsc);
+      if (xx < 0)
         throw RedExceptParse("incomplete character class range", pos());
     }
     else {
-      charToSet(rv.multiChar_, ch, escape);
-      ch = ch2;
-      escape = escape2;
+      charToSet(rv.multiChar_, xx, xxEsc);
+      xx = yy;
+      xxEsc = yyEsc;
     }
   }
 
@@ -197,23 +193,23 @@ Token Scanner::scanClosure() {
   Token rv(tClosure, pos());
   rv.min_ = -1;
   rv.max_ = 0;
-  bool seen = false;
+  bool haveMax = false;
   Byte ch = 0;
 
   while (ptr_ < end_) {
     ch = *ptr_++;
     if (ch == '}')
       break;
-    else if (ch == ',') {
+    if (ch == ',') {
       if (rv.min_ >= 0)
         throw RedExceptParse("extra comma in count", pos());
       rv.min_ = rv.max_;
       rv.max_ = 0;
-      seen = false;
+      haveMax = false;
     }
     else if ((ch >= '0') && (ch <= '9')) {
       rv.max_ = (10 * rv.max_) + (ch - '0');
-      seen = true;
+      haveMax = true;
     }
     else
       throw RedExceptParse("non-digit in count", pos());
@@ -223,7 +219,7 @@ Token Scanner::scanClosure() {
     throw RedExceptParse("unclosed brace count", pos());
   if ((rv.min_ < 0) && (rv.max_ == 0))
     throw RedExceptParse("illegal count", pos());
-  if (!seen)
+  if (!haveMax)
     rv.max_ = -1;
   if ((rv.min_ == 0) && (rv.max_ == 0))
     throw RedExceptParse("zero brace count", pos());
@@ -255,34 +251,33 @@ int Scanner::interpretSingleChar(bool &escape) {
       throw RedExceptParse("partial backslash escape", pos());
     ch = *ptr_++;
 
+    char high;
+    char low;
+
     switch (ch) {
-      case '0':  return '\0';
-      case 'a':  return '\a';
-      case 'b':  return '\b';
-      case 'n':  return '\n';
-      case 'r':  return '\r';
-      case 't':  return '\t';
-      case 'v':  return '\v';
-      case '\\': return '\\';
+    case '0':  return '\0';
+    case 'a':  return '\a';
+    case 'b':  return '\b';
+    case 'n':  return '\n';
+    case 'r':  return '\r';
+    case 't':  return '\t';
+    case 'v':  return '\v';
+    case '\\': return '\\';
 
-      case 'x': {
-        if (ptr_ > (end_ - 2))
-          throw RedExceptParse("unterminated hex escape", pos());
-        char high;
-        char low;
-        if (((high = fromHexDigit(ptr_[0])) >= 0) &&
-            ((low = fromHexDigit(ptr_[1])) >= 0)) {
-          ptr_ += 2;
-          return (high << 4) | low;
-        }
-        else
-          throw RedExceptParse("invalid hex escape", pos());
-        break;
+    case 'x':
+      if (ptr_ > (end_ - 2))
+        throw RedExceptParse("unterminated hex escape", pos());
+      if (((high = fromHexDigit(ptr_[0])) >= 0) &&
+          ((low  = fromHexDigit(ptr_[1])) >= 0)) {
+        ptr_ += 2;
+        return (static_cast<unsigned>(high) << 4U) | static_cast<unsigned>(low);
       }
+      throw RedExceptParse("invalid hex escape", pos());
+      break;
 
-      default:
-        escape = true;
-        break;
+    default:
+      escape = true;
+      break;
     }
   }
   return ch;
@@ -294,11 +289,11 @@ Token Scanner::doExpansion(int ch, bool escape) {
     throw RedExceptParse("trying to expand illegal character", pos());
 
   Token rv(tChars, pos());
-  rv.multiChar_.clearAll();
+  rv.multiChar_.truncate();
 
   if (escape) {
     if ((ch >= '1') && (ch <= '9'))
-      throw RedExceptParse("backreferences not supported", pos());
+      throw RedExceptParse("dfa does not support backreferences", pos());
 
     if (ch == 'i') {
       rv.type_ = tFlags;
@@ -308,6 +303,15 @@ Token Scanner::doExpansion(int ch, bool escape) {
   }
 
   charToSet(rv.multiChar_, ch, escape);
+  return rv;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Token Scanner::makeDot() const {
+  Token rv(tChars, pos());
+  rv.multiChar_.resize(gAlphabetSize);
+  rv.multiChar_.setAll();
   return rv;
 }
 

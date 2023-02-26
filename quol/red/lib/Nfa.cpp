@@ -1,8 +1,9 @@
-// non-deterministic finite automaton implementation
+// non-deterministic finite automaton object implementation
 
 #include "Nfa.h"
 
 #include <limits>
+#include <utility>
 
 #include "Except.h"
 #include "Fnv.h"
@@ -14,14 +15,13 @@ namespace zezax::red {
 
 using std::numeric_limits;
 using std::unordered_map;
-using std::unordered_set;
 using std::vector;
 
 namespace {
 
 bool containsTr(const vector<NfaTransition> &vec, const NfaTransition &tr) {
   for (const NfaTransition &elem : vec)
-    if ((elem.next_ == tr.next_) && (elem.multiChar_ == tr.multiChar_))
+    if (elem == tr)
       return true;
   return false;
 }
@@ -31,7 +31,6 @@ void addTransition(NfaState &ns, const NfaTransition &tr) {
   if (!containsTr(ns.transitions_, tr))
     ns.transitions_.push_back(tr);
 }
-
 
 
 void addTransition(NfaState &ns, NfaTransition &&tr) {
@@ -67,17 +66,14 @@ void allMultiCharsRecurse(MultiCharSet           &out,
 
 NfaObj::NfaObj(NfaObj &&rhs)
   : states_(std::move(rhs.states_)),
-    initId_(rhs.initId_),
-    goal_(rhs.goal_) {
-  rhs.reset();
-}
+    initId_(std::exchange(rhs.initId_, gNfaNullId)),
+    goal_(std::exchange(rhs.goal_, 0)) {}
 
 
 NfaObj &NfaObj::operator=(NfaObj &&rhs) {
   states_ = std::move(rhs.states_);
-  initId_ = rhs.initId_;
-  goal_ = rhs.goal_;
-  rhs.reset();
+  initId_ = std::exchange(rhs.initId_, gNfaNullId);
+  goal_   = std::exchange(rhs.goal_, 0);
   return *this;
 }
 
@@ -99,7 +95,7 @@ NfaId NfaObj::newState(Result result) {
   if (len == 0)
     len = 1; // zero is invalid state id
   if (len > numeric_limits<NfaId>::max())
-    throw RedExceptLimit("NFA state ID overflow");
+    throw RedExceptLimit("nfa state id overflow");
   states_.resize(len + 1);
   NfaState &ns = states_[len];
   ns.result_ = result;
@@ -329,6 +325,7 @@ void NfaObj::selfUnion(NfaId id) {
 
 
 void NfaObj::dropUselessTransitions() { // also de-dup transitions
+  // identify useless states
   NfaIdSet useless;
   NfaId num = static_cast<NfaId>(states_.size());
   for (NfaId id = 1; id < num; ++id) {
@@ -349,13 +346,6 @@ void NfaObj::dropUselessTransitions() { // also de-dup transitions
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void NfaObj::reset() {
-  freeAll();
-  initId_ = gNfaNullId;
-  goal_ = 0;
-}
-
-
 NfaId NfaObj::copyRecurse(unordered_map<NfaId, NfaId> &map, NfaId id) {
   auto [it, novel] = map.insert({id, 0}); // FIXME ugly
   if (novel) {
@@ -369,8 +359,7 @@ NfaId NfaObj::copyRecurse(unordered_map<NfaId, NfaId> &map, NfaId id) {
     }
     return newId;
   }
-  else
-    return it->second;
+  return it->second;
 }
 
 } // namespace zezax::red

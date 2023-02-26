@@ -11,16 +11,16 @@
 namespace zezax::red {
 
 Executable compile(ReParser  &rp,
-                   Format     fmt = fmtDirectAuto,
+                   Format     fmt   = fmtDirectAuto,
                    CompStats *stats = nullptr);
 
 std::shared_ptr<const Executable> compileShared(
     ReParser  &rp,
-    Format     fmt = fmtDirectAuto,
+    Format     fmt   = fmtDirectAuto,
     CompStats *stats = nullptr);
 
 std::string compileToSerialized(ReParser  &rp,
-                                Format     fmt = fmtDirectAuto,
+                                Format     fmt   = fmtDirectAuto,
                                 CompStats *stats = nullptr);
 
 } // namespace zezax::red

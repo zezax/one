@@ -47,10 +47,10 @@ public:
   std::string replace(const char       *str,
                       std::string_view  repl,
                       Length            mlen = lenFull);
-  std::string replace(const std::string &src,
+  std::string replace(const std::string &s,
                       std::string_view   repl,
                       Length             mlen = lenFull);
-  std::string replace(std::string_view  src,
+  std::string replace(std::string_view  sv,
                       std::string_view  repl,
                       Length            mlen = lenFull);
 
@@ -87,6 +87,10 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Some macro magic here follows to define the variants of the match/check
+// functions.  This reduces repetitive code and gives fewer places for
+// special-case bugs to hide.
+
 // runtime dispatch to template functions based on format
 #define ZEZAX_RED_FMT_SWITCH(A_func, A_len, ...)        \
   switch (fmt_) {                                       \
@@ -104,7 +108,7 @@ private:
   }
 
 
-// generate template functions with different prototypes
+// generate template match/check functions with different prototypes
 #define ZEZAX_RED_FUNC_DEFS(A_func, ...)                        \
   template <Length length>                                      \
   Result Matcher::A_func(const void *ptr, size_t len) {         \
@@ -131,17 +135,16 @@ private:
 ZEZAX_RED_FUNC_DEFS(check, it, proxy)
 ZEZAX_RED_FUNC_DEFS(match, it, proxy)
 
+// don't #undef ZEZAX_RED_FMT_SWITCH
+#undef ZEZAX_RED_FUNC_DEFS
+
 ///////////////////////////////////////////////////////////////////////////////
-
-#define ZEZAX_RED_PREAMBLE                      \
-  const FileHeader *hdr = exec_->getHeader();   \
-  const char *base = exec_->getBase();          \
-  const Byte *equivMap = exec_->getEquivMap()
-
 
 template <Length length, class InProxyT, class DfaProxyT>
 Result Matcher::checkCore(InProxyT in, DfaProxyT dfap) {
-  ZEZAX_RED_PREAMBLE;
+  const FileHeader *hdr = exec_->getHeader();
+  const char *base = exec_->getBase();
+  const Byte *equivMap = exec_->getEquivMap();
 
   dfap.init(base, hdr->initialOff_);
   Result result = dfap.result();
@@ -172,8 +175,11 @@ Result Matcher::checkCore(InProxyT in, DfaProxyT dfap) {
 
 template <Length length, class InProxyT, class DfaProxyT>
 Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
-  ZEZAX_RED_PREAMBLE;
   typedef typename decltype(dfap)::State State;
+
+  const FileHeader *hdr = exec_->getHeader();
+  const char *base = exec_->getBase();
+  const Byte *equivMap = exec_->getEquivMap();
 
   dfap.init(base, hdr->initialOff_);
   const State *init = dfap.state();
@@ -220,7 +226,9 @@ template <Length length, class InProxyT, class DfaProxyT>
 std::string Matcher::replaceCore(InProxyT         in,
                                  DfaProxyT        dfap,
                                  std::string_view repl) {
-  ZEZAX_RED_PREAMBLE;
+  const FileHeader *hdr = exec_->getHeader();
+  const char *base = exec_->getBase();
+  const Byte *equivMap = exec_->getEquivMap();
 
   dfap.init(base, hdr->initialOff_);
   std::string str;
@@ -257,9 +265,5 @@ std::string Matcher::replaceCore(InProxyT         in,
 
   return str;
 }
-
-// #undef ZEZAX_RED_FMT_SWITCH
-#undef ZEZAX_RED_FUNC_DEFS
-#undef ZEZAX_RED_PREAMBLE
 
 } // namespace zezax::red

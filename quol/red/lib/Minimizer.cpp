@@ -4,7 +4,6 @@
 
 #include "Minimizer.h"
 
-#include <cassert>
 #include <map>
 
 #include "Except.h"
@@ -25,13 +24,83 @@ DfaId &twinRef(vector<DfaId> &vec, size_t idx) {
 
 
 BlockId findInBlock(DfaId id, const vector<DfaIdSet> &blocks) {
-  for (BlockId block = 0; static_cast<size_t>(block) < blocks.size(); ++block)
-    if (blocks[block].get(id))
+  DfaId block = 0;
+  for (const DfaIdSet &dis : blocks) {
+    if (dis.get(id))
       return block;
+    ++block;
+  }
   throw RedExceptMinimize("no block containing state");
 }
 
 } // anonymous
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DfaMinimizer::minimize() {
+  if (stats_)
+    stats_->preMinimize_ = std::chrono::steady_clock::now();
+
+  DfaObj work;
+
+  setup();
+  iterate();
+  cleanup(work);
+
+  src_.swap(work);
+
+  if (stats_) {
+    stats_->minimizedDfaStates_      = src_.numStates();
+    stats_->numDistinguishedSymbols_ = maxChar_ + 1;
+    stats_->postMinimize_            = std::chrono::steady_clock::now();
+  }
+}
+
+
+void DfaMinimizer::setup() {
+  src_.installEquivalenceMap(); // smaller alphabet means less work
+  maxChar_ = src_.findMaxChar();
+
+  {
+    DfaIdSet stateSet = src_.allStateIds();
+
+    inverse_ = invert(stateSet, src_.getStates(), maxChar_);
+
+    blocks_.clear();
+    partition(stateSet, src_.getStates(), blocks_);
+  }
+
+  list_ = makeList(maxChar_, blocks_);
+}
+
+
+void DfaMinimizer::iterate() {
+  vector<BlockId> twins;
+  PatchSet patches;
+
+  while (!list_.empty()) {
+    auto node = list_.extract(list_.begin());
+    BlockRec &br = node.value();
+    DfaIdSet splits = locateSplits(br, blocks_, inverse_);
+    if (!splits.empty()) {
+      performSplits(br, splits, twins, patches, src_.getStates(), blocks_);
+      patchBlocks(patches, list_, maxChar_, blocks_);
+    }
+  }
+
+  inverse_.clear();
+}
+
+
+void DfaMinimizer::cleanup(DfaObj &work) {
+  makeDfaFromBlocks(src_, work, blocks_);
+  blocks_.clear();
+  blocks_.shrink_to_fit(); // free some memory
+  work.copyEquivMap(src_);
+  flagDeadEnds(work.getMutStates(), maxChar_);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 DfaEdgeToIds invert(const DfaIdSet         &stateSet,
                     const vector<DfaState> &stateVec,
@@ -55,7 +124,7 @@ DfaEdgeToIds invert(const DfaIdSet         &stateSet,
 
 void partition(const DfaIdSet         &stateSet,
                const vector<DfaState> &stateVec,
-               vector<DfaIdSet>       &blocks) {
+               vector<DfaIdSet>       &blockVec) {
   ResultSet resultSet;
   resultSet.insert(0); // make sure non-accepting result is present
   for (DfaId did : stateSet)
@@ -69,23 +138,23 @@ void partition(const DfaIdSet         &stateSet,
 
   for (DfaId did : stateSet) {
     block = result2block[stateVec[did].result_];
-    safeRef(blocks, block).insert(did);
+    safeRef(blockVec, block).insert(did);
   }
 }
 
 
 BlockRecSet makeList(CharIdx                 maxChar,
                      const vector<DfaIdSet> &blocks) {
-  DfaId zeroPop = blocks[0].size();
-  DfaId restPop = 0;
+  DfaId zeroSize = blocks[0].size();
+  DfaId restSize = 0;
 
   BlockId num = static_cast<BlockId>(blocks.size());
   for (BlockId bid = 1; bid < num; ++bid)
-    restPop += blocks[bid].size();
+    restSize += blocks[bid].size();
 
   BlockId start = 0;
   BlockId end = 1;
-  if ((restPop > 0) && (restPop < zeroPop)) {
+  if ((restSize > 0) && (restSize < zeroSize)) {
     start = 1;
     end = num;
   }
@@ -125,13 +194,13 @@ void performSplits(const BlockRec         &blockRec,
                    vector<BlockId>        &twins,
                    PatchSet               &patches,
                    const vector<DfaState> &stateVec,
-                   vector<DfaIdSet>       &blocks) {
+                   vector<DfaIdSet>       &blockVec) {
   twins.clear(); // forget old
   for (DfaId splitId : splits) {
-    BlockId blockNum = findInBlock(splitId, blocks);
+    BlockId blockNum = findInBlock(splitId, blockVec);
     if (!containedIn(blockNum, blockRec.block_, blockRec.char_,
-                     stateVec, blocks))
-      handleTwins(splitId, blockNum, blocks, twins, patches);
+                     stateVec, blockVec))
+      handleTwins(splitId, blockNum, blockVec, twins, patches);
   }
 }
 
@@ -140,9 +209,9 @@ bool containedIn(BlockId                 needleId,
                  BlockId                 haystackId,
                  CharIdx                 ch,
                  const vector<DfaState> &stateVec,
-                 const vector<DfaIdSet> &blocks) {
-  const DfaIdSet &needle = blocks[needleId];
-  const DfaIdSet &haystack = blocks[haystackId];
+                 const vector<DfaIdSet> &blockVec) {
+  const DfaIdSet &needle   = blockVec[needleId];
+  const DfaIdSet &haystack = blockVec[haystackId];
 
   for (DfaId id : needle) {
     const DfaState &ds = stateVec[id];
@@ -178,7 +247,7 @@ void patchBlocks(PatchSet               &patches,
                  CharIdx                 maxChar,
                  const vector<DfaIdSet> &blocks) {
   for (const Patch &patch : patches)
-    patchPair(patch.first, patch.second, list, maxChar, blocks);
+    patchPair(patch.block_, patch.twin_, list, maxChar, blocks);
   patches.clear();
 }
 
@@ -189,8 +258,8 @@ void patchPair(BlockId                 ii,
                CharIdx                 maxChar,
                const vector<DfaIdSet> &blocks) {
   BlockRec bii;
-  bii.block_ = ii;
   BlockRec bjj;
+  bii.block_ = ii;
   bjj.block_ = jj;
   BlockRec bmin;
   bmin.block_ = (blocks[ii].size() < blocks[jj].size()) ? ii : jj;
@@ -214,24 +283,24 @@ void makeDfaFromBlocks(const DfaObj           &srcDfa,
                        const vector<DfaIdSet> &blocks) {
   // make new states, one per block, and map old ids to new ids
   StateToStateMap oldToNew;
-  DfaId errId = outDfa.newState();
+  DfaId errId  = outDfa.newState();
   DfaId initId = outDfa.newState();
   if ((errId != gDfaErrorId) || (initId != gDfaInitialId))
     throw RedExceptMinimize("dfa state ids not what was expected");
-  oldToNew.emplace(gDfaErrorId, gDfaErrorId);
-  oldToNew.emplace(gDfaInitialId, gDfaInitialId);
+  oldToNew.emplace(gDfaErrorId,   errId);
+  oldToNew.emplace(gDfaInitialId, initId);
 
-  for (const DfaIdSet &sis : blocks) {
-    auto it = sis.begin();
-    if (it != sis.end()) {
+  for (const DfaIdSet &dis : blocks) {
+    auto it = dis.begin();
+    if (it != dis.end()) {
       DfaId id;
       auto found = oldToNew.find(*it);
       if (found == oldToNew.end())
         id = outDfa.newState();
       else
         id = found->second;
-      for (; it != sis.end(); ++it)
-        oldToNew.emplace(*it, id); // FIXME: was insert_or_assign
+      for (; it != dis.end(); ++it)
+        oldToNew.emplace(*it, id);
     }
   }
 
@@ -243,85 +312,10 @@ void makeDfaFromBlocks(const DfaObj           &srcDfa,
       DfaState &outState = outDfa[oldToNew[*it]];
       for (auto [ch, st] : srcState.trans_.getMap())
         outState.trans_.emplace(ch, oldToNew[st]);
-      outState.result_ = srcState.result_;
+      outState.result_  = srcState.result_;
       outState.deadEnd_ = srcState.deadEnd_;
     }
   }
-}
-
-
-void improveDfa(DfaObj &dfa, CharIdx maxChar) {
-  flagDeadEnds(dfa.getMutStates(), maxChar);
-
-  {
-    DfaObj small = transcribeDfa(dfa);
-    dfa.swap(small);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DfaMinimizer::minimize() {
-  if (stats_)
-    stats_->preMinimize_ = std::chrono::steady_clock::now();
-
-  DfaObj work;
-
-  setup();
-  iterate();
-  cleanup(work);
-
-  src_.swap(work);
-
-  if (stats_) {
-    stats_->minimizedDfaStates_ = src_.numStates();
-    stats_->numDistinguishedSymbols_ = maxChar_ + 1;
-    stats_->postMinimize_ = std::chrono::steady_clock::now();
-  }
-}
-
-
-void DfaMinimizer::setup() {
-  src_.installEquivalenceMap(); // smaller alphabet means less work
-  maxChar_ = src_.findMaxChar();
-
-  {
-    DfaIdSet stateSet = src_.allStateIds();
-
-    inverse_ = std::move(invert(stateSet, src_.getStates(), maxChar_));
-
-    blocks_.clear();
-    partition(stateSet, src_.getStates(), blocks_);
-  }
-
-  list_ = std::move(makeList(maxChar_, blocks_));
-}
-
-
-void DfaMinimizer::iterate() {
-  vector<BlockId> twins;
-  PatchSet patches;
-
-  while (!list_.empty()) {
-    auto node = list_.extract(list_.begin());
-    BlockRec &br = node.value();
-    DfaIdSet splits = locateSplits(br, blocks_, inverse_);
-    if (splits.size() > 0) {
-      performSplits(br, splits, twins, patches, src_.getStates(), blocks_);
-      patchBlocks(patches, list_, maxChar_, blocks_);
-    }
-  }
-
-  inverse_.clear();
-}
-
-
-void DfaMinimizer::cleanup(DfaObj &work) {
-  makeDfaFromBlocks(src_, work, blocks_);
-  blocks_.clear();
-  blocks_.shrink_to_fit();
-  work.copyEquivMap(src_);
-  improveDfa(work, maxChar_);
 }
 
 } // namespace zezax::red

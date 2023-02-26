@@ -31,7 +31,7 @@ Executable::Executable(string &&buf)
     inStr_(true),
     usedMalloc_(false) {
   if (str_.empty())
-    throw RedExceptApi("Serialized DFA move-string is empty");
+    throw RedExceptApi("serialized dfa move-string is empty");
   buf_ = str_.data();
   end_ = buf_ + str_.size();
   validate();
@@ -47,7 +47,7 @@ Executable::Executable(const string &buf)
     inStr_(true),
     usedMalloc_(false) {
   if (str_.empty())
-    throw RedExceptApi("Serialized DFA copy-string is empty");
+    throw RedExceptApi("serialized dfa copy-string is empty");
   buf_ = str_.data();
   end_ = buf_ + str_.size();
   validate();
@@ -63,7 +63,7 @@ Executable::Executable(string_view sv)
     inStr_(true),
     usedMalloc_(false) {
   if (str_.empty())
-    throw RedExceptApi("Serialized DFA string_view is empty");
+    throw RedExceptApi("serialized dfa string_view is empty");
   buf_ = str_.data();
   end_ = buf_ + str_.size();
   validate();
@@ -79,7 +79,7 @@ Executable::Executable(const CopyBuf &, const void *ptr, size_t len)
     inStr_(true),
     usedMalloc_(false) {
   if (str_.empty())
-    throw RedExceptApi("Serialized DFA copy-ptr is empty");
+    throw RedExceptApi("serialized dfa copy-ptr is empty");
   buf_ = str_.data();
   end_ = buf_ + str_.size();
   validate();
@@ -94,7 +94,7 @@ Executable::Executable(const StealNew &, const void *ptr, size_t len)
     inStr_(false),
     usedMalloc_(false) {
   if (!buf_)
-    throw RedExceptApi("Serialized DFA new-ptr is empty");
+    throw RedExceptApi("serialized dfa new-ptr is empty");
   end_ = buf_ + len;
   validate();
 }
@@ -108,7 +108,7 @@ Executable::Executable(const StealMalloc &, const void *ptr, size_t len)
     inStr_(false),
     usedMalloc_(true) {
   if (!buf_)
-    throw RedExceptApi("Serialized DFA malloc-ptr is empty");
+    throw RedExceptApi("serialized dfa malloc-ptr is empty");
   end_ = buf_ + len;
   validate();
 }
@@ -122,6 +122,8 @@ Executable::Executable(const char *path)
     inStr_(true),
     usedMalloc_(false) {
   str_ = loadFromFile(path);
+  if (str_.empty())
+    throw RedExceptApi("serialized dfa from file is empty");
   buf_ = str_.data();
   end_ = buf_ + str_.size();
   validate();

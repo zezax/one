@@ -9,7 +9,6 @@
 
 namespace zezax::red {
 
-//FIXME: 3-byte
 enum Format : uint8_t {
   fmtDirectAuto = 10,
   fmtDirect1    = 11,
@@ -54,25 +53,25 @@ class Serializer {
 public:
   explicit Serializer(const DfaObj &dfa, CompStats *stats = nullptr);
 
-  std::string serialize(Format fmt);
+  std::string serializeToString(Format fmt);
   void serializeToFile(Format fmt, const char *path);
 
 private:
   void prepareToSerialize();
   Format validatedFormat(Format fmt);
   Format optimalFormat();
-  std::string serializeToString(Format fmt);
+  std::string serialize(Format fmt);
   void populateHeader(FileHeader &hdr, Format fmt);
   void appendState(Format fmt, std::string &buf, const DfaState &ds);
   void tabulateOffsets(Format fmt);
-  size_t measureState(Format fmt, const DfaState &ds);
+  size_t measureState(Format fmt, const DfaState &ds) const;
   void findMaxChar();
 
-  const DfaObj       &dfa_;
-  CharIdx             maxChar_;
-  Result              maxResult_;
-  std::vector<size_t> offsets_;
-  CompStats          *stats_;
+  const DfaObj        &dfa_;
+  CharIdx              maxChar_;
+  Result               maxResult_;
+  std::vector<size_t>  offsets_;
+  CompStats           *stats_;
 };
 
 

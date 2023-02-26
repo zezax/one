@@ -1,5 +1,8 @@
+// small utility functions implementation
+
 #include "Util.h"
 
+#include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -8,45 +11,49 @@
 #endif
 
 #include <array>
+#include <limits>
 #include <system_error>
 
 #include "Except.h"
 
 namespace zezax::red {
 
+using std::generic_category;
+using std::numeric_limits;
 using std::string;
+using std::system_error;
 
-char fromHexDigit(Byte c) {
-  if ((c >= '0') && (c <= '9'))
-    return (static_cast<char>(c) - '0');
-  if ((c >= 'A') && (c <= 'F'))
-    return (static_cast<char>(c) - 'A' + 10);
-  if ((c >= 'a') && (c <= 'f'))
-    return (static_cast<char>(c) - 'a' + 10);
+char fromHexDigit(Byte x) {
+  if ((x >= '0') && (x <= '9'))
+    return (static_cast<char>(x) - '0');
+  if ((x >= 'A') && (x <= 'F'))
+    return (static_cast<char>(x) - 'A' + 10);
+  if ((x >= 'a') && (x <= 'f'))
+    return (static_cast<char>(x) - 'a' + 10);
   return -1;
 }
 
-void writeStringToFile(const std::string &str, const char *path) {
+
+void writeStringToFile(const string &str, const char *path) {
   if (!path)
-    throw RedExceptApi("Write file path is null");
+    throw RedExceptApi("write file path is null");
 
   int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
   if (fd < 0)
-    throw std::system_error(errno, std::generic_category(),
-                            "Failed to open file for write");
+    throw system_error(errno, generic_category(),
+                       "failed to open file for write");
 
+  constexpr size_t maxChunk = numeric_limits<ssize_t>::max();
   const char *ptr = str.data();
   size_t nbytes = str.size();
   while (nbytes > 0) {
-    ssize_t chunk =
-      (nbytes > 0x7fffffff) ? 0x7fffffff : static_cast<ssize_t>(nbytes);
-    ssize_t did = write(fd, ptr, chunk);
+    size_t chunk = (nbytes > maxChunk) ? maxChunk : nbytes;
+    ssize_t did = write(fd, ptr, static_cast<ssize_t>(chunk));
     if (did < 0) {
       if (errno == EINTR)
         continue;
       close(fd);
-      throw std::system_error(errno, std::generic_category(),
-                              "Failed to write file");
+      throw system_error(errno, generic_category(), "failed to write file");
     }
     ptr += did;
     nbytes -= did;
@@ -58,15 +65,22 @@ void writeStringToFile(const std::string &str, const char *path) {
 
 string readFileToString(const char *path) {
   if (!path)
-    throw RedExceptApi("Read file path is null");
+    throw RedExceptApi("read file path is null");
 
   int fd = open(path, O_RDONLY | O_CLOEXEC);
   if (fd < 0)
-    throw std::system_error(errno, std::generic_category(),
-                            "Failed to open file for read");
+    throw system_error(errno, generic_category(),
+                       "failed to open file for read");
+
+  struct stat sst;
+  int res = fstat(fd, &sst);
+  if (res < 0)
+    throw system_error(errno, generic_category(), "failed to fstat read file");
 
   string str;
-  std::array<char, 65536> buf;
+  str.reserve(sst.st_size);
+  std::array<char, 1048576> buf;
+
   for (;;) {
     ssize_t got = read(fd, buf.data(), buf.size());
     if (got <= 0) {
@@ -74,24 +88,21 @@ string readFileToString(const char *path) {
         if (errno == EINTR)
           continue;
         close(fd);
-        throw std::system_error(errno, std::generic_category(),
-                                "Failed to read file");
+        throw system_error(errno, generic_category(), "failed to read file");
       }
-      else
-        break;
+      break;
     }
     str.append(buf.data(), got);
   }
 
   close(fd);
-  str.shrink_to_fit();
   return str;
 }
 
+size_t bytesUsed() {
 
 #ifdef USE_JEMALLOC
 
-size_t bytesUsed() {
   mallctl("thread.tcache.flush", nullptr, nullptr, nullptr, 0);
   uint64_t epoch = 1;
   size_t elen = sizeof(epoch);
@@ -100,30 +111,29 @@ size_t bytesUsed() {
   size_t val;
   size_t vlen = sizeof(val);
   mallctl("stats.allocated", &val, &vlen, nullptr, 0);
-  return val;
-}
 
 #else /* USE_JEMALLOC */
 
-size_t bytesUsed() {
-  char buf[1024];
+  static long pageBytes = sysconf(_SC_PAGESIZE);
+  std::array<char, 1024> buf;
   int fd = open("/proc/self/statm", O_RDONLY);
   if (fd < 0)
     return 0;
-  size_t rv = 0;
-  ssize_t got = read(fd, buf, sizeof(buf) - 1);
+  size_t val = 0;
+  ssize_t got = read(fd, buf.data(), buf.size() - 1);
   if (got > 0) {
     buf[got] = '\0';
-    const char *p = buf;
+    const char *p = buf.data();
     for (; *p; ++p)
       if (*p == ' ')
         break;
-    rv = 4096 * strtol(p, nullptr, 0); // rss is second field
+    val = pageBytes * strtol(p, nullptr, 0); // rss is second field
   }
   close(fd);
-  return rv;
-}
 
 #endif /* USE_JEMALLOC */
+
+  return val;
+}
 
 } // namespace zezax::red

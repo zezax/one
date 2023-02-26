@@ -1,4 +1,4 @@
-// deterministic finite automaton implementation
+// deterministic finite automaton object implementation
 
 #include "Dfa.h"
 
@@ -59,19 +59,19 @@ Result maxResultRecurse(DfaIdSet               &seen,
 }
 
 
-void oneDeadEnd(DfaState &ds, DfaId id, CharIdx maxChar) {
+void determineDeadEnd(DfaState &ds, DfaId id, CharIdx maxChar) {
   // (likely) try sparse first...
-  for (const auto [ch, tid] : ds.trans_.getMap())
+  const std::unordered_map<CharIdx, DfaId> &sparse = ds.trans_.getMap();
+  for (const auto [ch, tid] : sparse)
     if ((ch < gAlphabetSize) && (tid != id)) {
       ds.deadEnd_ = false;
       return;
     }
-  // (rare) then try exhaustive...
-  for (CharIdx ch = 0; ch <= maxChar; ++ch)
-    if (ds.trans_[ch] != id) {
-      ds.deadEnd_ = false;
-      return;
-    }
+  // if not in sparse, could be default value
+  if ((sparse.size() <= maxChar) && (id != ds.trans_.getDefault())) {
+    ds.deadEnd_ = false;
+    return;
+  }
   ds.deadEnd_ = true;
 }
 
@@ -85,20 +85,103 @@ bool shareFate(const vector<DfaState> &states, CharIdx aa, CharIdx bb) {
 
 } // anonymous
 
+void DfaObj::clear() {
+  states_.clear();
+  equivMap_.clear();
+}
+
+
+void DfaObj::swap(DfaObj &other) {
+  states_.swap(other.states_);
+  equivMap_.swap(other.equivMap_);
+}
+
+
+DfaId DfaObj::newState() {
+  size_t len = states_.size();
+  if (len > numeric_limits<DfaId>::max())
+    throw RedExceptLimit("dfa state id overflow");
+  states_.resize(len + 1); // default init
+  return static_cast<DfaId>(len);
+}
+
+
+DfaIdSet DfaObj::allStateIds() const {
+  DfaIdSet seen;
+  seen.insert(gDfaErrorId);
+  seen.insert(gDfaInitialId);
+  allStatesRecurse(seen, states_, gDfaInitialId);
+  return seen;
+}
+
+
+CharIdx DfaObj::findMaxChar() const {
+  DfaIdSet seen;
+  seen.insert(gDfaInitialId);
+  return maxCharRecurse(seen, states_, gDfaInitialId);
+}
+
+
+Result DfaObj::findMaxResult() const {
+  DfaIdSet seen;
+  seen.insert(gDfaInitialId);
+  return maxResultRecurse(seen, states_, gDfaInitialId);
+}
+
+
+void DfaObj::chopEndMarks() {
+  for (DfaState &ds : states_) {
+    bool found = false;
+    CharToStateMap::Map &tmap = ds.trans_.getMap();
+    for (auto it = tmap.begin(); it != tmap.end(); )
+      if ((it->first >= gAlphabetSize) && (it->second != gDfaErrorId)) {
+        if (!found) {
+          found = true;
+          ds.result_ = it->first - gAlphabetSize;
+        }
+        it = tmap.erase(it);
+      }
+      else
+        ++it;
+  }
+}
+
+
+void DfaObj::installEquivalenceMap() {
+  vector<CharIdx> map = makeEquivalenceMap(states_, findMaxChar());
+  remapStates(states_, map);
+  equivMap_.swap(map);
+}
+
+
+Result DfaObj::matchFull(string_view sv) {
+  const DfaState *ds = &states_[gDfaInitialId];
+  for (char c : sv) {
+    CharIdx ch = static_cast<unsigned char>(c);
+    if (ch < equivMap_.size())
+      ch = equivMap_[ch];
+    ds = &states_[ds->trans_[ch]];
+    if (ds->deadEnd_)
+      break;
+  }
+  return ds->result_;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 DfaObj transcribeDfa(const DfaObj &src) {
   DfaObj rv;
-  DfaIdSet states = src.allStateIds();
+  DfaIdSet states = src.allStateIds(); // only reachable states
   rv.reserve(states.size());
 
   StateToStateMap oldToNew;
-  DfaId errId = rv.newState();
+  DfaId errId  = rv.newState();
   DfaId initId = rv.newState();
   if ((errId != gDfaErrorId) || (initId != gDfaInitialId))
     throw RedExceptMinimize("dfa state ids not as expected");
-  oldToNew.emplace(gDfaErrorId, gDfaErrorId);
-  oldToNew.emplace(gDfaInitialId, gDfaInitialId);
+  oldToNew.emplace(gDfaErrorId,   errId);
+  oldToNew.emplace(gDfaInitialId, initId);
 
-  // this skips unreachable states
   for (DfaId srcId : states) {
     if (!oldToNew.contains(srcId)) {
       DfaId newId = rv.newState();
@@ -111,23 +194,19 @@ DfaObj transcribeDfa(const DfaObj &src) {
     DfaState &newState = rv[oldToNew[srcId]];
     for (auto [ch, st] : srcState.trans_.getMap())
       newState.trans_.emplace(ch, oldToNew[st]);
-    newState.result_ = srcState.result_;
+    newState.result_  = srcState.result_;
     newState.deadEnd_ = srcState.deadEnd_;
   }
 
-  // copy equivalence map
   rv.copyEquivMap(src);
-
   return rv;
 }
 
 
 void flagDeadEnds(vector<DfaState> &states, CharIdx maxChar) {
   DfaId id = 0;
-  for (DfaState &ds : states) {
-    oneDeadEnd(ds, id, maxChar);
-    ++id;
-  }
+  for (DfaState &ds : states)
+    determineDeadEnd(ds, id++, maxChar);
 }
 
 
@@ -164,90 +243,6 @@ void remapStates(vector<DfaState> &states, const vector<CharIdx> &map) {
       work.set(map[ch], id);
     ds.trans_.swap(work);
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DfaObj::clear() {
-  states_.clear();
-  equivMap_.clear();
-}
-
-
-void DfaObj::swap(DfaObj &other) {
-  states_.swap(other.states_);
-  equivMap_.swap(other.equivMap_);
-}
-
-
-DfaId DfaObj::newState() {
-  size_t len = states_.size();
-  if (len > numeric_limits<DfaId>::max())
-    throw RedExceptLimit("DFA state ID overflow");
-  states_.resize(len + 1); // default init
-  return static_cast<DfaId>(len);
-}
-
-
-DfaIdSet DfaObj::allStateIds() const {
-  DfaIdSet seen;
-  seen.insert(gDfaErrorId);
-  seen.insert(gDfaInitialId);
-  allStatesRecurse(seen, states_, gDfaInitialId);
-  return seen;
-}
-
-
-CharIdx DfaObj::findMaxChar() const {
-  DfaIdSet seen;
-  seen.insert(gDfaInitialId);
-  return maxCharRecurse(seen, states_, gDfaInitialId);
-}
-
-
-Result DfaObj::findMaxResult() const {
-  DfaIdSet seen;
-  seen.insert(gDfaInitialId);
-  return maxResultRecurse(seen, states_, gDfaInitialId);
-}
-
-
-void DfaObj::chopEndMarks() {
-  for (DfaState &ds : states_) {
-    bool first = true;
-    CharToStateMap::Map &tmap = ds.trans_.getMap();
-    for (auto it = tmap.begin(); it != tmap.end(); )
-      if ((it->first >= gAlphabetSize) && (it->second != gDfaErrorId)) {
-        if (first) {
-          ds.result_ = it->first - gAlphabetSize;
-          first = false;
-        }
-        it = tmap.erase(it);
-      }
-      else
-        ++it;
-  }
-}
-
-
-void DfaObj::installEquivalenceMap() {
-  vector<CharIdx> map = makeEquivalenceMap(states_, findMaxChar());
-  remapStates(states_, map);
-  equivMap_.swap(map);
-}
-
-
-Result DfaObj::matchFull(string_view s) {
-  DfaState *cur = &states_[gDfaInitialId];
-  for (char c : s) {
-    CharIdx ch = static_cast<CharIdx>(c);
-    if (ch < equivMap_.size())
-      ch = equivMap_[ch];
-    cur = &states_[cur->trans_[ch]];
-    if (cur->deadEnd_)
-      break;
-  }
-  return cur->result_;
 }
 
 } // namespace zezax::red

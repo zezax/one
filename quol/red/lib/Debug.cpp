@@ -1,4 +1,5 @@
 // general printing and debugging implementation
+// in theory, none of this code should end up linked into a final binary
 
 #include "Debug.h"
 
@@ -27,21 +28,21 @@ namespace {
 
 string visibleChar(CharIdx ch) {
   string rv;
-  if ((ch >= ' ') && (ch <= '~'))
+  if ((ch >= ' ') && (ch <= '~')) // simple printable
     rv += static_cast<char>(ch);
   else if (ch <= 255) {
     Byte c8 = static_cast<Byte>(ch);
-    if (c8 < ' ') {
+    if (c8 < ' ') {               // control
       rv += '^';
       rv += '@' + static_cast<char>(c8);
     }
-    else {
+    else {                        // high ascii in hex
       rv += '$';
-      rv += toHexDigit(c8 >> 4);
-      rv += toHexDigit(c8 & 0x0f);
+      rv += toHexDigit(c8 / 16);
+      rv += toHexDigit(c8 % 16);
     }
   }
-  else {
+  else {                          // render end-marks in brackets
     rv += '[';
     rv += to_string(ch - gAlphabetSize);
     rv += ']';
@@ -59,24 +60,42 @@ string timeDiff(steady_clock::time_point aa, steady_clock::time_point bb) {
 }
 
 
+template <Format fmt>
+void appendSerializedState(string     &buf,
+                           const char *ptr,
+                           size_t      off,
+                           size_t      maxChar) {
+  DfaProxy<fmt> proxy;
+  proxy.init(ptr, 0);
+  Result result = proxy.result();
+  bool deadEnd = proxy.deadEnd();
+  buf += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
+  if (deadEnd)
+    buf += "  DeadEnd\n";
+  for (size_t ii = 0; ii <= maxChar; ++ii) {
+    buf += "  " + to_string(ii) + " -> $" +
+      toHexString(proxy.trans(ii)) + '\n';
+  }
+}
+
+
+// BitSet
 template <class Index, class Tag, class Word>
 void toStringAppend(string &out, const BitSet<Index, Tag, Word> &bs) {
+  constexpr Index nval = numeric_limits<Index>::max() - 1; // avoid opt bug
   Index start = 0;
-  Index prev = numeric_limits<Index>::max();
+  Index prev = nval;
   bool first = true;
   for (Index cur : bs) {
     if (cur != (prev + 1)) {
-      if (prev != numeric_limits<Index>::max()) {
+      if (prev != nval) {
         if (first)
           first = false;
         else
           out += ',';
         out += to_string(start);
         if (prev > start) {
-          if (prev > (start + 1))
-            out += '-';
-          else
-            out += ',';
+          out += '-';
           out += to_string(prev);
         }
       }
@@ -84,21 +103,19 @@ void toStringAppend(string &out, const BitSet<Index, Tag, Word> &bs) {
     }
     prev = cur;
   }
-  if (prev != numeric_limits<Index>::max()) {
+  if (prev != nval) {
     if (!first)
       out += ',';
     out += to_string(start);
     if (prev > start) {
-      if (prev > (start + 1))
-        out += '-';
-      else
-        out += ',';
+      out += '-';
       out += to_string(prev);
     }
   }
 }
 
 
+// NfaState
 void toStringAppend(string &out, const NfaState &ns) {
   out += "NfaState -> " + to_string(ns.result_) + '\n';
   for (const NfaTransition &tr : ns.transitions_)
@@ -107,6 +124,7 @@ void toStringAppend(string &out, const NfaState &ns) {
 }
 
 
+// DfaState
 void toStringAppend(string &out, const DfaState &ds) {
   out += "DfaState -> " + to_string(ds.result_) + '\n';
   if (ds.deadEnd_)
@@ -115,11 +133,11 @@ void toStringAppend(string &out, const DfaState &ds) {
 }
 
 
+// equivalence map
 template <class T>
 void toStringAppendEquivMap(string &out, const T *ptr, size_t len) {
   out += "equiv[\n";
-  size_t nval = 0;
-  --nval;  // underflow to largest 2's complement
+  constexpr size_t nval = numeric_limits<size_t>::max();
   size_t start = 0;
   size_t prev = nval;
   size_t idx;
@@ -153,11 +171,13 @@ void toStringAppendEquivMap(string &out, const T *ptr, size_t len) {
 }
 
 
+// equivalence map
 void toStringAppend(string &out, const vector<CharIdx> &vec) {
   toStringAppendEquivMap(out, vec.data(), vec.size());
 }
 
 
+// FileHeader
 void toStringAppend(string &out, const FileHeader &hdr) {
   out += visibleChar(hdr.magic_[0]);
   out += visibleChar(hdr.magic_[1]);
@@ -174,6 +194,13 @@ void toStringAppend(string &out, const FileHeader &hdr) {
 
 } // anonymous
 
+///////////////////////////////////////////////////////////////////////////////
+//
+// NFA STUFF
+//
+///////////////////////////////////////////////////////////////////////////////
+
+// MultiChar
 string toString(const MultiChar &mc) {
   string rv;
   CharIdx start = 0;
@@ -204,6 +231,7 @@ string toString(const MultiChar &mc) {
 }
 
 
+// MultiCharSet
 string toString(const MultiCharSet &mcs) {
   vector<MultiChar> vec;
   for (const MultiChar &mc : mcs)
@@ -216,6 +244,7 @@ string toString(const MultiCharSet &mcs) {
 }
 
 
+// NfaIdSet as numbers
 string toString(const NfaIdSet &nis) {
   string rv;
   toStringAppend(rv, nis);
@@ -223,26 +252,7 @@ string toString(const NfaIdSet &nis) {
 }
 
 
-string toString(const DfaIdSet &dis) {
-  string rv;
-  toStringAppend(rv, dis);
-  return rv;
-}
-
-
-string toString(const vector<DfaIdSet> &blocks) {
-  string rv = "blocks[\n";
-  int ii = 0;
-  for (const DfaIdSet &dis : blocks) {
-    rv += "  " + to_string(ii) + ": ";
-    toStringAppend(rv, dis);
-    rv += '\n';
-    ++ii;
-  }
-  return rv + "]\n";;
-}
-
-
+// Token
 string toString(const Token &t) {
   switch (t.type_) {
   case tError:   return "error";
@@ -258,8 +268,9 @@ string toString(const Token &t) {
 }
 
 
+// NfaObj state dump
 string toString(const NfaObj &nfa) {
-  NfaIdSet all = nfa.allStates(nfa.getNfaInitial());
+  NfaIdSet all = nfa.allStates(nfa.getInitial());
   vector<NfaId> vec;
   for (NfaId id : all)
     vec.push_back(id);
@@ -275,6 +286,7 @@ string toString(const NfaObj &nfa) {
 }
 
 
+// NfaIdSet state dump
 string toString(const NfaIdSet &nis, const NfaObj &nfa) {
   string rv = "set{\n";
   for (NfaId id : nis) {
@@ -286,9 +298,10 @@ string toString(const NfaIdSet &nis, const NfaObj &nfa) {
 }
 
 
+// NfaStatesToTransitions map/table
 string toString(const NfaStatesToTransitions &tbl) {
   vector<NfaIdSet> vec;
-  for (auto &[key, _] : tbl)
+  for (const auto &[key, _] : tbl)
     vec.emplace_back(key);
   std::sort(vec.begin(), vec.end());
 
@@ -310,7 +323,8 @@ string toString(const NfaStatesToTransitions &tbl) {
 }
 
 
-string toString(const NfaStateToCount &c) {
+// NfaIdToCount
+string toString(const NfaIdToCount &c) {
   vector<std::pair<NfaId, size_t>> vec;
   for (auto [key, val] : c)
     vec.emplace_back(key, val);
@@ -323,7 +337,12 @@ string toString(const NfaStateToCount &c) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+//
+// DFA STUFF
+//
+///////////////////////////////////////////////////////////////////////////////
 
+// CharToStateMap
 string toString(const CharToStateMap &map) {
   vector<std::pair<CharIdx, DfaId>> vec;
   for (auto [ch, id] : map.getMap())
@@ -363,6 +382,15 @@ string toString(const CharToStateMap &map) {
 }
 
 
+// DfaIdSet as numbers
+string toString(const DfaIdSet &dis) {
+  string rv;
+  toStringAppend(rv, dis);
+  return rv;
+}
+
+
+// DfaState
 string toString(const DfaState &ds) {
   string rv;
   toStringAppend(rv, ds);
@@ -370,6 +398,7 @@ string toString(const DfaState &ds) {
 }
 
 
+// DfaObj state dump
 string toString(const DfaObj &dfa) {
   string rv = "Dfa init=" + to_string(gDfaInitialId) +
     " err=" + to_string(gDfaErrorId) + '\n';
@@ -384,11 +413,13 @@ string toString(const DfaObj &dfa) {
 }
 
 
+// DfaEdge
 string toString(const DfaEdge &e) {
   return "edge(" + to_string(e.id_) + ' ' + visibleChar(e.char_) + ')';
 }
 
 
+// DfaEdgeSet
 string toString(const DfaEdgeSet &des) {
   string rv = "edges{\n";
   for (const DfaEdge &e : des)
@@ -397,6 +428,7 @@ string toString(const DfaEdgeSet &des) {
 }
 
 
+// DfaEdgeToIds (reverse map)
 string toString(const DfaEdgeToIds &rev) {
   string rv = "rev{\n";
   for (const auto &[e, dis] : rev)
@@ -405,11 +437,27 @@ string toString(const DfaEdgeToIds &rev) {
 }
 
 
+// blocks
+string toString(const vector<DfaIdSet> &blocks) {
+  string rv = "blocks[\n";
+  int ii = 0;
+  for (const DfaIdSet &dis : blocks) {
+    rv += "  " + to_string(ii) + ": ";
+    toStringAppend(rv, dis);
+    rv += '\n';
+    ++ii;
+  }
+  return rv + "]\n";;
+}
+
+
+// BlockRec
 string toString(const BlockRec &br) {
   return "brec(" + to_string(br.block_) + ' ' + visibleChar(br.char_) + ')';
 }
 
 
+// BlockRecSet
 string toString(const BlockRecSet &brs) {
   string rv = "brecs{\n";
   for (const BlockRec &br : brs)
@@ -418,13 +466,20 @@ string toString(const BlockRecSet &brs) {
 }
 
 
-string toString(const vector<CharIdx> &vec) { // equiv map
+// equivalence map
+string toString(const vector<CharIdx> &vec) {
   string rv;
   toStringAppend(rv, vec);
   return rv;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+//
+// SERIALIZED FORM
+//
+///////////////////////////////////////////////////////////////////////////////
 
+// FileHeader
 string toString(const FileHeader &hdr) {
   string rv;
   toStringAppend(rv, hdr);
@@ -432,7 +487,8 @@ string toString(const FileHeader &hdr) {
 }
 
 
-string toString(const char *buf, size_t len) { // serialized
+// serialized dfa
+string toString(const char *buf, size_t len) {
   string rv;
   const char *msg = checkHeader(buf, len);
   if (msg) {
@@ -460,21 +516,20 @@ string toString(const char *buf, size_t len) { // serialized
     return rv;
   }
 
-  size_t numChars = hdr->maxChar_;
-  ++numChars;
+  CharIdx maxChar = hdr->maxChar_;
   const char *end = buf + len;
   const char *base = buf + sizeof(FileHeader);
 
   size_t inc;
   switch (fmt) {
   case fmtDirect1:
-    inc = DfaProxy<fmtDirect1>::stateSize(hdr->maxChar_);
+    inc = DfaProxy<fmtDirect1>::stateSize(maxChar);
     break;
   case fmtDirect2:
-    inc = DfaProxy<fmtDirect2>::stateSize(hdr->maxChar_);
+    inc = DfaProxy<fmtDirect2>::stateSize(maxChar);
     break;
   case fmtDirect4:
-    inc = DfaProxy<fmtDirect4>::stateSize(hdr->maxChar_);
+    inc = DfaProxy<fmtDirect4>::stateSize(maxChar);
     break;
   default:
     throw RedExceptInternal("corrupted format");
@@ -484,49 +539,13 @@ string toString(const char *buf, size_t len) { // serialized
     size_t off = static_cast<size_t>(ptr - base);
     switch (fmt) {
     case fmtDirect1:
-      {
-        DfaProxy<fmtDirect1> proxy;
-        proxy.init(ptr, 0);
-        Result result = proxy.result();
-        bool deadEnd = proxy.deadEnd();
-        rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
-        if (deadEnd)
-          rv += "  DeadEnd\n";
-        for (size_t ii = 0; ii < numChars; ++ii) {
-          rv += "  " + to_string(ii) + " -> $" +
-            toHexString(proxy.trans(ii)) + '\n';
-        }
-      }
+      appendSerializedState<fmtDirect1>(rv, ptr, off, maxChar);
       break;
     case fmtDirect2:
-      {
-        DfaProxy<fmtDirect2> proxy;
-        proxy.init(ptr, 0);
-        Result result = proxy.result();
-        bool deadEnd = proxy.deadEnd();
-        rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
-        if (deadEnd)
-          rv += "  DeadEnd\n";
-        for (size_t ii = 0; ii < numChars; ++ii) {
-          rv += "  " + to_string(ii) + " -> $" +
-            toHexString(proxy.trans(ii)) + '\n';
-        }
-      }
+      appendSerializedState<fmtDirect2>(rv, ptr, off, maxChar);
       break;
     case fmtDirect4:
-      {
-        DfaProxy<fmtDirect4> proxy;
-        proxy.init(ptr, 0);
-        Result result = proxy.result();
-        bool deadEnd = proxy.deadEnd();
-        rv += '$' + toHexString(off) + " -> " + to_string(result) + '\n';
-        if (deadEnd)
-          rv += "  DeadEnd\n";
-        for (size_t ii = 0; ii < numChars; ++ii) {
-          rv += "  " + to_string(ii) + " -> $" +
-            toHexString(proxy.trans(ii)) + '\n';
-        }
-      }
+      appendSerializedState<fmtDirect4>(rv, ptr, off, maxChar);
       break;
     default:
       break;
@@ -536,6 +555,11 @@ string toString(const char *buf, size_t len) { // serialized
   return rv + "END\n";
 }
 
+///////////////////////////////////////////////////////////////////////////////
+//
+// MISC
+//
+///////////////////////////////////////////////////////////////////////////////
 
 string toString(const CompStats *s) {
   string rv = "CompStats:\n";
@@ -562,8 +586,10 @@ string toString(const CompStats *s) {
 
 char toHexDigit(Byte x) {
   if (x <= 9)
-    return '0' + static_cast<char>(x);
-  return static_cast<char>('a' - 10 + x);
+    return static_cast<char>('0' + x);
+  if (x <= 15)
+    return static_cast<char>('a' - 10 + x);
+  throw RedExceptInternal("hex digit out of range");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -574,7 +600,7 @@ ostream &operator<<(ostream &os, const MultiChar &mc) {
 }
 
 ostream &operator<<(ostream &os, const DfaIdSet &dis) {
-  os << toString(dis); // FIXME: non-char version
+  os << toString(dis);
   return os;
 }
 

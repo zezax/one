@@ -14,7 +14,7 @@
 namespace zezax::red {
 
 typedef uint8_t  Byte;
-typedef int32_t  FlagsT;
+typedef uint32_t Flags;
 typedef int32_t  Result;
 typedef int32_t  NfaId;
 typedef uint32_t CharIdx;
@@ -34,6 +34,8 @@ typedef BitSet<NfaId, NfaTag>::Iter                 NfaIdSetIter;
 typedef BitSet<DfaId, DfaTag>                       DfaIdSet;
 typedef BitSet<DfaId, DfaTag>::Iter                 DfaIdSetIter;
 
+
+// pass to both parse and compile stages if desired
 struct CompStats {
   std::chrono::steady_clock::time_point preNfa_;
   std::chrono::steady_clock::time_point postNfa_;
@@ -62,11 +64,13 @@ template<> struct std::hash<zezax::red::MultiChar> {
   size_t operator()(const zezax::red::MultiChar &mc) const { return mc.hash(); }
 };
 
+
 template<> struct std::hash<zezax::red::NfaIdSet> {
   size_t operator()(const zezax::red::NfaIdSet &nis) const {
     return nis.hash();
   }
 };
+
 
 template<> struct std::hash<zezax::red::DfaIdSet> {
   size_t operator()(const zezax::red::DfaIdSet &sis) const {

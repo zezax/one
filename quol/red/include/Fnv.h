@@ -25,8 +25,8 @@ struct FnvParams<T, std::enable_if_t<sizeof(T) == 8>> {
 // incremental hashing of additional bytes
 template <class T>
 T fnv1aInc(T hash, const void *ptr, size_t nbytes) {
-  auto bytep = reinterpret_cast<const uint8_t *>(ptr);
-  auto end = bytep + nbytes;
+  const uint8_t *bytep = reinterpret_cast<const uint8_t *>(ptr);
+  const uint8_t *end = bytep + nbytes;
   for (; bytep < end; ++bytep) {
     hash ^= *bytep;
     hash *= FnvParams<T>::prime_;

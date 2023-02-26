@@ -64,7 +64,7 @@ TEST(Powerset, stepwise) {
   addTrans(nfa, s1, s1, 'b');
   addTrans(nfa, s1, s2, 'a');
   addTrans(nfa, s2, s3, 'b');
-  nfa.setNfaInitial(s1);
+  nfa.setInitial(s1);
   MultiCharSet all = nfa.allMultiChars(s1);
   MultiCharSet basis = basisMultiChars(all);
   vector<MultiChar> chars;
@@ -100,7 +100,7 @@ TEST(Powerset, stepwise) {
   EXPECT_TRUE(contains(v, nis1));
   EXPECT_TRUE(contains(v, nis12));
 
-  NfaStateToCount counts = countAcceptingStates(tbl, nfa);
+  NfaIdToCount counts = countAcceptingStates(tbl, nfa);
   EXPECT_EQ(1, counts.size());
   ASSERT_TRUE(counts.contains(s3));
   EXPECT_EQ(1, counts[s3]);
@@ -136,7 +136,7 @@ TEST(Powerset, convert) {
   addTrans(nfa, s1, s2, 'a');
   addTrans(nfa, s2, s3, 'b');
   addTrans(nfa, s3, s4, gAlphabetSize + 1); // end mark
-  nfa.setNfaInitial(s1);
+  nfa.setInitial(s1);
 
   DfaObj dfa;
   {

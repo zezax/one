@@ -1,4 +1,4 @@
-// small utility functions
+// small utility functions header
 
 #pragma once
 
@@ -15,7 +15,7 @@ char fromHexDigit(Byte x);
 void writeStringToFile(const std::string &str, const char *path);
 std::string readFileToString(const char *path);
 
-size_t bytesUsed();
+size_t bytesUsed(); // generally reports resident set size
 
 
 template <class T>
@@ -27,27 +27,27 @@ T &safeRef(std::vector<T> &vec, size_t idx) {
 
 
 template <class T>
-bool contains(const std::vector<T> &vec, const T &want) {
+bool contains(const std::vector<T> &vec, const T &seek) {
   for (const T &elem : vec)
-    if (elem == want)
+    if (elem == seek)
       return true;
   return false;
 }
 
 
 template <class K, class T>
-bool contains(const std::map<K, T> &map, const T &want) {
-  for (const auto &[key, val] : map)
-    if (val == want)
+bool contains(const std::map<K, T> &map, const T &seek) {
+  for (const auto &[_, val] : map)
+    if (val == seek)
       return true;
   return false;
 }
 
 
 template <class T>
-bool contains(const SparseVec<T> &vec, const T &want) {
-  for (const auto &[idx, elem] : vec)
-    if (elem == want)
+bool contains(const SparseVec<T> &vec, const T &seek) {
+  for (const auto &[_, elem] : vec)
+    if (elem == seek)
       return true;
   return false;
 }
