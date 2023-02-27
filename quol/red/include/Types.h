@@ -40,6 +40,8 @@ struct CompStats {
   std::chrono::steady_clock::time_point preNfa_;
   std::chrono::steady_clock::time_point postNfa_;
   std::chrono::steady_clock::time_point preDfa_;
+  std::chrono::steady_clock::time_point postBasisChars_;
+  std::chrono::steady_clock::time_point postMakeTable_;
   std::chrono::steady_clock::time_point postDfa_;
   std::chrono::steady_clock::time_point preMinimize_;
   std::chrono::steady_clock::time_point postMinimize_;

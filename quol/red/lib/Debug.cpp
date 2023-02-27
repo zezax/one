@@ -568,6 +568,9 @@ string toString(const CompStats *s) {
   rv += "totalTime   " + timeDiff(s->preNfa_, s->postSerialize_) + '\n';
   rv += "parseNfa    " + timeDiff(s->preNfa_, s->postNfa_) + '\n';
   rv += "buildDfa    " + timeDiff(s->preDfa_, s->postDfa_) + '\n';
+  rv += "  basis     " + timeDiff(s->preDfa_, s->postBasisChars_) + '\n';
+  rv += "  table     " + timeDiff(s->postBasisChars_, s->postMakeTable_) + '\n';
+  rv += "  build     " + timeDiff(s->postMakeTable_, s->postDfa_) + '\n';
   rv += "minimizeDfa " + timeDiff(s->preMinimize_, s->postMinimize_) + '\n';
   rv += "serialize   " + timeDiff(s->preSerialize_, s->postSerialize_) + '\n';
   rv += "tokens               " + to_string(s->numTokens_) + '\n';

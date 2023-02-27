@@ -16,6 +16,9 @@ void checkSpan(MultiChar &mc, CharIdx beg, CharIdx end) {
     EXPECT_TRUE(mc.get(ii));
   EXPECT_EQ(mc.population(), end - beg + 1);
   EXPECT_FALSE(mc.empty());
+  mc.clearSpan(beg, end);
+  EXPECT_EQ(0, mc.population());
+  EXPECT_TRUE(mc.empty());
 }
 
 } // anonymous
@@ -273,6 +276,23 @@ TEST(BitSet, assign) {
   EXPECT_EQ(3, bb.population());
   bb = std::move(bb);
   EXPECT_EQ(0, bb.population());
+}
+
+
+TEST(BitSet, trailing) {
+  MultiChar mc;
+  EXPECT_EQ(0, mc.bitSize());
+  mc.chopTrailingZeros();
+  EXPECT_EQ(0, mc.bitSize());
+  mc.setSpan(0,99);
+  EXPECT_EQ(100, mc.population());
+  EXPECT_LE(100, mc.bitSize());
+  mc.clearSpan(50, 99);
+  EXPECT_EQ(50, mc.population());
+  EXPECT_LE(100, mc.bitSize());
+  mc.chopTrailingZeros();
+  EXPECT_EQ(50, mc.population());
+  EXPECT_GT(100, mc.bitSize());
 }
 
 

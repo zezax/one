@@ -51,10 +51,17 @@ DfaObj PowersetConverter::convert() {
     MultiCharSet basisMcs = basisMultiChars(allMcs);
     allMcs.clear(); // save memory
     for (const MultiChar &mc : basisMcs)
-      multiChars.emplace_back(mc); // copy faster than move here
+      multiChars.emplace_back(mc); // copy here -> makeTable() faster
   }
 
+  if (stats_)
+    stats_->postBasisChars_ = std::chrono::steady_clock::now();
+
   NfaStatesToTransitions table = makeTable(initial, nfa_, multiChars);
+
+  if (stats_)
+    stats_->postMakeTable_ = std::chrono::steady_clock::now();
+
   NfaIdToCount counts = countAcceptingStates(table, nfa_);
 
   DfaObj dfa;
@@ -119,8 +126,10 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
     for (const MultiChar &mc : sets[ii]) {
       MultiChar copy = mc;
       copy.subtract(unions[ii]);
-      if (!copy.empty())
+      if (!copy.empty()) {
+        copy.chopTrailingZeros(); // try to shorten vector for later
         rv.emplace(std::move(copy));
+      }
     }
 
   return rv;

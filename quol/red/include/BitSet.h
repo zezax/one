@@ -106,6 +106,7 @@ public:
   void insert(Index idx) { set(idx); } // for std::set compatibility
 
   void setSpan(Index first, Index last);
+  void clearSpan(Index first, Index last);
 
   void clear(Index idx) {
     ensure(idx);
@@ -128,6 +129,8 @@ public:
   }
 
   void truncate() { vec_.clear(); }
+  void chopTrailingZeros();
+  void shrinkToFit() { vec_.shrink_to_fit(); }
 
   void clearAll() {
     for (Word &ref : vec_)
@@ -340,6 +343,43 @@ void BitSet<Index, Tag, Word>::setSpan(Index first, Index last) {
     mask = calcMask(lastBit + 1);
     vec_[lastWord] |= mask;
   }
+}
+
+
+template <class Index, class Tag, class Word>
+void BitSet<Index, Tag, Word>::clearSpan(Index first, Index last) {
+  last = std::min(last, bitSize());
+  Index firstWord = first / wordBits_;
+  Index lastWord = last / wordBits_;
+  Index firstBit = first % wordBits_;
+  if (firstWord == lastWord) {
+    Index nbits = last - first + 1;
+    Word mask = calcMask(nbits);
+    mask <<= firstBit;
+    vec_[firstWord] &= ~mask;
+  }
+  else if (firstWord < lastWord) {
+    Index nbits = wordBits_ - firstBit;
+    Word mask = calcMask(nbits);
+    mask <<= firstBit;
+    vec_[firstWord] &= ~mask;
+    for (Index ii = firstWord + 1; ii < lastWord; ++ii)
+      vec_[ii] = 0;
+    Index lastBit = last % wordBits_;
+    mask = calcMask(lastBit + 1);
+    vec_[lastWord] &= ~mask;
+  }
+}
+
+
+template <class Index, class Tag, class Word>
+void BitSet<Index, Tag, Word>::chopTrailingZeros() {
+  size_t limit = 0;
+  size_t n = vec_.size();
+  for (size_t ii = 0; ii < n; ++ii)
+    if (vec_[ii])
+      limit = ii + 1;
+  vec_.resize(limit);
 }
 
 
