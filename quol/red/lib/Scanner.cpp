@@ -267,8 +267,8 @@ int Scanner::interpretSingleChar(bool &escape) {
     case 'x':
       if (ptr_ > (end_ - 2))
         throw RedExceptParse("unterminated hex escape", pos());
-      if (((high = fromHexDigit(ptr_[0])) >= 0) &&
-          ((low  = fromHexDigit(ptr_[1])) >= 0)) {
+      if (((high = fromHexDigit(ptr_[0])) >= 0) && // !!! assign-as-condition
+          ((low  = fromHexDigit(ptr_[1])) >= 0)) { // !!! assign-as-condition
         ptr_ += 2;
         return (static_cast<unsigned>(high) << 4U) | static_cast<unsigned>(low);
       }

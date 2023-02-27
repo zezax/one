@@ -1,14 +1,10 @@
 // unit tests for dfa class and utilities
 
-#include <vector>
-
 #include <gtest/gtest.h>
 
 #include "Dfa.h"
 
 using namespace zezax::red;
-
-using std::vector;
 
 namespace {
 
@@ -45,8 +41,7 @@ TEST(Dfa, maxchar) {
   //      v   | a   v   | b
   // S0   S1 -+---> S2 -+---> S3 -+---> S4 accept
 
-  const vector<DfaState> &vec = dfa.getMutStates();
-  ASSERT_EQ(5, vec.size());
+  ASSERT_EQ(5, dfa.numStates());
   CharIdx maxChar = dfa.findMaxChar();
   EXPECT_EQ(gAlphabetSize + 1, maxChar);
 }
@@ -71,6 +66,27 @@ TEST(Dfa, maxresult) {
 }
 
 
+TEST(Dfa, transcribe) {
+  DfaObj dfa;
+  DfaId s0 = mkState(dfa, 0);
+  DfaId s1 = mkState(dfa, 1);
+  DfaId s2 = mkState(dfa, 2);
+  DfaId s3 = mkState(dfa, 3);
+  DfaId s4 = mkState(dfa, 4);
+  mkState(dfa, 0); // unconnected state
+  addTrans(dfa, s1, s1, 'b');
+  addTrans(dfa, s1, s2, 'a');
+  addTrans(dfa, s2, s2, 'a');
+  addTrans(dfa, s2, s3, 'b');
+  addTrans(dfa, s3, s4, gAlphabetSize + 1); // end mark
+  EXPECT_EQ(gDfaErrorId, s0);
+  EXPECT_EQ(gDfaInitialId, s1);
+  EXPECT_EQ(6, dfa.numStates());
+  dfa = transcribeDfa(dfa);
+  EXPECT_EQ(5, dfa.numStates());
+}
+
+
 TEST(Dfa, equivmap) {
   DfaObj dfa;
   mkState(dfa, 0); // zero is error state
@@ -89,11 +105,10 @@ TEST(Dfa, equivmap) {
   //      v   | a   v   | b
   // S0   S1 -+---> S2 -+---> S3 -+---> S4 accept
 
-  const vector<DfaState> &vec = dfa.getStates();
   CharIdx maxChar = dfa.findMaxChar();
   EXPECT_EQ(gAlphabetSize + 1, maxChar);
   dfa.installEquivalenceMap();
-  ASSERT_EQ(5, vec.size());
+  ASSERT_EQ(5, dfa.numStates());
   maxChar = dfa.findMaxChar();
   EXPECT_EQ(3, maxChar); // a, b, endmark, and everything else
 }
