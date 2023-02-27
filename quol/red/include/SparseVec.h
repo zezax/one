@@ -33,9 +33,9 @@ public:
   size_t size() const { return vec_.size(); }
 
   Iterator begin() { return vec_.begin(); }
-  Iterator end() { return vec_.end(); }
+  Iterator end()   { return vec_.end(); }
   CIterator begin() const { return vec_.begin(); }
-  CIterator end() const { return vec_.end(); }
+  CIterator end()   const { return vec_.end(); }
 
 private:
   Vec vec_;

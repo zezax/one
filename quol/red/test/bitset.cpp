@@ -267,6 +267,12 @@ TEST(BitSet, assign) {
   EXPECT_TRUE(aa.empty());
   EXPECT_EQ(0, cc.population());
   EXPECT_TRUE(cc.empty());
+
+  // self-assign
+  bb = bb;
+  EXPECT_EQ(3, bb.population());
+  bb = std::move(bb);
+  EXPECT_EQ(0, bb.population());
 }
 
 

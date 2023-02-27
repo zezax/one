@@ -66,6 +66,26 @@ TEST(SparseVec, smoke) {
 }
 
 
+TEST(SparseVec, assign) {
+  SparseVec<Elem> v0;
+  v0[0] = 13;
+  v0[10] = 66;
+  v0[5] = 69;
+  v0[10] = 666;
+  v0[99] = 999;
+  EXPECT_EQ(4, v0.size());
+  SparseVec<Elem> v1 = v0;
+  EXPECT_EQ(4, v1.size());
+  v1 = v1;
+  EXPECT_EQ(4, v1.size());
+  v1 = std::move(v1);
+  EXPECT_EQ(0, v1.size());
+  v1 = std::move(v0);
+  EXPECT_EQ(0, v0.size());
+  EXPECT_EQ(4, v1.size());
+}
+
+
 TEST(SparseVec, iter) {
   SparseVec<Elem> vec;
   vec[69] = 0;
