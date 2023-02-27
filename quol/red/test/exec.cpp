@@ -18,7 +18,7 @@ namespace {
 
 Result execMatch(const Executable *rex, const char *str) {
   Matcher mat(rex);
-  return mat.match(str, lenFull);
+  return mat.match(str, styFull);
 }
 
 } // anonymous
@@ -82,9 +82,9 @@ TEST_P(ExecTest, smoke) {
     rex = compile(p, fmt, &stats);
   }
   Matcher mat(&rex);
-  EXPECT_EQ(0, mat.match("bca", lenFull));
-  EXPECT_EQ(1, mat.match("bac", lenFull));
-  EXPECT_EQ(2, mat.match("cab", lenFull));
+  EXPECT_EQ(0, mat.match("bca", styFull));
+  EXPECT_EQ(1, mat.match("bac", styFull));
+  EXPECT_EQ(2, mat.match("cab", styFull));
 
   EXPECT_EQ(10, stats.numTokens_);
   EXPECT_EQ(2, stats.numPatterns_);

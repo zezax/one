@@ -371,7 +371,7 @@ TEST_P(OmnibusFmt, matcher) {
       rex = make_shared<const Executable>(std::move(buf));
     }
     Matcher mat(rex);
-    Result res = mat.check(r.text_, lenFull);
+    Result res = mat.check(r.text_, styFull);
     EXPECT_EQ(r.match_, (res == 1));
   }
   catch (const RedExceptLimit &lim) {

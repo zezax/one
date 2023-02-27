@@ -62,42 +62,42 @@ void Matcher::reset() {
 
 
 // for match/check
-#define MCASE(A_name, A_len, ...)      \
-  case A_len:                          \
-    return A_name<A_len>(__VA_ARGS__);
+#define MCASE(A_name, A_style, ...)      \
+  case A_style:                          \
+    return A_name<A_style>(__VA_ARGS__);
 
 
 // for replace
-#define RCASE(A_name, A_len, ...)                             \
-  case A_len:                                                 \
-    ZEZAX_RED_FMT_SWITCH(A_name ## Core, A_len, __VA_ARGS__);
+#define RCASE(A_name, A_style, ...)                             \
+  case A_style:                                                 \
+    ZEZAX_RED_FMT_SWITCH(A_name ## Core, A_style, __VA_ARGS__);
 
 
-// runtime dispatch based on match-length; concatenate pfx & suf to expand
-#define LEN_SWITCH(A_name, A_pfx, A_suf, ...)            \
-  switch(mlen) {                                         \
-    A_pfx ## A_suf(A_name, lenShortest,   __VA_ARGS__)   \
-    A_pfx ## A_suf(A_name, lenContiguous, __VA_ARGS__)   \
-    A_pfx ## A_suf(A_name, lenLast,       __VA_ARGS__)   \
-    A_pfx ## A_suf(A_name, lenFull,       __VA_ARGS__)   \
+// runtime dispatch based on match-style; concatenate pfx & suf to expand
+#define STYLE_SWITCH(A_name, A_pfx, A_suf, ...)          \
+  switch(style) {                                        \
+    A_pfx ## A_suf(A_name, styFirst,      __VA_ARGS__)   \
+    A_pfx ## A_suf(A_name, styContiguous, __VA_ARGS__)   \
+    A_pfx ## A_suf(A_name, styLast,       __VA_ARGS__)   \
+    A_pfx ## A_suf(A_name, styFull,       __VA_ARGS__)   \
   default:                                               \
-    throw RedExceptExec("unsupported length");           \
+    throw RedExceptExec("unsupported style");            \
   }
 
 
 // generate match/check functions with different prototypes
 #define SUITE(A_name)                                                 \
-  Result Matcher::A_name(const void *ptr, size_t len, Length mlen) {  \
-    LEN_SWITCH(A_name, M, CASE, ptr, len)                             \
+  Result Matcher::A_name(const void *ptr, size_t len, Style style) {  \
+    STYLE_SWITCH(A_name, M, CASE, ptr, len)                           \
   }                                                                   \
-  Result Matcher::A_name(const char *str, Length mlen) {              \
-    LEN_SWITCH(A_name, M, CASE, str)                                  \
+  Result Matcher::A_name(const char *str, Style style) {              \
+    STYLE_SWITCH(A_name, M, CASE, str)                                \
   }                                                                   \
-  Result Matcher::A_name(const string &s, Length mlen) {              \
-    LEN_SWITCH(A_name, M, CASE, s)                                    \
+  Result Matcher::A_name(const string &s, Style style) {              \
+    STYLE_SWITCH(A_name, M, CASE, s)                                  \
   }                                                                   \
-  Result Matcher::A_name(string_view sv, Length mlen) {               \
-    LEN_SWITCH(A_name, M, CASE, sv)                                   \
+  Result Matcher::A_name(string_view sv, Style style) {               \
+    STYLE_SWITCH(A_name, M, CASE, sv)                                 \
   }
 
 
@@ -108,21 +108,21 @@ SUITE(match)
 // generate replace functions with different prototypes
 #define REPL(A_name, ...)                                                   \
   string Matcher::A_name(const void *ptr, size_t len,                       \
-                         string_view repl, Length mlen) {                   \
+                         string_view repl, Style style) {                   \
     RangeIter it(ptr, len);                                                 \
-    LEN_SWITCH(A_name, R, CASE, __VA_ARGS__)                                \
+    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                              \
   }                                                                         \
-  string Matcher::A_name(const char *str, string_view repl, Length mlen) {  \
+  string Matcher::A_name(const char *str, string_view repl, Style style) {  \
     NullTermIter it(str);                                                   \
-    LEN_SWITCH(A_name, R, CASE, __VA_ARGS__)                                \
+    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                              \
   }                                                                         \
-  string Matcher::A_name(const string &s, string_view repl, Length mlen) {  \
+  string Matcher::A_name(const string &s, string_view repl, Style style) {  \
     RangeIter it(s);                                                        \
-    LEN_SWITCH(A_name, R, CASE, __VA_ARGS__)                                \
+    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                              \
   }                                                                         \
-  string Matcher::A_name(string_view sv, string_view repl, Length mlen) {   \
+  string Matcher::A_name(string_view sv, string_view repl, Style style) {   \
     RangeIter it(sv);                                                       \
-    LEN_SWITCH(A_name, R, CASE, __VA_ARGS__)                                \
+    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                              \
   }
 
 

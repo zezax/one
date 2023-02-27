@@ -123,7 +123,7 @@ COMMIT f29f76c
   TEST: bench 1000 matchLast (rename)
   RESULT: ucpu 25.777
 COMMIT a781502
-  Use match function templatized by match-length
+  Use match function templatized by match-style
   TEST: bench 1000 matchLast
   RESULT: ucpu 25.224
 COMMIT 1e639d7

@@ -19,7 +19,7 @@ using testing::Values;
 
 TEST(Serializer, header) {
   std::array<char, 1024> buf;
-  memset(buf.data(), 0, buf.size());
+  buf.fill(0);
   EXPECT_NE(nullptr, checkHeader(buf.data(), buf.size()));
 }
 

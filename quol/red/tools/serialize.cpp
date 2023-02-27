@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
 
     string line;
     while (std::getline(std::cin, line))
-      std::cout << mat.check(line, lenFull) << std::endl;
+      std::cout << mat.check(line, styFull) << std::endl;
 
     return 0;
   }
