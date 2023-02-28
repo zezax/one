@@ -1,5 +1,6 @@
 // red benchmark that builds a large dfa
 
+#include <charconv>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -17,6 +18,7 @@
 
 using namespace zezax::red;
 
+using std::from_chars;
 using std::string;
 using std::string_view;
 using std::vector;
@@ -45,8 +47,6 @@ void getMallCtlBool(const char *name) {
 #endif /* USE_JEMALLOC */
 
 int main(int argc, char **argv) {
-  (void) argc;
-  (void) argv;
 
 #ifdef USE_JEMALLOC
   getMallCtlStr("opt.junk");
@@ -56,14 +56,40 @@ int main(int argc, char **argv) {
   getMallCtlStr("opt.prof_prefix");
 #endif
 
+  int goal = 0;
+  Flags flags = fIgnoreCase;
+
+  for (int ii = 1; ii < argc; ++ii) {
+    string_view arg = argv[ii];
+    if (arg == "-ls")
+      flags |= fLooseStart;
+    else if (arg == "-le")
+      flags |= fLooseEnd;
+    else if (arg == "-cs")
+      flags &= ~fIgnoreCase;
+    else
+      from_chars(arg.data(), arg.data() + arg.size(), goal);
+  }
+
+  constexpr int totWords = 234937; // !!! from my machine
+  if (!goal)
+    goal = 9397; // for continuity with past tests
+  int ratio = totWords / goal;
+  std::cout << "Goal words " << goal << " ratio 1:" << ratio << std::endl;
+
   vector<string> words;
   {
     std::ifstream file("/usr/share/dict/words");
     string line;
-    int ii = 0;
-    while (std::getline(file, line))
-      if ((++ii % 25) == 0)
+    int lines = 0;
+    int hits = 0;
+    while (std::getline(file, line)) {
+      if ((++lines % ratio) == 0) {
         words.push_back(line);
+        if (++hits >= goal)
+          break;
+      }
+    }
   }
   std::cout << "Total words " << words.size() << std::endl;
 
@@ -74,7 +100,7 @@ int main(int argc, char **argv) {
       ReParser p(&stats);
       Result res = 0;
       for (string &word : words)
-        p.add(word, ++res, fIgnoreCase);
+        p.add(word, ++res, flags);
       rex = compile(p, fmtDirectAuto, &stats);
     }
 

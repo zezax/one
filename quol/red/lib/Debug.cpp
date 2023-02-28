@@ -572,6 +572,11 @@ string toString(const CompStats *s) {
   rv += "  table     " + timeDiff(s->postBasisChars_, s->postMakeTable_) + '\n';
   rv += "  build     " + timeDiff(s->postMakeTable_, s->postDfa_) + '\n';
   rv += "minimizeDfa " + timeDiff(s->preMinimize_, s->postMinimize_) + '\n';
+  rv += "  equivMap  " + timeDiff(s->preMinimize_, s->postEquivMap_) + '\n';
+  rv += "  invert    " + timeDiff(s->postEquivMap_, s->postInvert_) + '\n';
+  rv += "  partition " + timeDiff(s->postInvert_, s->postPartition_) + '\n';
+  rv += "  makeList  " + timeDiff(s->postPartition_, s->postMakeList_) + '\n';
+  rv += "  iterate   " + timeDiff(s->postMakeList_, s->postMinimize_) + '\n';
   rv += "serialize   " + timeDiff(s->preSerialize_, s->postSerialize_) + '\n';
   rv += "tokens               " + to_string(s->numTokens_) + '\n';
   rv += "patterns             " + to_string(s->numPatterns_) + '\n';

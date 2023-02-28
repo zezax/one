@@ -1,0 +1,88 @@
+#!/bin/bash
+
+SCRIPTDIR=$(dirname $(readlink -f $0))
+BUILDDIR="$SCRIPTDIR/../_build"
+mkdir -p $BUILDDIR
+
+if [[ $# < 1 ]]; then
+  DAT=$BUILDDIR/usage.dat
+  $SCRIPTDIR/capture-usage > $DAT
+else
+  DAT=$1
+  shift
+fi
+
+SCRIPT=/tmp/redgp$$
+
+function preamble { # <xrange> <pngfile>
+  cat > $SCRIPT <<-EOS
+	set terminal pngcairo transparent fontscale 1.2
+	set output "$BUILDDIR/$2.png"
+	set style data lines
+	set xrange [$1]
+	set xlabel "Patterns (count)"
+	set ylabel "$YLABEL"
+	set format y '$YFORMAT'
+	set key center top
+	set title "$TITLE"
+	plot \\
+	EOS
+}
+
+function plotone { # <column> <index> <name> <end>
+  cat >> $SCRIPT <<-EOS
+	'$DAT' index $2 using 1:$1 linewidth 2 title "$3"$4 \\
+	EOS
+}
+
+function postamble {
+  echo >> $SCRIPT
+}
+
+# TIME
+
+TITLE="DFA Compilation Time"
+YLABEL="Time (seconds)"
+YFORMAT="%.0s"
+
+preamble 0:100 comp-time-100
+plotone 2 0 "tight" ,
+plotone 2 1 "loose-start" ,
+plotone 2 2 "loose"
+postamble
+gnuplot -c $SCRIPT
+
+preamble 0:10000 comp-time-10000
+plotone 2 0 "tight" ,
+plotone 2 3 "tight-case" ,
+plotone 2 1 "loose-start" ,
+plotone 2 4 "loose-start-case" ,
+plotone 2 2 "loose"
+postamble
+gnuplot -c $SCRIPT
+
+# MEMORY
+
+TITLE="DFA Compilation Memory"
+YLABEL="Resident Set Size"
+YFORMAT="%.0s%cB"
+
+preamble 0:100 comp-rss-100
+plotone 3 0 "tight" ,
+plotone 3 1 "loose-start" ,
+plotone 3 2 "loose"
+postamble
+gnuplot -c $SCRIPT
+
+preamble 0:10000 comp-rss-10000
+plotone 3 0 "tight" ,
+plotone 3 3 "tight-case" ,
+plotone 3 1 "loose-start" ,
+plotone 3 4 "loose-start-case" ,
+plotone 3 2 "loose"
+postamble
+gnuplot -c $SCRIPT
+
+rm -f $SCRIPT
+
+##### EOF #####

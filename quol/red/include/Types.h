@@ -44,6 +44,10 @@ struct CompStats {
   std::chrono::steady_clock::time_point postMakeTable_;
   std::chrono::steady_clock::time_point postDfa_;
   std::chrono::steady_clock::time_point preMinimize_;
+  std::chrono::steady_clock::time_point postEquivMap_;
+  std::chrono::steady_clock::time_point postInvert_;
+  std::chrono::steady_clock::time_point postPartition_;
+  std::chrono::steady_clock::time_point postMakeList_;
   std::chrono::steady_clock::time_point postMinimize_;
   std::chrono::steady_clock::time_point preSerialize_;
   std::chrono::steady_clock::time_point postSerialize_;

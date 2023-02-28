@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Generate raw data for graphs of resource usage by input size and options.
+# This is meant for gnuplot.
+
+WORDS=_build/tools/words
+TMP=/tmp/redcc$$
+
+function trial {
+  $WORDS $ARGS $N > $TMP
+  TIME=$(grep totalTime $TMP | awk '{print$2}')
+  RSS=$(grep powersetMemUsed $TMP | awk '{print$2}')
+  rm -f $TMP
+  LABEL=${ARGS// /}
+  echo $N $TIME $RSS $LABEL
+  echo
+  echo
+}
+
+SMALL="1 2 4 6 8 9 10 11"
+MEDIUM="$SMALL 100 200 500"
+LARGE="$MEDIUM 1000 2000 5000 8000 10000"
+for CS in "" "-cs"; do
+  ARGS="$CS"
+  for N in $LARGE; do
+    trial
+  done
+
+  # this is pretty expensive...
+  ARGS="$CS -ls"
+  for N in $MEDIUM; do
+    trial
+  done
+
+  # this is very expensive...
+  ARGS="$CS -ls -le"
+  for N in $SMALL; do
+    trial
+  done
+done
+
+##### EOF #####

@@ -41,12 +41,11 @@ void DfaMinimizer::minimize() {
   if (stats_)
     stats_->preMinimize_ = std::chrono::steady_clock::now();
 
-  DfaObj work;
-
   setup();
   iterate();
-  cleanup(work);
 
+  DfaObj work;
+  cleanup(work);
   src_.swap(work);
 
   if (stats_) {
@@ -59,18 +58,26 @@ void DfaMinimizer::minimize() {
 
 void DfaMinimizer::setup() {
   src_.installEquivalenceMap(); // smaller alphabet means less work
+  if (stats_)
+    stats_->postEquivMap_ = std::chrono::steady_clock::now();
   maxChar_ = src_.findMaxChar();
 
   {
     DfaIdSet stateSet = src_.allStateIds();
 
     inverse_ = invert(stateSet, src_.getStates(), maxChar_);
+    if (stats_)
+      stats_->postInvert_ = std::chrono::steady_clock::now();
 
     blocks_.clear();
     partition(stateSet, src_.getStates(), blocks_);
+    if (stats_)
+      stats_->postPartition_ = std::chrono::steady_clock::now();
   }
 
   list_ = makeList(maxChar_, blocks_);
+  if (stats_)
+    stats_->postMakeList_ = std::chrono::steady_clock::now();
 }
 
 
