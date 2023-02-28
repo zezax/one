@@ -43,6 +43,25 @@ CharIdx maxCharRecurse(DfaIdSet               &seen,
 }
 
 
+CharIdx usedCharsRecurse(DfaIdSet               &seen,
+                         MultiChar              &used,
+                         const vector<DfaState> &states,
+                         DfaId                   did) {
+  CharIdx maxChar = 0;
+  for (auto [ch, id] : states[did].trans_.getMap()) {
+    used.set(ch);
+    if (ch > maxChar)
+      maxChar = ch;
+    if (!seen.testAndSet(id)) {
+      CharIdx sub = usedCharsRecurse(seen, used, states, id);
+      if (sub > maxChar)
+        maxChar = sub;
+    }
+  }
+  return maxChar;
+}
+
+
 Result maxResultRecurse(DfaIdSet               &seen,
                         const vector<DfaState> &states,
                         DfaId                   did) {
@@ -122,6 +141,14 @@ CharIdx DfaObj::findMaxChar() const {
 }
 
 
+CharIdx DfaObj::findUsedChars(MultiChar &used) const {
+  used.clearAll();
+  DfaIdSet seen;
+  seen.insert(gDfaInitialId);
+  return usedCharsRecurse(seen, used, states_, gDfaInitialId);
+}
+
+
 Result DfaObj::findMaxResult() const {
   DfaIdSet seen;
   seen.insert(gDfaInitialId);
@@ -148,7 +175,9 @@ void DfaObj::chopEndMarks() {
 
 
 void DfaObj::installEquivalenceMap() {
-  vector<CharIdx> map = makeEquivalenceMap(states_, findMaxChar());
+  MultiChar usedChars;
+  CharIdx maxChar = findUsedChars(usedChars);
+  vector<CharIdx> map = makeEquivalenceMap(states_, maxChar, usedChars);
   remapStates(states_, map);
   equivMap_.swap(map);
 }
@@ -169,40 +198,6 @@ Result DfaObj::matchFull(string_view sv) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DfaObj transcribeDfa(const DfaObj &src) {
-  DfaObj rv;
-  DfaIdSet states = src.allStateIds(); // only reachable states
-  rv.reserve(states.size());
-
-  StateToStateMap oldToNew;
-  DfaId errId  = rv.newState();
-  DfaId initId = rv.newState();
-  if ((errId != gDfaErrorId) || (initId != gDfaInitialId))
-    throw RedExceptMinimize("dfa state ids not as expected");
-  oldToNew.emplace(gDfaErrorId,   errId);
-  oldToNew.emplace(gDfaInitialId, initId);
-
-  for (DfaId srcId : states) {
-    if (!oldToNew.contains(srcId)) {
-      DfaId newId = rv.newState();
-      oldToNew[srcId] = newId;
-    }
-  }
-
-  for (DfaId srcId : states) {
-    const DfaState &srcState = src[srcId];
-    DfaState &newState = rv[oldToNew[srcId]];
-    for (auto [ch, st] : srcState.trans_.getMap())
-      newState.trans_.emplace(ch, oldToNew[st]);
-    newState.result_  = srcState.result_;
-    newState.deadEnd_ = srcState.deadEnd_;
-  }
-
-  rv.copyEquivMap(src);
-  return rv;
-}
-
-
 void flagDeadEnds(vector<DfaState> &states, CharIdx maxChar) {
   DfaId id = 0;
   for (DfaState &ds : states)
@@ -210,24 +205,41 @@ void flagDeadEnds(vector<DfaState> &states, CharIdx maxChar) {
 }
 
 
+// this is a performance-sensitive function
 vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
-                                   CharIdx                 maxChar) {
+                                   CharIdx                 maxChar,
+                                   const MultiChar        &usedChars) {
   CharIdx limit = maxChar + 1;
-  if (limit < gAlphabetSize)
-    limit = gAlphabetSize;
+  CharIdx size = std::max(limit, gAlphabetSize);
   vector<CharIdx> map;
-  map.reserve(limit);
+  map.reserve(size);
   CharIdx cur = 0;
 
-  for (CharIdx ii = 0; ii < limit; ++ii) {
+  CharIdx ii;
+  for (ii = 0; ii <= limit; ++ii) { // !!! one past limit
     CharIdx jj;
-    for (jj = 0; jj < ii; ++jj)
-      if (shareFate(states, ii, jj)) {
-        map.push_back(map[jj]);
-        break;
-      }
+    if (usedChars.get(ii)) { // one is used -> we really need to check fate
+      for (jj = 0; jj < ii; ++jj)
+        if (shareFate(states, ii, jj)) {
+          map.push_back(map[jj]);
+          break;
+        }
+    }
+    else                     // one is not used -> we can cheat
+      for (jj = 0; jj < ii; ++jj)
+        if (!usedChars.get(jj)) { // neither used -> same fate
+          map.push_back(map[jj]);
+          break;
+        }
+
     if (jj >= ii)
       map.push_back(cur++);
+  }
+
+  if (ii < size) {            // every char past limit is unused
+    CharIdx val = map[limit]; // last entry should represent unused chars
+    for (; ii < size; ++ii)
+      map.push_back(val);
   }
 
   return map;

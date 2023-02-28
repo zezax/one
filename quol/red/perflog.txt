@@ -97,10 +97,14 @@ COMMIT 2023/02/26
   Proofreading pass through all files
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:21.649 peak rss 2.565GB one-sec rss 2.562GB
-COMMIT 2024/02/27
+COMMIT 2023/02/27
   Chop trailing zeros from MultiChar.  More granular timestamps.
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:21.470 peak rss 2.566GB one-sec rss 2.561GB
+COMMIT 2024/02/28
+  Optimize makeEquivalenceMap().  Remove transcribeDfa() to speed up code.
+  TEST: words ratio 1:25 (9397)
+  RESULT: ucpu 0:21.053 peak rss 2.565GB one-sec rss 2.566GB
 
 MATCHING:
 ---------

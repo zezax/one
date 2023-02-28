@@ -13,8 +13,6 @@ function trial {
   rm -f $TMP
   LABEL=${ARGS// /}
   echo $N $TIME $RSS $LABEL
-  echo
-  echo
 }
 
 SMALL="1 2 4 6 8 9 10 11"
@@ -25,18 +23,21 @@ for CS in "" "-cs"; do
   for N in $LARGE; do
     trial
   done
+  echo; echo
 
   # this is pretty expensive...
   ARGS="$CS -ls"
   for N in $MEDIUM; do
     trial
   done
+  echo; echo
 
   # this is very expensive...
   ARGS="$CS -ls -le"
   for N in $SMALL; do
     trial
   done
+  echo; echo
 done
 
 ##### EOF #####

@@ -41,6 +41,7 @@ public:
 
   DfaIdSet allStateIds() const;
   CharIdx findMaxChar() const;
+  CharIdx findUsedChars(MultiChar &used) const; // returns max
   Result findMaxResult() const;
 
   void chopEndMarks();
@@ -62,11 +63,11 @@ private:
 
 
 // useful functions
-DfaObj transcribeDfa(const DfaObj &src);
 void flagDeadEnds(std::vector<DfaState> &states, CharIdx maxChar);
 
 std::vector<CharIdx> makeEquivalenceMap(const std::vector<DfaState> &states,
-                                        CharIdx                      maxChar);
+                                        CharIdx                      maxChar,
+                                        const MultiChar             &seenChars);
 
 void remapStates(std::vector<DfaState>      &states,
                  const std::vector<CharIdx> &map);
