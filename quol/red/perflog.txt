@@ -105,6 +105,10 @@ COMMIT 2024/02/28
   Optimize makeEquivalenceMap().  Remove transcribeDfa() to speed up code.
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:21.053 peak rss 2.565GB one-sec rss 2.566GB
+COMMIT 2024/02/28
+  Use bit-vector iteration in makeEquivalenceMap().
+  TEST: words ratio 1:25 (9397)
+  RESULT: ucpu 0:20.951 peak rss 2.566GB one-sec rss 2.562GB
 
 MATCHING:
 ---------

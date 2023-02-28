@@ -16,7 +16,7 @@ SCRIPT=/tmp/redgp$$
 
 function preamble { # <xrange> <pngfile>
   cat > $SCRIPT <<-EOS
-	set terminal pngcairo transparent fontscale 1.2
+	set terminal pngcairo transparent fontscale 1.1
 	set output "$BUILDDIR/$2.png"
 	set style data lines
 	set xrange [$1]
@@ -31,7 +31,7 @@ function preamble { # <xrange> <pngfile>
 
 function plotone { # <column> <index> <name> <end>
   cat >> $SCRIPT <<-EOS
-	'$DAT' index $2 using 1:$1 linewidth 2 title "$3"$4 \\
+	'$DAT' index $2 using 1:$1 linewidth 3 title "$3"$4 \\
 	EOS
 }
 
@@ -64,8 +64,8 @@ gnuplot -c $SCRIPT
 # MEMORY
 
 TITLE="DFA Compilation Memory"
-YLABEL="Resident Set Size"
-YFORMAT="%.0s%cB"
+YLABEL="Resident Set Size (bytes)"
+YFORMAT="%.0s%c"
 
 preamble 0:100 comp-rss-100
 plotone 3 0 "tight" ,

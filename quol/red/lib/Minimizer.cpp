@@ -16,7 +16,7 @@ using std::vector;
 
 namespace {
 
-DfaId &twinRef(vector<DfaId> &vec, size_t idx) {
+DfaId &twinRef(vector<BlockId> &vec, size_t idx) {
   while (vec.size() <= idx)
     vec.push_back(-1);
   return vec[idx];

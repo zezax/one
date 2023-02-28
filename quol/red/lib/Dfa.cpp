@@ -208,29 +208,35 @@ void flagDeadEnds(vector<DfaState> &states, CharIdx maxChar) {
 // this is a performance-sensitive function
 vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
                                    CharIdx                 maxChar,
-                                   const MultiChar        &usedChars) {
+                                   MultiChar              &charMask) {
   CharIdx limit = maxChar + 1;
   CharIdx size = std::max(limit, gAlphabetSize);
   vector<CharIdx> map;
   map.reserve(size);
   CharIdx cur = 0;
 
+  charMask.flipAll(); // now represents un-used chars
+
   CharIdx ii;
   for (ii = 0; ii <= limit; ++ii) { // !!! one past limit
     CharIdx jj;
-    if (usedChars.get(ii)) { // one is used -> we really need to check fate
+    if (!charMask.get(ii)) { // one is used -> we really need to check fates
       for (jj = 0; jj < ii; ++jj)
         if (shareFate(states, ii, jj)) {
           map.push_back(map[jj]);
           break;
         }
     }
-    else                     // one is not used -> we can cheat
-      for (jj = 0; jj < ii; ++jj)
-        if (!usedChars.get(jj)) { // neither used -> same fate
+    else {                   // one is not used -> we can cheat
+      auto it = charMask.begin();
+      if (it == charMask.end())
+        jj = ii;
+      else {                 // first unused one -> same fate
+        jj = *it;
+        if (jj < ii)
           map.push_back(map[jj]);
-          break;
-        }
+      }
+    }
 
     if (jj >= ii)
       map.push_back(cur++);

@@ -6,7 +6,6 @@
 - document keep results low
 - document ascii
 - public api
-- equivmap: first look for chars in no transitions
 - optional line prefix arg in debug strings
 - executable dump to file
 - work out shared ptr usage
