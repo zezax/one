@@ -143,8 +143,8 @@ ZEZAX_RED_FUNC_DEFS(match, it, proxy)
 template <Style style, class InProxyT, class DfaProxyT>
 Result Matcher::checkCore(InProxyT in, DfaProxyT dfap) {
   const FileHeader *hdr = exec_->getHeader();
-  const char *base = exec_->getBase();
-  const Byte *equivMap = exec_->getEquivMap();
+  const char *__restrict__ base = exec_->getBase();
+  const Byte *__restrict__ equivMap = exec_->getEquivMap();
 
   dfap.init(base, hdr->initialOff_);
   Result result = dfap.result();
@@ -178,11 +178,11 @@ Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
   typedef typename decltype(dfap)::State State;
 
   const FileHeader *hdr = exec_->getHeader();
-  const char *base = exec_->getBase();
-  const Byte *equivMap = exec_->getEquivMap();
+  const char *__restrict__ base = exec_->getBase();
+  const Byte *__restrict__ equivMap = exec_->getEquivMap();
 
   dfap.init(base, hdr->initialOff_);
-  const State *init = dfap.state();
+  const State *__restrict__ init = dfap.state();
   Result result = dfap.result();
   Result prevResult = 0;
   size_t idx = 0;
@@ -192,7 +192,7 @@ Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
     Byte byte = equivMap[*in];
 
     if (UNLIKELY(dfap.state() == init)) {
-      const State *prevState = dfap.state();
+      const State *__restrict__ prevState = dfap.state();
       dfap.next(base, byte);
       if (dfap.state() != prevState)
         matchStart_ = idx;
@@ -227,14 +227,14 @@ std::string Matcher::replaceCore(InProxyT         in,
                                  DfaProxyT        dfap,
                                  std::string_view repl) {
   const FileHeader *hdr = exec_->getHeader();
-  const char *base = exec_->getBase();
-  const Byte *equivMap = exec_->getEquivMap();
+  const char *__restrict__ base = exec_->getBase();
+  const Byte *__restrict__ equivMap = exec_->getEquivMap();
 
   dfap.init(base, hdr->initialOff_);
   std::string str;
 
   while (in) {
-    const Byte *found = nullptr;
+    const Byte *__restrict__ found = nullptr;
     DfaProxyT dproxy = dfap;
     for (InProxyT inner(in); inner; ++inner) {
       Byte byte = equivMap[*inner];
