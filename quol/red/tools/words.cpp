@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "Except.h"
-#include "ReParser.h"
+#include "Parser.h"
 #include "Compile.h"
 #include "Exec.h"
 #include "Util.h"
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
     CompStats stats;
     Executable rex;
     {
-      ReParser p(&stats);
+      Parser p(&stats);
       Result res = 0;
       for (string &word : words)
         p.add(word, ++res, flags);

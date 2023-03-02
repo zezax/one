@@ -10,51 +10,9 @@ using std::string;
 using std::string_view;
 
 
-Matcher::Matcher(std::shared_ptr<const Executable> exec)
-  : exec_(exec.get()), shared_(std::move(exec)) {
-  reset();
-}
-
-
 Matcher::Matcher(const Executable *exec)
-  : exec_(exec) {
-  reset();
-}
-
-
-void Matcher::reset() {
-  matchStart_ = 0;
-  matchEnd_   = 0;
-
-  const FileHeader *hdr = exec_->getHeader();
-  const char *base = exec_->getBase();
-  fmt_ = static_cast<Format>(hdr->format_);
-  switch (fmt_) {
-  case fmtDirect1:
-    {
-      DfaProxy<fmtDirect1> proxy;
-      proxy.init(base, hdr->initialOff_);
-      result_ = proxy.result();
-    }
-    break;
-  case fmtDirect2:
-    {
-      DfaProxy<fmtDirect2> proxy;
-      proxy.init(base, hdr->initialOff_);
-      result_ = proxy.result();
-    }
-    break;
-  case fmtDirect4:
-    {
-      DfaProxy<fmtDirect4> proxy;
-      proxy.init(base, hdr->initialOff_);
-      result_ = proxy.result();
-    }
-    break;
-  default:
-    throw RedExceptExec("unsupported format");
-  }
-}
+  : exec_(exec),
+    fmt_(static_cast<Format>(exec_->getHeader()->format_)) {}
 
 
 // Lots of macro magic here follows.  This reduces repetitive code and gives
@@ -86,23 +44,23 @@ void Matcher::reset() {
 
 
 // generate match/check functions with different prototypes
-#define SUITE(A_name)                                                 \
-  Result Matcher::A_name(const void *ptr, size_t len, Style style) {  \
+#define SUITE(A_ret, A_name)                                          \
+  A_ret Matcher::A_name(const void *ptr, size_t len, Style style) {   \
     STYLE_SWITCH(A_name, M, CASE, ptr, len)                           \
   }                                                                   \
-  Result Matcher::A_name(const char *str, Style style) {              \
+  A_ret Matcher::A_name(const char *str, Style style) {               \
     STYLE_SWITCH(A_name, M, CASE, str)                                \
   }                                                                   \
-  Result Matcher::A_name(const string &s, Style style) {              \
+  A_ret Matcher::A_name(const string &s, Style style) {               \
     STYLE_SWITCH(A_name, M, CASE, s)                                  \
   }                                                                   \
-  Result Matcher::A_name(string_view sv, Style style) {               \
+  A_ret Matcher::A_name(string_view sv, Style style) {                \
     STYLE_SWITCH(A_name, M, CASE, sv)                                 \
   }
 
 
-SUITE(check)
-SUITE(match)
+SUITE(Result, check)
+SUITE(Outcome, match)
 
 
 // generate replace functions with different prototypes

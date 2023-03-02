@@ -9,10 +9,10 @@
 
 namespace zezax::red {
 
-class ReParser {
+class Parser {
 public:
-  explicit ReParser(CompStats *stats = nullptr);
-  ~ReParser() = default;
+  explicit Parser(CompStats *stats = nullptr);
+  ~Parser() = default;
 
   // Adds a regular expression to the automaton, to yield the specified
   // positive result.  The following flags are honored:

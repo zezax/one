@@ -1,7 +1,7 @@
 // regular expression non-deterministic finite automaton parser implementation
 // recursive-descent parser produces nfa without epsilon transitions
 
-#include "ReParser.h"
+#include "Parser.h"
 
 #include <chrono>
 
@@ -16,7 +16,7 @@ using namespace std::chrono_literals;
 using chrono::steady_clock;
 using std::string_view;
 
-ReParser::ReParser(CompStats *stats)
+Parser::Parser(CompStats *stats)
   : flags_(0),
     level_(0),
     begun_(false),
@@ -33,7 +33,7 @@ ReParser::ReParser(CompStats *stats)
 }
 
 
-void ReParser::add(string_view regex, Result result, Flags flags) {
+void Parser::add(string_view regex, Result result, Flags flags) {
   if (result <= 0)
     throw RedExceptApi("result must be positive");
 
@@ -72,7 +72,7 @@ void ReParser::add(string_view regex, Result result, Flags flags) {
 }
 
 
-void ReParser::addAuto(string_view regex, Result result, Flags flags) {
+void Parser::addAuto(string_view regex, Result result, Flags flags) {
   flags |= fLooseStart | fLooseEnd; // generally expected default
 
   if (regex.starts_with("\\i")) {
@@ -102,7 +102,7 @@ void ReParser::addAuto(string_view regex, Result result, Flags flags) {
 }
 
 
-void ReParser::finish() {
+void Parser::finish() {
   if (nfa_.numStates() == 0)
     nfa_.setInitial(nfa_.newState(1)); // empty matches empty
 
@@ -119,13 +119,13 @@ void ReParser::finish() {
 }
 
 
-void ReParser::freeAll() {
+void Parser::freeAll() {
   nfa_.freeAll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-NfaId ReParser::parseExpr() {
+NfaId Parser::parseExpr() {
   NfaId state = parsePart();
   if (!state)
     return gNfaNullId;
@@ -141,7 +141,7 @@ NfaId ReParser::parseExpr() {
 }
 
 
-NfaId ReParser::parsePart() {
+NfaId Parser::parsePart() {
   begun_ = false;
   NfaId state = parseMulti();
   if (!state)
@@ -157,7 +157,7 @@ NfaId ReParser::parsePart() {
 }
 
 
-NfaId ReParser::parseMulti() {
+NfaId Parser::parseMulti() {
   NfaId state = parseUnit();
   if (!state)
     return gNfaNullId;
@@ -183,7 +183,7 @@ NfaId ReParser::parseMulti() {
 }
 
 
-NfaId ReParser::parseUnit() {
+NfaId Parser::parseUnit() {
   while (tok_.type_ == tFlags) {
     flags_ |= tok_.flags_;
     tok_ = scanner_.scanNext();
@@ -226,7 +226,7 @@ NfaId ReParser::parseUnit() {
 }
 
 
-NfaId ReParser::parseCharBits() {
+NfaId Parser::parseCharBits() {
   NfaId init = nfa_.newState(0);
   NfaId goal = nfa_.newGoalState();
   NfaTransition tr{goal, tok_.multiChar_}; // FIXME: constructor

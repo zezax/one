@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "ReParser.h"
+#include "Parser.h"
 #include "Compile.h"
 #include "Exec.h"
 #include "Matcher.h"
@@ -18,7 +18,8 @@ namespace {
 
 Result execMatch(const Executable *rex, const char *str) {
   Matcher mat(rex);
-  return mat.match(str, styFull);
+  Outcome oc = mat.match(str, styFull);
+  return oc.result_;
 }
 
 } // anonymous
@@ -26,7 +27,7 @@ Result execMatch(const Executable *rex, const char *str) {
 TEST(Exec, memory) {
   string s1;
   {
-    ReParser p;
+    Parser p;
     p.addAuto("ab*c", 1, 0);
     s1 = compileToSerialized(p);
   }
@@ -76,15 +77,15 @@ TEST_P(ExecTest, smoke) {
   CompStats stats;
   Executable rex;
   {
-    ReParser p(&stats);;
+    Parser p(&stats);;
     p.addAuto("ab*c", 1, 0);
     p.addAuto("ca*b", 2, 0);
     rex = compile(p, fmt, &stats);
   }
   Matcher mat(&rex);
-  EXPECT_EQ(0, mat.match("bca", styFull));
-  EXPECT_EQ(1, mat.match("bac", styFull));
-  EXPECT_EQ(2, mat.match("cab", styFull));
+  EXPECT_EQ(0, mat.match("bca", styFull).result_);
+  EXPECT_EQ(1, mat.match("bac", styFull).result_);
+  EXPECT_EQ(2, mat.match("cab", styFull).result_);
 
   EXPECT_EQ(10, stats.numTokens_);
   EXPECT_EQ(2, stats.numPatterns_);

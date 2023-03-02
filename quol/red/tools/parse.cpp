@@ -3,14 +3,14 @@
 #include <iostream>
 
 #include "Except.h"
-#include "ReParser.h"
+#include "Parser.h"
 #include "Debug.h"
 
 using namespace zezax::red;
 
 int main(int argc, char **argv) {
   try {
-    ReParser p;
+    Parser p;
     for (int ii = 1; ii < argc; ++ii)
       p.addAuto(argv[ii], ii, 0);
     p.finish();

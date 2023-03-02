@@ -2,14 +2,14 @@
 
 #include <gtest/gtest.h>
 
-#include "ReParser.h"
+#include "Parser.h"
 #include "Debug.h"
 
 using namespace zezax::red;
 
 
 TEST(Parser, smoke) {
-  ReParser p;
+  Parser p;
   p.addAuto("^a(l|e)[X-x]{,3}$", 1, 0);
   p.addAuto("(meyer\\i)+", 2, 0);
   p.finish();

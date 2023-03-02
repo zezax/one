@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "Exec.h"
+#include "Outcome.h"
 #include "Proxy.h"
 
 namespace zezax::red {
@@ -19,26 +20,17 @@ enum Style {
 
 class Matcher {
 public:
-  explicit Matcher(std::shared_ptr<const Executable> exec);
-  explicit Matcher(const Executable *exec); // to avoid shared_ptr overhead
-
-  explicit operator bool() const { return (result_ > 0); }
-
-  void reset();
-
-  Result result() const { return result_; }
-  size_t start() const { return matchStart_; }
-  size_t end() const { return matchEnd_; }
+  explicit Matcher(const Executable *exec); // pay attention to longevity
 
   Result check(const void *ptr, size_t len, Style style = styFull);
   Result check(const char *str, Style style = styFull);
   Result check(const std::string &s, Style style = styFull);
   Result check(std::string_view sv, Style style = styFull);
 
-  Result match(const void *ptr, size_t len, Style style = styFull);
-  Result match(const char *str, Style style = styFull);
-  Result match(const std::string &s, Style style = styFull);
-  Result match(std::string_view sv, Style style = styFull);
+  Outcome match(const void *ptr, size_t len, Style style = styFull);
+  Outcome match(const char *str, Style style = styFull);
+  Outcome match(const std::string &s, Style style = styFull);
+  Outcome match(std::string_view sv, Style style = styFull);
 
   std::string replace(const void       *ptr,
                       size_t            len,
@@ -60,17 +52,17 @@ public:
   template <Style style> Result check(const std::string &s);
   template <Style style> Result check(std::string_view sv);
 
-  template <Style style> Result match(const void *ptr, size_t len);
-  template <Style style> Result match(const char *str);
-  template <Style style> Result match(const std::string &s);
-  template <Style style> Result match(std::string_view sv);
+  template <Style style> Outcome match(const void *ptr, size_t len);
+  template <Style style> Outcome match(const char *str);
+  template <Style style> Outcome match(const std::string &s);
+  template <Style style> Outcome match(std::string_view sv);
 
 private:
   template <Style style, class InProxyT, class DfaProxyT>
   Result checkCore(InProxyT in, DfaProxyT dfap);
 
   template <Style style, class InProxyT, class DfaProxyT>
-  Result matchCore(InProxyT in, DfaProxyT dfap);
+  Outcome matchCore(InProxyT in, DfaProxyT dfap);
 
   template <Style style, class InProxyT, class DfaProxyT>
   std::string replaceCore(InProxyT         in,
@@ -78,11 +70,7 @@ private:
                           std::string_view repl);
 
   const Executable                  *exec_;
-  size_t                             matchStart_; // escape initial state
-  size_t                             matchEnd_;   // most recent accept
-  Result                             result_;
   Format                             fmt_;
-  std::shared_ptr<const Executable>  shared_;     // only if supplied
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -109,31 +97,31 @@ private:
 
 
 // generate template match/check functions with different prototypes
-#define ZEZAX_RED_FUNC_DEFS(A_func, ...)                        \
+#define ZEZAX_RED_FUNC_DEFS(A_ret, A_func, ...)                 \
   template <Style style>                                        \
-  Result Matcher::A_func(const void *ptr, size_t len) {         \
+  A_ret Matcher::A_func(const void *ptr, size_t len) {          \
     RangeIter it(ptr, len);                                     \
     ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)    \
   }                                                             \
   template <Style style>                                        \
-  Result Matcher::A_func(const char *str) {                     \
+  A_ret Matcher::A_func(const char *str) {                      \
     NullTermIter it(str);                                       \
     ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)    \
   }                                                             \
   template <Style style>                                        \
-  Result Matcher::A_func(const std::string &s) {                \
+  A_ret Matcher::A_func(const std::string &s) {                 \
     RangeIter it(s);                                            \
     ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)    \
   }                                                             \
   template <Style style>                                        \
-  Result Matcher::A_func(std::string_view sv) {                 \
+  A_ret Matcher::A_func(std::string_view sv) {                  \
     RangeIter it(sv);                                           \
     ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)    \
   }
 
 
-ZEZAX_RED_FUNC_DEFS(check, it, proxy)
-ZEZAX_RED_FUNC_DEFS(match, it, proxy)
+ZEZAX_RED_FUNC_DEFS(Result, check, it, proxy)
+ZEZAX_RED_FUNC_DEFS(Outcome, match, it, proxy)
 
 // don't #undef ZEZAX_RED_FMT_SWITCH
 #undef ZEZAX_RED_FUNC_DEFS
@@ -174,7 +162,7 @@ Result Matcher::checkCore(InProxyT in, DfaProxyT dfap) {
 
 
 template <Style style, class InProxyT, class DfaProxyT>
-Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
+Outcome Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
   typedef typename decltype(dfap)::State State;
 
   const FileHeader *hdr = exec_->getHeader();
@@ -186,6 +174,7 @@ Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
   Result result = dfap.result();
   Result prevResult = 0;
   size_t idx = 0;
+  size_t matchStart = 0;
   size_t matchEnd = 0;
 
   for (; in; ++in, ++idx) {
@@ -195,7 +184,7 @@ Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
       const State *__restrict__ prevState = dfap.state();
       dfap.next(base, byte);
       if (dfap.state() != prevState)
-        matchStart_ = idx;
+        matchStart = idx;
     }
     else
       dfap.next(base, byte);
@@ -216,9 +205,17 @@ Result Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
     if ((result == 0) && (prevResult > 0))
       result = prevResult;
 
-  matchEnd_ = (result == 0) ? 0 : matchEnd;
-  result_ = result;
-  return result;
+  Outcome rv;
+  rv.result_ = result;
+  if (result == 0) {
+    rv.start_ = 0;
+    rv.end_   = 0;
+  }
+  else {
+    rv.start_ = matchStart;
+    rv.end_   = matchEnd;
+  }
+  return rv;
 }
 
 

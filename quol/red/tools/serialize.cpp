@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "ReParser.h"
+#include "Parser.h"
 #include "Powerset.h"
 #include "Minimizer.h"
 #include "Serializer.h"
@@ -13,7 +13,6 @@
 
 using namespace zezax::red;
 
-using std::shared_ptr;
 using std::string;
 using std::string_view;
 
@@ -23,7 +22,7 @@ int main(int argc, char **argv) {
   try {
     string buf;
     {
-      ReParser p;
+      Parser p;
       int cur = 0;
       for (int ii = 1; ii < argc; ++ii) {
         string_view sv = argv[ii];
@@ -59,9 +58,8 @@ int main(int argc, char **argv) {
       }
     }
     std::cout << toString(buf.data(), buf.size()) << std::flush;
-    shared_ptr<const Executable> rex =
-      make_shared<const Executable>(std::move(buf));
-    Matcher mat(rex);
+    Executable rex(std::move(buf));
+    Matcher mat(&rex);
 
     string line;
     while (std::getline(std::cin, line))

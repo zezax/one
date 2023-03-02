@@ -4,7 +4,7 @@
 
 #include <array>
 
-#include "ReParser.h"
+#include "Parser.h"
 #include "Powerset.h"
 #include "Minimizer.h"
 #include "Serializer.h"
@@ -30,7 +30,7 @@ TEST_P(SerializerTest, smoke) {
   Format fmt = GetParam();
   string buf;
   {
-    ReParser p;
+    Parser p;
     p.addAuto("ab*c", 1, 0);
     p.finish();
     {
@@ -58,7 +58,7 @@ TEST_P(SerializerTest, file) {
   Format fmt = GetParam();
   string fn = "/tmp/reda" + to_string(getpid());
   {
-    ReParser p;
+    Parser p;
     p.addAuto("ab*c", 1, 0);
     p.finish();
     {

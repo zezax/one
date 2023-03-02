@@ -5,7 +5,7 @@
 #include <ostream>
 
 #include "Except.h"
-#include "ReParser.h"
+#include "Parser.h"
 #include "Powerset.h"
 #include "Minimizer.h"
 #include "Serializer.h"
@@ -14,9 +14,7 @@
 
 using namespace zezax::red;
 
-using std::make_shared;
 using std::ostream;
-using std::shared_ptr;
 using std::string;
 using std::to_string;
 using std::tuple;
@@ -28,7 +26,7 @@ using testing::ValuesIn;
 
 // FIXME: move this to a matching test
 TEST(Omnibus, multi) {
-  ReParser p;
+  Parser p;
   p.add("a", 1, 0);
   p.add("aa", 2, 0);
   p.add("aaa", 3, 0);
@@ -53,7 +51,7 @@ TEST(Omnibus, multi) {
 
 
 TEST(Omnibus, null) {
-  ReParser p;
+  Parser p;
   p.finish();
   PowersetConverter psc(p.getNfa());
   DfaObj dfa = psc.convert();
@@ -252,7 +250,7 @@ class Omnibus : public TestWithParam<Rec> {};
 TEST_P(Omnibus, parse) {
   Rec r = GetParam();
   try {
-    ReParser p;
+    Parser p;
     p.addAuto(r.regex_, 1, 0);
     p.finish();
     p.freeAll();
@@ -267,7 +265,7 @@ TEST_P(Omnibus, parse) {
 TEST_P(Omnibus, convert) {
   Rec r = GetParam();
   try {
-    ReParser p;
+    Parser p;
     p.addAuto(r.regex_, 1, 0);
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
@@ -287,7 +285,7 @@ TEST_P(Omnibus, convert) {
 TEST_P(Omnibus, minimize) {
   Rec r = GetParam();
   try {
-    ReParser p;
+    Parser p;
     p.addAuto(r.regex_, 1, 0);
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
@@ -311,7 +309,7 @@ TEST_P(Omnibus, minimize) {
 TEST_P(Omnibus, match) {
   Rec r = GetParam();
   try {
-    ReParser p;
+    Parser p;
     p.addAuto(r.regex_, 1, 0);
     p.finish();
     EXPECT_FALSE(r.text_ == nullptr);
@@ -345,9 +343,9 @@ TEST_P(OmnibusFmt, matcher) {
   Rec r = std::get<0>(GetParam());
   Format fmt = std::get<1>(GetParam());
   try {
-    shared_ptr<const Executable> rex;
+    Executable rex;
     {
-      ReParser p;
+      Parser p;
       p.addAuto(r.regex_, 1, 0);
       p.finish();
       EXPECT_FALSE(r.text_ == nullptr);
@@ -368,9 +366,9 @@ TEST_P(OmnibusFmt, matcher) {
           buf = ser.serializeToString(fmt);
         }
       }
-      rex = make_shared<const Executable>(std::move(buf));
+      rex = std::move(Executable(std::move(buf)));
     }
-    Matcher mat(rex);
+    Matcher mat(&rex);
     Result res = mat.check(r.text_, styFull);
     EXPECT_EQ(r.match_, (res == 1));
   }

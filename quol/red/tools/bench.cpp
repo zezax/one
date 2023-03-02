@@ -3,14 +3,13 @@
 #include <iostream>
 
 #include "Util.h"
-#include "ReParser.h"
+#include "Parser.h"
 #include "Compile.h"
 #include "Exec.h"
 #include "Matcher.h"
 
 using namespace zezax::red;
 
-using std::make_shared;
 using std::string;
 using std::string_view;
 using std::vector;
@@ -24,7 +23,7 @@ int main(int argc, char **argv) {
 
     Executable rex;
     {
-      ReParser p;
+      Parser p;
       p.add("anticritique",   1, fIgnoreCase);
       p.add("beerbibber",     2, fIgnoreCase);
       p.add("capriped",       3, fIgnoreCase);
@@ -58,10 +57,10 @@ int main(int argc, char **argv) {
     const char *end = beg + words.size();
     for (int ii = 0; ii < iters; ++ii)
       for (const char *ptr = beg; ptr < end; ) {
-        mat.match<styLast>(ptr, end - ptr);
-        if (mat.result() > 0) {
-          ptr += mat.end();
-          sum += mat.result();
+        Outcome oc = mat.match<styLast>(ptr, end - ptr);
+        if (oc) {
+          ptr += oc.end_;
+          sum += oc.result_;
         }
         else
           ++ptr;

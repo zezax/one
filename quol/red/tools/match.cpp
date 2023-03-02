@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "ReParser.h"
+#include "Parser.h"
 #include "Powerset.h"
 #include "Minimizer.h"
 #include "Debug.h"
@@ -16,7 +16,7 @@ using std::string_view;
 int main(int argc, char **argv) {
   bool raw = false;
   try {
-    ReParser p;
+    Parser p;
     int cur = 0;
     for (int ii = 1; ii < argc; ++ii) {
       string_view sv = argv[ii];
