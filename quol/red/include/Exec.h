@@ -21,6 +21,9 @@ constexpr StealNew gStealNew;
 struct StealMalloc {};
 constexpr StealMalloc gStealMalloc;
 
+struct ReferenceBuf {};
+constexpr ReferenceBuf gReferenceBuf; // no ownership or cleanup
+
 
 class Executable {
 public:
@@ -36,6 +39,7 @@ public:
   Executable(const CopyBuf &, const void *ptr, size_t len);     // copy
   Executable(const StealNew &, const void *ptr, size_t len);    // will delete[]
   Executable(const StealMalloc &, const void *ptr, size_t len); // will free()
+  Executable(const ReferenceBuf &, const void *ptr, size_t len); // nothing
 
   // load dfa from file
   explicit Executable(const char *path);
@@ -54,6 +58,7 @@ public:
 
   const char *getBase() const { return base_; }
   const Byte *getEquivMap() const { return equivMap_; }
+  Format getFormat() const { return fmt_; }
 
 private:
   void validate();
@@ -63,7 +68,9 @@ private:
   const char  *end_;
   const Byte  *equivMap_;
   const char  *base_;
+  Format       fmt_;
   bool         inStr_;
+  bool         usedNew_;
   bool         usedMalloc_;
 };
 

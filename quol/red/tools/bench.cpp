@@ -49,7 +49,6 @@ int main(int argc, char **argv) {
       p.add("waxily",        23, fIgnoreCase);
       rex = compile(p);
     }
-    Matcher mat(&rex);
 
     int sum = 0;
     constexpr int iters = 1000;
@@ -57,7 +56,7 @@ int main(int argc, char **argv) {
     const char *end = beg + words.size();
     for (int ii = 0; ii < iters; ++ii)
       for (const char *ptr = beg; ptr < end; ) {
-        Outcome oc = mat.match<styLast>(ptr, end - ptr);
+        Outcome oc = match<styLast>(rex, ptr, end - ptr);
         if (oc) {
           ptr += oc.end_;
           sum += oc.result_;

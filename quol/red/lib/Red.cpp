@@ -38,21 +38,18 @@ Red::Red(Parser &parser) { // for power users
 
 
 Outcome Red::fullMatch(string_view text) const {
-  Matcher m(&program_);
-  return m.match<styFull>(text);
+  return match<styFull>(program_, text);
 }
 
 
 Outcome Red::prefixMatch(string_view text) const {
-  Matcher m(&program_);
-  return m.match<styLast>(text);
+  return match<styLast>(program_, text);
 }
 
 
 Outcome Red::partialMatch(string_view text) const {
-  Matcher m(&program_);
   while (!text.empty()) {       // sliding match
-    Outcome oc = m.match<styLast>(text);
+    Outcome oc = match<styLast>(program_, text);
     if (oc)
       return oc;
     text.remove_prefix(1);

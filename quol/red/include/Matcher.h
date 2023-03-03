@@ -17,61 +17,66 @@ enum Style {
   styFull       = 4,
 };
 
+// all free functions; no "matcher" class
 
-class Matcher {
-public:
-  explicit Matcher(const Executable *exec); // pay attention to longevity
+Result check(const Executable &exec, const void *ptr, size_t len, Style style);
+Result check(const Executable &exec, const char *str, Style style);
+Result check(const Executable &exec, const std::string &s, Style style);
+Result check(const Executable &exec, std::string_view sv, Style style);
 
-  Result check(const void *ptr, size_t len, Style style = styFull);
-  Result check(const char *str, Style style = styFull);
-  Result check(const std::string &s, Style style = styFull);
-  Result check(std::string_view sv, Style style = styFull);
+Outcome match(const Executable &exec, const void *ptr, size_t len, Style style);
+Outcome match(const Executable &exec, const char *str, Style style);
+Outcome match(const Executable &exec, const std::string &s, Style style);
+Outcome match(const Executable &exec, std::string_view sv, Style style);
 
-  Outcome match(const void *ptr, size_t len, Style style = styFull);
-  Outcome match(const char *str, Style style = styFull);
-  Outcome match(const std::string &s, Style style = styFull);
-  Outcome match(std::string_view sv, Style style = styFull);
+std::string replace(const Executable &exec,
+                    const void       *ptr,
+                    size_t            len,
+                    std::string_view  repl,
+                    Style             style);
+std::string replace(const Executable &exec,
+                    const char       *str,
+                    std::string_view  repl,
+                    Style             style);
+std::string replace(const Executable  &exec,
+                    const std::string &s,
+                    std::string_view   repl,
+                    Style              style);
+std::string replace(const Executable &exec,
+                    std::string_view  sv,
+                    std::string_view  repl,
+                    Style             style);
 
-  std::string replace(const void       *ptr,
-                      size_t            len,
-                      std::string_view  repl,
-                      Style             style = styFull);
-  std::string replace(const char       *str,
-                      std::string_view  repl,
-                      Style             style = styFull);
-  std::string replace(const std::string &s,
-                      std::string_view   repl,
-                      Style              style = styFull);
-  std::string replace(std::string_view sv,
-                      std::string_view repl,
-                      Style            style = styFull);
+// these versions skip the run-time dispatch based on match-style
+template <Style style> Result check(const Executable &exec,
+                                    const void       *ptr,
+                                    size_t            len);
+template <Style style> Result check(const Executable &exec, const char *str);
+template <Style style> Result check(const Executable  &exec,
+                                    const std::string &s);
+template <Style style> Result check(const Executable &exec,
+                                    std::string_view  sv);
 
-  // these versions skip the run-time dispatch based on match-style
-  template <Style style> Result check(const void *ptr, size_t len);
-  template <Style style> Result check(const char *str);
-  template <Style style> Result check(const std::string &s);
-  template <Style style> Result check(std::string_view sv);
+template <Style style> Outcome match(const Executable &exec,
+                                     const void       *ptr,
+                                     size_t            len);
+template <Style style> Outcome match(const Executable &exec, const char *str);
+template <Style style> Outcome match(const Executable  &exec,
+                                     const std::string &s);
+template <Style style> Outcome match(const Executable &exec,
+                                     std::string_view  sv);
 
-  template <Style style> Outcome match(const void *ptr, size_t len);
-  template <Style style> Outcome match(const char *str);
-  template <Style style> Outcome match(const std::string &s);
-  template <Style style> Outcome match(std::string_view sv);
+template <Style style, class InProxyT, class DfaProxyT>
+Result checkCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
 
-private:
-  template <Style style, class InProxyT, class DfaProxyT>
-  Result checkCore(InProxyT in, DfaProxyT dfap);
+template <Style style, class InProxyT, class DfaProxyT>
+Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
 
-  template <Style style, class InProxyT, class DfaProxyT>
-  Outcome matchCore(InProxyT in, DfaProxyT dfap);
-
-  template <Style style, class InProxyT, class DfaProxyT>
-  std::string replaceCore(InProxyT         in,
-                          DfaProxyT        dfap,
-                          std::string_view repl);
-
-  const Executable                  *exec_;
-  Format                             fmt_;
-};
+template <Style style, class InProxyT, class DfaProxyT>
+std::string replaceCore(const Executable &exec,
+                        InProxyT          in,
+                        DfaProxyT         dfap,
+                        std::string_view  repl);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -81,7 +86,7 @@ private:
 
 // runtime dispatch to template functions based on format
 #define ZEZAX_RED_FMT_SWITCH(A_func, A_style, ...)      \
-  switch (fmt_) {                                       \
+  switch (exec.getFormat()) {                           \
   case fmtDirect1: {                                    \
     DfaProxy<fmtDirect1> proxy;                         \
     return A_func<A_style>(__VA_ARGS__); }              \
@@ -97,31 +102,31 @@ private:
 
 
 // generate template match/check functions with different prototypes
-#define ZEZAX_RED_FUNC_DEFS(A_ret, A_func, ...)                 \
-  template <Style style>                                        \
-  A_ret Matcher::A_func(const void *ptr, size_t len) {          \
-    RangeIter it(ptr, len);                                     \
-    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)    \
-  }                                                             \
-  template <Style style>                                        \
-  A_ret Matcher::A_func(const char *str) {                      \
-    NullTermIter it(str);                                       \
-    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)    \
-  }                                                             \
-  template <Style style>                                        \
-  A_ret Matcher::A_func(const std::string &s) {                 \
-    RangeIter it(s);                                            \
-    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)    \
-  }                                                             \
-  template <Style style>                                        \
-  A_ret Matcher::A_func(std::string_view sv) {                  \
-    RangeIter it(sv);                                           \
-    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)    \
+#define ZEZAX_RED_FUNC_DEFS(A_ret, A_func, ...)                          \
+  template <Style style>                                                 \
+  A_ret A_func(const Executable &exec, const void *ptr, size_t len) {    \
+    RangeIter it(ptr, len);                                              \
+    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)             \
+  }                                                                      \
+  template <Style style>                                                 \
+  A_ret A_func(const Executable &exec, const char *str) {                \
+    NullTermIter it(str);                                                \
+    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)             \
+  }                                                                      \
+  template <Style style>                                                 \
+  A_ret A_func(const Executable &exec, const std::string &s) {           \
+    RangeIter it(s);                                                     \
+    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)             \
+  }                                                                      \
+  template <Style style>                                                 \
+  A_ret A_func(const Executable &exec, std::string_view sv) {            \
+    RangeIter it(sv);                                                    \
+    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)             \
   }
 
 
-ZEZAX_RED_FUNC_DEFS(Result, check, it, proxy)
-ZEZAX_RED_FUNC_DEFS(Outcome, match, it, proxy)
+ZEZAX_RED_FUNC_DEFS(Result, check, exec, it, proxy)
+ZEZAX_RED_FUNC_DEFS(Outcome, match, exec, it, proxy)
 
 // don't #undef ZEZAX_RED_FMT_SWITCH
 #undef ZEZAX_RED_FUNC_DEFS
@@ -129,10 +134,10 @@ ZEZAX_RED_FUNC_DEFS(Outcome, match, it, proxy)
 ///////////////////////////////////////////////////////////////////////////////
 
 template <Style style, class InProxyT, class DfaProxyT>
-Result Matcher::checkCore(InProxyT in, DfaProxyT dfap) {
-  const FileHeader *hdr = exec_->getHeader();
-  const char *__restrict__ base = exec_->getBase();
-  const Byte *__restrict__ equivMap = exec_->getEquivMap();
+Result checkCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
+  const FileHeader *hdr = exec.getHeader();
+  const char *__restrict__ base = exec.getBase();
+  const Byte *__restrict__ equivMap = exec.getEquivMap();
 
   dfap.init(base, hdr->initialOff_);
   Result result = dfap.result();
@@ -162,12 +167,12 @@ Result Matcher::checkCore(InProxyT in, DfaProxyT dfap) {
 
 
 template <Style style, class InProxyT, class DfaProxyT>
-Outcome Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
+Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
   typedef typename decltype(dfap)::State State;
 
-  const FileHeader *hdr = exec_->getHeader();
-  const char *__restrict__ base = exec_->getBase();
-  const Byte *__restrict__ equivMap = exec_->getEquivMap();
+  const FileHeader *hdr = exec.getHeader();
+  const char *__restrict__ base = exec.getBase();
+  const Byte *__restrict__ equivMap = exec.getEquivMap();
 
   dfap.init(base, hdr->initialOff_);
   const State *__restrict__ init = dfap.state();
@@ -220,12 +225,13 @@ Outcome Matcher::matchCore(InProxyT in, DfaProxyT dfap) {
 
 
 template <Style style, class InProxyT, class DfaProxyT>
-std::string Matcher::replaceCore(InProxyT         in,
-                                 DfaProxyT        dfap,
-                                 std::string_view repl) {
-  const FileHeader *hdr = exec_->getHeader();
-  const char *__restrict__ base = exec_->getBase();
-  const Byte *__restrict__ equivMap = exec_->getEquivMap();
+std::string replaceCore(const Executable &exec,
+                        InProxyT          in,
+                        DfaProxyT         dfap,
+                        std::string_view  repl) {
+  const FileHeader *hdr = exec.getHeader();
+  const char *__restrict__ base = exec.getBase();
+  const Byte *__restrict__ equivMap = exec.getEquivMap();
 
   dfap.init(base, hdr->initialOff_);
   std::string str;

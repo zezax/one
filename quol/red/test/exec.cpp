@@ -16,9 +16,8 @@ using testing::Values;
 
 namespace {
 
-Result execMatch(const Executable *rex, const char *str) {
-  Matcher mat(rex);
-  Outcome oc = mat.match(str, styFull);
+Result execMatch(const Executable &rex, const char *str) {
+  Outcome oc = match(rex, str, styFull);
   return oc.result_;
 }
 
@@ -48,20 +47,20 @@ TEST(Exec, memory) {
   Executable e5(gStealNew, p1, len);
   Executable e6(gStealMalloc, p2, len);
 
-  EXPECT_EQ(1, execMatch(&e1, "abbc"));
-  EXPECT_EQ(1, execMatch(&e2, "abbc"));
-  EXPECT_EQ(1, execMatch(&e3, "abbc"));
-  EXPECT_EQ(1, execMatch(&e4, "abbc"));
-  EXPECT_EQ(1, execMatch(&e5, "abbc"));
-  EXPECT_EQ(1, execMatch(&e6, "abbc"));
+  EXPECT_EQ(1, execMatch(e1, "abbc"));
+  EXPECT_EQ(1, execMatch(e2, "abbc"));
+  EXPECT_EQ(1, execMatch(e3, "abbc"));
+  EXPECT_EQ(1, execMatch(e4, "abbc"));
+  EXPECT_EQ(1, execMatch(e5, "abbc"));
+  EXPECT_EQ(1, execMatch(e6, "abbc"));
 
   e0 = std::move(e1);
   e3 = std::move(e2);
   Executable e7(std::move(e4));
 
-  EXPECT_EQ(1, execMatch(&e0, "abbc"));
-  EXPECT_EQ(1, execMatch(&e3, "abbc"));
-  EXPECT_EQ(1, execMatch(&e7, "abbc"));
+  EXPECT_EQ(1, execMatch(e0, "abbc"));
+  EXPECT_EQ(1, execMatch(e3, "abbc"));
+  EXPECT_EQ(1, execMatch(e7, "abbc"));
 };
 
 
@@ -82,10 +81,9 @@ TEST_P(ExecTest, smoke) {
     p.addAuto("ca*b", 2, 0);
     rex = compile(p, fmt, &stats);
   }
-  Matcher mat(&rex);
-  EXPECT_EQ(0, mat.match("bca", styFull).result_);
-  EXPECT_EQ(1, mat.match("bac", styFull).result_);
-  EXPECT_EQ(2, mat.match("cab", styFull).result_);
+  EXPECT_EQ(0, match(rex, "bca", styFull).result_);
+  EXPECT_EQ(1, match(rex, "bac", styFull).result_);
+  EXPECT_EQ(2, match(rex, "cab", styFull).result_);
 
   EXPECT_EQ(10, stats.numTokens_);
   EXPECT_EQ(2, stats.numPatterns_);

@@ -368,8 +368,9 @@ TEST_P(OmnibusFmt, matcher) {
       }
       rex = std::move(Executable(std::move(buf)));
     }
-    Matcher mat(&rex);
-    Result res = mat.check(r.text_, styFull);
+    Result res = check(rex, r.text_, styFull);
+    Outcome oc = match(rex, r.text_, styFull);
+    EXPECT_EQ(res, oc.result_);
     EXPECT_EQ(r.match_, (res == 1));
   }
   catch (const RedExceptLimit &lim) {

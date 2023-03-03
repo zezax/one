@@ -18,7 +18,9 @@ Executable::Executable(Executable &&other)
     end_(std::exchange(other.end_, nullptr)),
     equivMap_(std::exchange(other.equivMap_, nullptr)),
     base_(std::exchange(other.base_, nullptr)),
+    fmt_(std::exchange(other.fmt_, fmtInvalid)),
     inStr_(std::exchange(other.inStr_, true)),
+    usedNew_(std::exchange(other.usedNew_, false)),
     usedMalloc_(std::exchange(other.usedMalloc_, false)) {}
 
 
@@ -28,7 +30,9 @@ Executable::Executable(string &&buf)
     end_(nullptr),
     equivMap_(nullptr),
     base_(nullptr),
+    fmt_(fmtInvalid),
     inStr_(true),
+    usedNew_(false),
     usedMalloc_(false) {
   if (str_.empty())
     throw RedExceptApi("serialized dfa move-string is empty");
@@ -44,7 +48,9 @@ Executable::Executable(const string &buf)
     end_(nullptr),
     equivMap_(nullptr),
     base_(nullptr),
+    fmt_(fmtInvalid),
     inStr_(true),
+    usedNew_(false),
     usedMalloc_(false) {
   if (str_.empty())
     throw RedExceptApi("serialized dfa copy-string is empty");
@@ -60,7 +66,9 @@ Executable::Executable(string_view sv)
     end_(nullptr),
     equivMap_(nullptr),
     base_(nullptr),
+    fmt_(fmtInvalid),
     inStr_(true),
+    usedNew_(false),
     usedMalloc_(false) {
   if (str_.empty())
     throw RedExceptApi("serialized dfa string_view is empty");
@@ -76,7 +84,9 @@ Executable::Executable(const CopyBuf &, const void *ptr, size_t len)
     end_(nullptr),
     equivMap_(nullptr),
     base_(nullptr),
+    fmt_(fmtInvalid),
     inStr_(true),
+    usedNew_(false),
     usedMalloc_(false) {
   if (str_.empty())
     throw RedExceptApi("serialized dfa copy-ptr is empty");
@@ -91,7 +101,9 @@ Executable::Executable(const StealNew &, const void *ptr, size_t len)
     end_(nullptr),
     equivMap_(nullptr),
     base_(nullptr),
+    fmt_(fmtInvalid),
     inStr_(false),
+    usedNew_(true),
     usedMalloc_(false) {
   if (!buf_)
     throw RedExceptApi("serialized dfa new-ptr is empty");
@@ -105,10 +117,28 @@ Executable::Executable(const StealMalloc &, const void *ptr, size_t len)
     end_(nullptr),
     equivMap_(nullptr),
     base_(nullptr),
+    fmt_(fmtInvalid),
     inStr_(false),
+    usedNew_(false),
     usedMalloc_(true) {
   if (!buf_)
     throw RedExceptApi("serialized dfa malloc-ptr is empty");
+  end_ = buf_ + len;
+  validate();
+}
+
+
+Executable::Executable(const ReferenceBuf &, const void *ptr, size_t len)
+  : buf_(static_cast<const char *>(ptr)),
+    end_(nullptr),
+    equivMap_(nullptr),
+    base_(nullptr),
+    fmt_(fmtInvalid),
+    inStr_(false),
+    usedNew_(false),
+    usedMalloc_(false) {
+  if (!buf_)
+    throw RedExceptApi("serialized dfa reference-ptr is empty");
   end_ = buf_ + len;
   validate();
 }
@@ -119,7 +149,9 @@ Executable::Executable(const char *path)
     end_(nullptr),
     equivMap_(nullptr),
     base_(nullptr),
+    fmt_(fmtInvalid),
     inStr_(true),
+    usedNew_(false),
     usedMalloc_(false) {
   str_ = loadFromFile(path);
   if (str_.empty())
@@ -132,10 +164,10 @@ Executable::Executable(const char *path)
 
 Executable::~Executable() {
   if (!inStr_) {
-    if (usedMalloc_)
-      free(const_cast<char *>(buf_));
-    else
+    if (usedNew_)
       delete[] buf_;
+    else if (usedMalloc_)
+      free(const_cast<char *>(buf_));
   }
   buf_ = nullptr;
   end_ = nullptr;
@@ -150,7 +182,9 @@ Executable &Executable::operator=(Executable &&rhs) {
   end_ = std::exchange(rhs.end_, nullptr);
   equivMap_ = std::exchange(rhs.equivMap_, nullptr);
   base_ = std::exchange(rhs.base_, nullptr);
+  fmt_ = std::exchange(rhs.fmt_, fmtInvalid);
   inStr_ = std::exchange(rhs.inStr_, true);
+  usedNew_ = std::exchange(rhs.usedNew_, false);
   usedMalloc_ = std::exchange(rhs.usedMalloc_, false);
   return *this;
 }
@@ -164,6 +198,7 @@ void Executable::validate() {
   const FileHeader *hdr = reinterpret_cast<const FileHeader *>(buf_);
   equivMap_ = reinterpret_cast<const Byte *>(hdr->equivMap_);
   base_ = reinterpret_cast<const char *>(hdr->bytes_);
+  fmt_ = static_cast<Format>(hdr->format_);
 }
 
 } // namespace zezax::red

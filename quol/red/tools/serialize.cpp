@@ -59,11 +59,10 @@ int main(int argc, char **argv) {
     }
     std::cout << toString(buf.data(), buf.size()) << std::flush;
     Executable rex(std::move(buf));
-    Matcher mat(&rex);
 
     string line;
     while (std::getline(std::cin, line))
-      std::cout << mat.check(line, styFull) << std::endl;
+      std::cout << check(rex, line, styFull) << std::endl;
 
     return 0;
   }

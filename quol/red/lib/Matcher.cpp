@@ -9,15 +9,8 @@ namespace zezax::red {
 using std::string;
 using std::string_view;
 
-
-Matcher::Matcher(const Executable *exec)
-  : exec_(exec),
-    fmt_(static_cast<Format>(exec_->getHeader()->format_)) {}
-
-
 // Lots of macro magic here follows.  This reduces repetitive code and gives
 // fewer places for special-case bugs to hide.
-
 
 // for match/check
 #define MCASE(A_name, A_style, ...)      \
@@ -44,18 +37,19 @@ Matcher::Matcher(const Executable *exec)
 
 
 // generate match/check functions with different prototypes
-#define SUITE(A_ret, A_name)                                          \
-  A_ret Matcher::A_name(const void *ptr, size_t len, Style style) {   \
-    STYLE_SWITCH(A_name, M, CASE, ptr, len)                           \
-  }                                                                   \
-  A_ret Matcher::A_name(const char *str, Style style) {               \
-    STYLE_SWITCH(A_name, M, CASE, str)                                \
-  }                                                                   \
-  A_ret Matcher::A_name(const string &s, Style style) {               \
-    STYLE_SWITCH(A_name, M, CASE, s)                                  \
-  }                                                                   \
-  A_ret Matcher::A_name(string_view sv, Style style) {                \
-    STYLE_SWITCH(A_name, M, CASE, sv)                                 \
+#define SUITE(A_ret, A_name)                                            \
+  A_ret A_name(const Executable &exec,                                  \
+               const void *ptr, size_t len, Style style) {              \
+    STYLE_SWITCH(A_name, M, CASE, exec, ptr, len)                       \
+  }                                                                     \
+  A_ret A_name(const Executable &exec, const char *str, Style style) {  \
+    STYLE_SWITCH(A_name, M, CASE, exec, str)                            \
+  }                                                                     \
+  A_ret A_name(const Executable &exec, const string &s, Style style) {  \
+    STYLE_SWITCH(A_name, M, CASE, exec, s)                              \
+  }                                                                     \
+  A_ret A_name(const Executable &exec, string_view sv, Style style) {   \
+    STYLE_SWITCH(A_name, M, CASE, exec, sv)                             \
   }
 
 
@@ -64,26 +58,29 @@ SUITE(Outcome, match)
 
 
 // generate replace functions with different prototypes
-#define REPL(A_name, ...)                                                   \
-  string Matcher::A_name(const void *ptr, size_t len,                       \
-                         string_view repl, Style style) {                   \
-    RangeIter it(ptr, len);                                                 \
-    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                              \
-  }                                                                         \
-  string Matcher::A_name(const char *str, string_view repl, Style style) {  \
-    NullTermIter it(str);                                                   \
-    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                              \
-  }                                                                         \
-  string Matcher::A_name(const string &s, string_view repl, Style style) {  \
-    RangeIter it(s);                                                        \
-    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                              \
-  }                                                                         \
-  string Matcher::A_name(string_view sv, string_view repl, Style style) {   \
-    RangeIter it(sv);                                                       \
-    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                              \
+#define REPL(A_name, ...)                                               \
+  string A_name(const Executable &exec, const void *ptr, size_t len,    \
+                string_view repl, Style style) {                        \
+    RangeIter it(ptr, len);                                             \
+    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                          \
+  }                                                                     \
+  string A_name(const Executable &exec, const char *str,                \
+                string_view repl, Style style) {                        \
+    NullTermIter it(str);                                               \
+    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                          \
+  }                                                                     \
+  string A_name(const Executable &exec, const string &s,                \
+                string_view repl, Style style) {                        \
+    RangeIter it(s);                                                    \
+    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                          \
+  }                                                                     \
+  string A_name(const Executable &exec, string_view sv,                 \
+                string_view repl, Style style) {                        \
+    RangeIter it(sv);                                                   \
+    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                          \
   }
 
 
-REPL(replace, it, proxy, repl)
+REPL(replace, exec, it, proxy, repl)
 
 } // namespace zezax::red

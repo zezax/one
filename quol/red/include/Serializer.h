@@ -10,6 +10,7 @@
 namespace zezax::red {
 
 enum Format : uint8_t {
+  fmtInvalid    = 0,
   fmtDirectAuto = 10,
   fmtDirect1    = 11,
   fmtDirect2    = 12,

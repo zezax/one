@@ -23,23 +23,22 @@ TEST(Matcher, checkStartEnd) {
     p.add("[^d]*dummy", 2, 0);
     rex = compile(p);
   }
-  Matcher mat(&rex);
-  Outcome oc = mat.match("abbc", styLast);
+  Outcome oc = match(rex, "abbc", styLast);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
-  oc = mat.match("xabbc", styLast);
+  oc = match(rex, "xabbc", styLast);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(1, oc.start_);
   EXPECT_EQ(5, oc.end_);
 
-  oc = mat.match("xabbcx", styLast);
+  oc = match(rex, "xabbcx", styLast);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(1, oc.start_);
   EXPECT_EQ(5, oc.end_);
 
-  oc = mat.match("xyzabbcxyz", styLast);
+  oc = match(rex, "xyzabbcxyz", styLast);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(7, oc.end_);
@@ -55,57 +54,56 @@ TEST(Matcher, checkStyles) {
     p.add("abcdefg", 3, 0);
     rex = compile(p);
   }
-  Matcher mat(&rex);
   string_view in = "abcdefg";
 
-  EXPECT_EQ(1, mat.check(in, styFirst));
-  EXPECT_EQ(2, mat.check(in, styContiguous));
-  EXPECT_EQ(3, mat.check(in, styLast));
-  EXPECT_EQ(3, mat.check(in, styFull));
+  EXPECT_EQ(1, check(rex, in, styFirst));
+  EXPECT_EQ(2, check(rex, in, styContiguous));
+  EXPECT_EQ(3, check(rex, in, styLast));
+  EXPECT_EQ(3, check(rex, in, styFull));
 
-  Outcome oc = mat.match(in, styFirst);
+  Outcome oc = match(rex, in, styFirst);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(3, oc.end_);
 
-  oc = mat.match(in, styContiguous);
+  oc = match(rex, in, styContiguous);
   EXPECT_EQ(2, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
-  oc = mat.match(in, styLast);
+  oc = match(rex, in, styLast);
   EXPECT_EQ(3, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(7, oc.end_);
 
-  oc = mat.match(in, styFull);
+  oc = match(rex, in, styFull);
   EXPECT_EQ(3, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(7, oc.end_);
 
   in = "abcdefgh";
 
-  EXPECT_EQ(1, mat.check(in, styFirst));
-  EXPECT_EQ(2, mat.check(in, styContiguous));
-  EXPECT_EQ(3, mat.check(in, styLast));
-  EXPECT_EQ(0, mat.check(in, styFull));
+  EXPECT_EQ(1, check(rex, in, styFirst));
+  EXPECT_EQ(2, check(rex, in, styContiguous));
+  EXPECT_EQ(3, check(rex, in, styLast));
+  EXPECT_EQ(0, check(rex, in, styFull));
 
-  oc = mat.match(in, styFirst);
+  oc = match(rex, in, styFirst);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(3, oc.end_);
 
-  oc = mat.match(in, styContiguous);
+  oc = match(rex, in, styContiguous);
   EXPECT_EQ(2, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
-  oc = mat.match(in, styLast);
+  oc = match(rex, in, styLast);
   EXPECT_EQ(3, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(7, oc.end_);
 
-  oc = mat.match(in, styFull);
+  oc = match(rex, in, styFull);
   EXPECT_EQ(0, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(0, oc.end_);
@@ -119,9 +117,8 @@ TEST(Matcher, replace) {
     p.add("ab*c", 1, 0);
     rex = compile(p);
   }
-  Matcher mat(&rex);
-  EXPECT_EQ("foobar", mat.replace("fooac", "bar", styLast));
-  EXPECT_EQ("foobarz", mat.replace(string("fooacz"), "bar", styLast));
+  EXPECT_EQ("foobar",  replace(rex, "fooac", "bar", styLast));
+  EXPECT_EQ("foobarz", replace(rex, string("fooacz"), "bar", styLast));
 }
 
 
@@ -134,12 +131,11 @@ TEST(Matcher, replaceStyles) {
     p.add("abcdefg", 3, 0);
     rex = compile(p);
   }
-  Matcher mat(&rex);
-  EXPECT_EQ("1xyzdefg2", mat.replace("1abcdefg2", "xyz", styFirst));
-  EXPECT_EQ("1xyzefg2", mat.replace("1abcdefg2", "xyz", styContiguous));
-  EXPECT_EQ("1xyz2", mat.replace("1abcdefg2", "xyz", styLast));
-  EXPECT_EQ("1abcdefg2", mat.replace("1abcdefg2", "xyz", styFull));
-  EXPECT_EQ("1xyz", mat.replace("1abcdefg", "xyz", styFull));
+  EXPECT_EQ("1xyzdefg2", replace(rex, "1abcdefg2", "xyz", styFirst));
+  EXPECT_EQ("1xyzefg2", replace(rex, "1abcdefg2", "xyz", styContiguous));
+  EXPECT_EQ("1xyz2", replace(rex, "1abcdefg2", "xyz", styLast));
+  EXPECT_EQ("1abcdefg2", replace(rex, "1abcdefg2", "xyz", styFull));
+  EXPECT_EQ("1xyz", replace(rex, "1abcdefg", "xyz", styFull));
 }
 
 
@@ -154,17 +150,13 @@ TEST_P(MatcherTest, check) {
     p.addAuto("ca*b", 2, 0);
     rex = compile(p, fmt);
   }
-  Matcher m0(&rex);
-  Matcher m00(&rex);
-  Matcher m1(&rex);
-  Matcher m2(&rex);
   const char *in0 = "bca";
   string in1 = "bac";
   string_view in2 = "cab";
-  EXPECT_EQ(0, m0.check(in0, styFull));
-  EXPECT_EQ(0, m00.check(in0, 3, styFull));
-  EXPECT_EQ(1, m1.check(in1, styFull));
-  EXPECT_EQ(2, m2.check(in2, styFull));
+  EXPECT_EQ(0, check(rex, in0, styFull));
+  EXPECT_EQ(0, check(rex, in0, 3, styFull));
+  EXPECT_EQ(1, check(rex, in1, styFull));
+  EXPECT_EQ(2, check(rex, in2, styFull));
 }
 
 
@@ -177,17 +169,13 @@ TEST_P(MatcherTest, match) {
     p.addAuto("ca*b", 2, 0);
     rex = compile(p, fmt);
   }
-  Matcher m0(&rex);
-  Matcher m00(&rex);
-  Matcher m1(&rex);
-  Matcher m2(&rex);
   const char *in0 = "bca";
   string in1 = "bac";
   string_view in2 = "cab";
-  Outcome oc0 = m0.match(in0, styFull);
-  Outcome oc00 = m00.match(in0, 3, styFull);
-  Outcome oc1 = m1.match(in1, styFull);
-  Outcome oc2 = m2.match(in2, styFull);
+  Outcome oc0 = match(rex, in0, styFull);
+  Outcome oc00 = match(rex, in0, 3, styFull);
+  Outcome oc1 = match(rex, in1, styFull);
+  Outcome oc2 = match(rex, in2, styFull);
   EXPECT_EQ(0, oc0.result_);
   EXPECT_EQ(0, oc00.result_);
   EXPECT_EQ(1, oc1.result_);

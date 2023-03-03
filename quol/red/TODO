@@ -6,7 +6,8 @@
 - document keep results low
 - document ascii
 - public api
-- allow reference to un-owned serialized form without copy
+- make equiv map after minimize
+- test replace in omnibus 
 - optional line prefix arg in debug strings
 - executable dump to file
 - work out shared ptr usage
