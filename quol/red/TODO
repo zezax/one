@@ -7,7 +7,8 @@
 - document ascii
 - public api
 - make equiv map after minimize
-- test replace in omnibus 
+- test replace in omnibus
+- test perf of non-void operator++
 - optional line prefix arg in debug strings
 - executable dump to file
 - work out shared ptr usage

@@ -401,7 +401,7 @@ string toString(const DfaState &ds) {
 // DfaObj state dump
 string toString(const DfaObj &dfa) {
   string rv = "Dfa init=" + to_string(gDfaInitialId) +
-    " err=" + to_string(gDfaErrorId) + '\n';
+    " err=" + to_string(gDfaErrorId) + " [\n";
   const vector<DfaState> &vec = dfa.getStates();
   DfaId ii = 0;
   for (const DfaState &ds : vec) {

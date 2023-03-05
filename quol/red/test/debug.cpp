@@ -148,7 +148,7 @@ TEST(Debug, dfa) {
   dfa[one].result_ = 1;
   dfa[one].deadEnd_ = false; // ???
   dfa[one].trans_.set('a', one);
-  EXPECT_EQ("Dfa init=1 err=0\n"
+  EXPECT_EQ("Dfa init=1 err=0 [\n"
             "0 DfaState -> 0\n  DeadEnd\n1 DfaState -> 1\n  1 <- a\n]\n",
             toString(dfa));
 }

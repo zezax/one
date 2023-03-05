@@ -155,7 +155,7 @@ TEST(Minimizer, results) {
 
 TEST(Minimizer, deadEnds) {
   DfaObj dfa;
-  DfaId s0 = mkState(dfa, 0);
+  /* s0 = */ mkState(dfa, 0);
   DfaId s1 = mkState(dfa, 0);
   DfaId s2 = mkState(dfa, 0);
   DfaId s3 = mkState(dfa, 1);
@@ -177,8 +177,16 @@ TEST(Minimizer, deadEnds) {
     dm.minimize();
   }
   ASSERT_EQ(4, dfa.numStates());
-  EXPECT_TRUE(dfa[s0].deadEnd_);
-  EXPECT_FALSE(dfa[s1].deadEnd_);
-  EXPECT_TRUE(dfa[s2].deadEnd_);
-  EXPECT_FALSE(dfa[s3].deadEnd_);
+  // minimization has mostly renumbered the states, so...
+  int live = 0;
+  int dead = 0;
+  for (DfaId ii = 0; ii < 4; ++ii) {
+    if (dfa[ii].deadEnd_)
+      ++dead;
+    else
+      ++live;
+  }
+  EXPECT_EQ(2, live);
+  EXPECT_EQ(2, dead);
+  EXPECT_TRUE(dfa[0].deadEnd_);
 }

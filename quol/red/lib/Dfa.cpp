@@ -78,20 +78,16 @@ Result maxResultRecurse(DfaIdSet               &seen,
 }
 
 
-void determineDeadEnd(DfaState &ds, DfaId id, CharIdx maxChar) {
+bool determineDeadEnd(const DfaState &ds, DfaId id, CharIdx maxChar) {
   // (likely) try sparse first...
   const std::unordered_map<CharIdx, DfaId> &sparse = ds.trans_.getMap();
   for (const auto [ch, tid] : sparse)
-    if ((ch < gAlphabetSize) && (tid != id)) {
-      ds.deadEnd_ = false;
-      return;
-    }
+    if ((ch < gAlphabetSize) && (tid != id))
+      return false;
   // if not in sparse, could be default value
-  if ((sparse.size() <= maxChar) && (id != ds.trans_.getDefault())) {
-    ds.deadEnd_ = false;
-    return;
-  }
-  ds.deadEnd_ = true;
+  if ((sparse.size() < maxChar) && (id != ds.trans_.getDefault()))
+    return false;
+  return true;
 }
 
 
@@ -202,7 +198,7 @@ Result DfaObj::matchFull(string_view sv) {
 void flagDeadEnds(vector<DfaState> &states, CharIdx maxChar) {
   DfaId id = 0;
   for (DfaState &ds : states)
-    determineDeadEnd(ds, id++, maxChar);
+    ds.deadEnd_ = determineDeadEnd(ds, id++, maxChar);
 }
 
 
