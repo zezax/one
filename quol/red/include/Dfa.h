@@ -46,7 +46,7 @@ public:
 
   void chopEndMarks();
 
-  void installEquivalenceMap();
+  CharIdx installEquivalenceMap(); // returns maxChar
   void copyEquivMap(const DfaObj &src) { equivMap_ = src.equivMap_; }
   const std::vector<CharIdx> &getEquivMap() const { return equivMap_; }
 
@@ -66,7 +66,7 @@ private:
 void flagDeadEnds(std::vector<DfaState> &states, CharIdx maxChar);
 
 std::vector<CharIdx> makeEquivalenceMap(const std::vector<DfaState> &states,
-                                        CharIdx                      maxChar,
+                                        CharIdx                     &maxChar,
                                         MultiChar                   &charMask);
 
 void remapStates(std::vector<DfaState>      &states,

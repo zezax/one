@@ -174,12 +174,13 @@ void DfaObj::chopEndMarks() {
 }
 
 
-void DfaObj::installEquivalenceMap() {
+CharIdx DfaObj::installEquivalenceMap() {
   MultiChar usedChars;
   CharIdx maxChar = findUsedChars(usedChars);
   vector<CharIdx> map = makeEquivalenceMap(states_, maxChar, usedChars);
   remapStates(states_, map);
   equivMap_.swap(map);
+  return maxChar;
 }
 
 
@@ -205,9 +206,9 @@ void flagDeadEnds(vector<DfaState> &states, CharIdx maxChar) {
 }
 
 
-// this is a performance-sensitive function
+// this can be a performance-sensitive function
 vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
-                                   CharIdx                 maxChar,
+                                   CharIdx                &maxChar, // in-out
                                    MultiChar              &charMask) {
   CharIdx limit = maxChar + 1;
   CharIdx size = std::max(limit, gAlphabetSize);
@@ -215,10 +216,20 @@ vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
   map.reserve(size);
   CharIdx cur = 0;
 
-  charMask.flipAll(); // now represents un-used chars
+  CharIdx unused;
+  if (charMask.bitSize() == 0)
+    unused = 0;
+  else {
+    charMask.flipAll();         // now represents un-used chars
+    auto it = charMask.begin(); // look for first unused character
+    if (it == charMask.end())
+      unused = numeric_limits<CharIdx>::max();
+    else
+      unused = *it;
+  }
 
-  CharIdx ii;
-  for (ii = 0; ii <= limit; ++ii) { // !!! one past limit
+  CharIdx ii = 0;
+  for (; ii < limit; ++ii) {
     CharIdx jj;
     if (!charMask.get(ii)) { // one is used -> we really need to check fates
       for (jj = 0; jj < ii; ++jj)
@@ -228,14 +239,9 @@ vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
         }
     }
     else {                   // one is not used -> we can cheat
-      auto it = charMask.begin();
-      if (it == charMask.end())
-        jj = ii;
-      else {                 // first unused one -> same fate
-        jj = *it;
-        if (jj < ii)
-          map.push_back(map[jj]);
-      }
+      jj = unused;           // should have same fate as any other unused
+      if (jj < ii)
+        map.push_back(map[jj]);
     }
 
     if (jj >= ii)
@@ -243,11 +249,16 @@ vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
   }
 
   if (ii < size) {            // every char past limit is unused
-    CharIdx val = map[limit]; // last entry should represent unused chars
+    CharIdx val;
+    if (unused != numeric_limits<CharIdx>::max())
+      val = map[unused];
+    else
+      val = cur++;
     for (; ii < size; ++ii)
       map.push_back(val);
   }
 
+  maxChar = (cur == 0) ? 0 : cur - 1;
   return map;
 }
 
