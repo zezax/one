@@ -57,10 +57,9 @@ void DfaMinimizer::minimize() {
 
 
 void DfaMinimizer::setup() {
-  src_.installEquivalenceMap(); // smaller alphabet means less work
+  maxChar_ = src_.installEquivalenceMap(); // smaller alphabet means less work
   if (stats_)
     stats_->postEquivMap_ = std::chrono::steady_clock::now();
-  maxChar_ = src_.findMaxChar();
 
   {
     DfaIdSet stateSet = src_.allStateIds();
