@@ -7,6 +7,12 @@ Testing Platform:
   Gentoo Linux 5.15.75
   GCC 11.3.0 (g++ -std=c++20)
 
+Some of the results/deltas below seem disproportionate to the code
+changes.  It's possible that aliasing effects in the instruction cache
+and/or branch prediction tables are responsible for these effects.  This
+would explain cases where removing dead code caused slowdowns, or where
+changes to compilation code led to speedups in matching tests.
+
 COMPILATION:
 ------------
   N words from /usr/dict/words compiled into DFA, with unique result values.
@@ -93,22 +99,26 @@ COMMIT 60bbebc
   RESULT: ucpu 0:21.806 rss 2.562GB
   TEST: words ratio 1:10 (23493)
   RESULT: ucpu 3:36.694 rss 14.090GB
-COMMIT 2023/02/26
+COMMIT 5d2942c
   Proofreading pass through all files
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:21.649 peak rss 2.565GB one-sec rss 2.562GB
-COMMIT 2023/02/27
+COMMIT f6cbc04
   Chop trailing zeros from MultiChar.  More granular timestamps.
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:21.470 peak rss 2.566GB one-sec rss 2.561GB
-COMMIT 2024/02/28
+COMMIT 076e7e5
   Optimize makeEquivalenceMap().  Remove transcribeDfa() to speed up code.
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:21.053 peak rss 2.565GB one-sec rss 2.566GB
-COMMIT 2024/02/28
+COMMIT b9896ea
   Use bit-vector iteration in makeEquivalenceMap().
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:20.951 peak rss 2.566GB one-sec rss 2.562GB
+COMMIT bc1cc4c
+  Fix equiv-map logic.  DFA iterators.  Reduce findMaxChar() calls.
+  TEST: words ratio 1:25 (9397)
+  RESULT: ucpu 0:20.949 peak 2.567GB one-sec rss 2.563GB
 
 MATCHING:
 ---------
@@ -146,7 +156,11 @@ COMMIT 8c139cf
   Use __builtin_expect(..., 0) for accept test in matchCore()
   TEST: bench 1000 matchLast
   RESULT: ucpu 19.866
-COMMIT 2023/02/26
+COMMIT 5d2942c
   Proofreading pass through all files
   TEST: bench 1000 matchLast
   RESULT: ucpu 19.128
+COMMIT bc1cc4c
+  Fix equiv-map logic.  DFA iterators.  Reduce findMaxChar() calls.
+  TEST: bench 1000 matchLast
+  RESULT: ucpu 17.635 ???

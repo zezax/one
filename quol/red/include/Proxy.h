@@ -23,7 +23,7 @@ public:
     : ptr_(static_cast<const Byte *>(ptr)) {}
 
   Byte operator*() const { return *ptr_; }
-  void operator++() { ptr_ += 1; } // !!! void
+  NullTermIter &operator++() { ptr_ += 1; return *this; }
   explicit operator bool() const { return (*ptr_ != 0); }
 
   // less safe stuff for replaceCore()
@@ -45,7 +45,7 @@ public:
     : ptr_(reinterpret_cast<const Byte *>(sv.data())), end_(ptr_ + sv.size()) {}
 
   Byte operator*() const { return *ptr_; }
-  void operator++() { ptr_ += 1; } // !!! void
+  RangeIter &operator++() { ptr_ += 1; return *this; }
   explicit operator bool() const { return (ptr_ < end_); }
 
   // less safe stuff for replaceCore()
