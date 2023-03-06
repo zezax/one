@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <deque>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -36,6 +37,99 @@ inline bool operator==(const NfaTransition &aa, const NfaTransition &bb) {
 typedef std::unordered_set<MultiChar> MultiCharSet;
 
 
+class NfaObj; // the important stuff is farther down...
+
+
+class NfaIter { // not your normal iterator; connected states only
+public:
+  explicit operator bool() const { return (state_ != nullptr); }
+
+  NfaId id() const { return id_; }
+  NfaState &state() const { return *state_; }
+
+  NfaIter &operator++() {
+    if (todo_.empty()) {
+      id_ = 0;
+      state_ = nullptr;
+    }
+    else {
+      id_ = todo_.front(); // breadth-first iteration
+      todo_.pop_front();
+      state_ = stateBase_ + id_;
+      for (const NfaTransition &tr : state_->transitions_)
+        if (!seen_.testAndSet(tr.next_))
+          todo_.push_back(tr.next_);
+    }
+    return *this;
+  }
+
+  NfaIdSet &seen() { return seen_; } // useful by-product
+
+private:
+  NfaIter(NfaId id, std::vector<NfaState> &states)
+    : id_(0), state_(nullptr), stateBase_(states.data()) {
+    if (!states.empty()) {
+      seen_.insert(id);
+      todo_.push_back(id);
+    }
+    ++*this;
+  }
+
+  NfaId              id_;
+  NfaState          *state_;
+  NfaState          *stateBase_;
+  NfaIdSet           seen_;
+  std::deque<NfaId>  todo_;
+
+  friend NfaObj;
+};
+
+
+class NfaConstIter { // const variant
+public:
+  explicit operator bool() const { return (state_ != nullptr); }
+
+  NfaId id() const { return id_; }
+  const NfaState &state() const { return *state_; }
+
+  NfaConstIter &operator++() {
+    if (todo_.empty()) {
+      id_ = 0;
+      state_ = nullptr;
+    }
+    else {
+      id_ = todo_.front(); // breadth-first iteration
+      todo_.pop_front();
+      state_ = stateBase_ + id_;
+      for (const NfaTransition &tr : state_->transitions_)
+        if (!seen_.testAndSet(tr.next_))
+          todo_.push_back(tr.next_);
+    }
+    return *this;
+  }
+
+  NfaIdSet &seen() { return seen_; } // useful by-product
+
+private:
+  NfaConstIter(NfaId id, const std::vector<NfaState> &states)
+    : id_(0), state_(nullptr), stateBase_(states.data()) {
+    if (!states.empty()) {
+      seen_.insert(id);
+      todo_.push_back(id);
+    }
+    ++*this;
+  }
+
+  NfaId              id_;
+  const NfaState    *state_;
+  const NfaState    *stateBase_;
+  NfaIdSet           seen_;
+  std::deque<NfaId>  todo_;
+
+  friend NfaObj;
+};
+
+
 class NfaObj {
 public:
   NfaObj() : initId_(gNfaNullId), goal_(0) {}
@@ -68,7 +162,6 @@ public:
 
   NfaIdSet allStates(NfaId id) const;
   MultiCharSet allMultiChars(NfaId id) const;
-  std::vector<NfaId> allAcceptingStates(NfaId id) const;
   std::vector<NfaStateTransition> allAcceptingTransitions(NfaId id) const;
   void allAcceptingStatesTransitions( // combines above two
       NfaId                            id,
@@ -87,6 +180,9 @@ public:
   void selfUnion(NfaId id);
 
   void dropUselessTransitions();
+
+  NfaIter iter(NfaId id) { return NfaIter(id, states_); }
+  NfaConstIter citer(NfaId id) const { return NfaConstIter(id, states_); }
 
 private:
   NfaId copyRecurse(std::unordered_map<NfaId, NfaId> &map, NfaId id);

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <deque>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -18,6 +19,101 @@ struct DfaState {
   Result         result_;
   bool           deadEnd_;
   CharToStateMap trans_;
+};
+
+
+class DfaObj; // the main attraction is farther down...
+
+
+class DfaIter { // unconventional iterator over reachable states (plus zero)
+public:
+  explicit operator bool() const { return (state_ != nullptr); }
+
+  DfaId id() const { return id_; }
+  DfaState &state() const { return *state_; }
+
+  DfaIter &operator++() {
+    if (todo_.empty()) {
+      id_ = 0;
+      state_ = nullptr;
+    }
+    else {
+      id_ = todo_.front(); // breadth-first traversal
+      todo_.pop_front();
+      state_ = stateBase_ + id_;
+      for (auto [_, next] : state_->trans_.getMap())
+        if (!seen_.testAndSet(next))
+          todo_.push_back(next);
+    }
+    return *this;
+  }
+
+  DfaIdSet &seen() { return seen_; } // useful by-product
+
+private:
+  DfaIter(std::vector<DfaState> &states)
+    : id_(0), state_(nullptr), stateBase_(states.data()) {
+    DfaId num = std::min(static_cast<DfaId>(states.size()), gDfaInitialId + 1);
+    for (DfaId id = 0; id < num; ++id) {
+      seen_.insert(id);
+      todo_.push_back(id);
+    }
+    ++*this;
+  }
+
+  DfaId              id_;
+  DfaState          *state_;
+  DfaState          *stateBase_;
+  DfaIdSet           seen_;
+  std::deque<DfaId>  todo_;
+
+  friend DfaObj;
+};
+
+
+class DfaConstIter { // const version of above
+public:
+  explicit operator bool() const { return (state_ != nullptr); }
+
+  DfaId id() const { return id_; }
+  const DfaState &state() const { return *state_; }
+
+  DfaConstIter &operator++() {
+    if (todo_.empty()) {
+      id_ = 0;
+      state_ = nullptr;
+    }
+    else {
+      id_ = todo_.front(); // breadth-first traversal
+      todo_.pop_front();
+      state_ = stateBase_ + id_;
+      for (auto [_, next] : state_->trans_.getMap())
+        if (!seen_.testAndSet(next))
+          todo_.push_back(next);
+    }
+    return *this;
+  }
+
+  DfaIdSet &seen() { return seen_; } // useful by-product
+
+private:
+  DfaConstIter(const std::vector<DfaState> &states)
+    : id_(0), state_(nullptr), stateBase_(states.data()) {
+    DfaId num = std::min(static_cast<DfaId>(states.size()), gDfaInitialId + 1);
+    for (DfaId id = 0; id < num; ++id) {
+      seen_.insert(id);
+      todo_.push_back(id);
+    }
+    ++*this;
+  }
+
+  DfaId              id_;
+  const DfaState    *state_;
+  const DfaState    *stateBase_;
+  DfaIdSet           seen_;
+  std::deque<DfaId>  todo_;
+
+  friend DfaObj;
 };
 
 
@@ -55,6 +151,9 @@ public:
   std::vector<DfaState> &getMutStates() { return states_; }
 
   Result matchFull(std::string_view s); // for unit tests
+
+  DfaIter iter() { return DfaIter(states_); } // relevant states only
+  DfaConstIter citer() const { return DfaConstIter(states_); }
 
 private:
   std::vector<DfaState> states_;

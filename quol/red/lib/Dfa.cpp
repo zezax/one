@@ -17,67 +17,6 @@ using std::vector;
 
 namespace {
 
-void allStatesRecurse(DfaIdSet               &seen,
-                      const vector<DfaState> &states,
-                      DfaId                   did) {
-  for (auto [_, id] : states[did].trans_.getMap())
-    if (!seen.testAndSet(id))
-      allStatesRecurse(seen, states, id);
-}
-
-
-CharIdx maxCharRecurse(DfaIdSet               &seen,
-                       const vector<DfaState> &states,
-                       DfaId                   did) {
-  CharIdx maxChar = 0;
-  for (auto [ch, id] : states[did].trans_.getMap()) {
-    if (ch > maxChar)
-      maxChar = ch;
-    if (!seen.testAndSet(id)) {
-      CharIdx sub = maxCharRecurse(seen, states, id);
-      if (sub > maxChar)
-        maxChar = sub;
-    }
-  }
-  return maxChar;
-}
-
-
-CharIdx usedCharsRecurse(DfaIdSet               &seen,
-                         MultiChar              &used,
-                         const vector<DfaState> &states,
-                         DfaId                   did) {
-  CharIdx maxChar = 0;
-  for (auto [ch, id] : states[did].trans_.getMap()) {
-    used.set(ch);
-    if (ch > maxChar)
-      maxChar = ch;
-    if (!seen.testAndSet(id)) {
-      CharIdx sub = usedCharsRecurse(seen, used, states, id);
-      if (sub > maxChar)
-        maxChar = sub;
-    }
-  }
-  return maxChar;
-}
-
-
-Result maxResultRecurse(DfaIdSet               &seen,
-                        const vector<DfaState> &states,
-                        DfaId                   did) {
-  const DfaState &ds = states[did];
-  Result maxResult = ds.result_;
-  for (auto [_, id] : ds.trans_.getMap())
-    if (!seen.testAndSet(id)) {
-      Result sub = maxResultRecurse(seen, states, id);
-      if (sub > maxResult)
-        maxResult = sub;
-    }
-
-  return maxResult;
-}
-
-
 bool determineDeadEnd(const DfaState &ds, DfaId id, CharIdx maxChar) {
   // (likely) try sparse first...
   const std::unordered_map<CharIdx, DfaId> &sparse = ds.trans_.getMap();
@@ -122,33 +61,42 @@ DfaId DfaObj::newState() {
 
 
 DfaIdSet DfaObj::allStateIds() const {
-  DfaIdSet seen;
-  seen.insert(gDfaErrorId);
-  seen.insert(gDfaInitialId);
-  allStatesRecurse(seen, states_, gDfaInitialId);
-  return seen;
+  DfaConstIter it = citer();
+  for (; it; ++it)
+    ;
+  return it.seen();
 }
 
 
 CharIdx DfaObj::findMaxChar() const {
-  DfaIdSet seen;
-  seen.insert(gDfaInitialId);
-  return maxCharRecurse(seen, states_, gDfaInitialId);
+  CharIdx high = 0;
+  for (DfaConstIter it = citer(); it; ++it)
+    for (auto [ch, _] : it.state().trans_.getMap())
+      if (ch > high)
+        high = ch;
+  return high;
 }
 
 
 CharIdx DfaObj::findUsedChars(MultiChar &used) const {
+  CharIdx high = 0;
   used.clearAll();
-  DfaIdSet seen;
-  seen.insert(gDfaInitialId);
-  return usedCharsRecurse(seen, used, states_, gDfaInitialId);
+  for (DfaConstIter it = citer(); it; ++it)
+    for (auto [ch, _] : it.state().trans_.getMap()) {
+      used.set(ch);
+      if (ch > high)
+        high = ch;
+    }
+  return high;
 }
 
 
 Result DfaObj::findMaxResult() const {
-  DfaIdSet seen;
-  seen.insert(gDfaInitialId);
-  return maxResultRecurse(seen, states_, gDfaInitialId);
+  Result high = 0;
+  for (DfaConstIter it = citer(); it; ++it)
+    if (it.state().result_ > high)
+      high = it.state().result_;
+  return high;
 }
 
 

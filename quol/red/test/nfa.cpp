@@ -56,3 +56,43 @@ TEST(Nfa, smoke) {
   EXPECT_FALSE(three.accepts(s2));
   EXPECT_TRUE(three.accepts(s3));
 }
+
+
+TEST(Nfa, iter) {
+  NfaObj nfa;
+  /* s1 = */ nfa.newState(0);
+  NfaId s2 = nfa.newState(0);
+  NfaId s3 = nfa.newState(0);
+  /* s4 = */ nfa.newState(0);
+  NfaId s5 = nfa.newState(1);
+  addTrans(nfa, s2, s2, 'a');
+  addTrans(nfa, s2, s2, 'b');
+  addTrans(nfa, s2, s3, 'a');
+  addTrans(nfa, s3, s5, 'b');
+  NfaId sum = 0;
+  NfaIter it = nfa.iter(s2);
+  for (; it; ++it)
+    sum += 100 + it.id();
+  EXPECT_EQ(310, sum);
+  EXPECT_EQ(3, it.seen().size());
+}
+
+
+TEST(Nfa, constiter) {
+  NfaObj nfa;
+  /* s1 = */ nfa.newState(0);
+  NfaId s2 = nfa.newState(0);
+  NfaId s3 = nfa.newState(0);
+  /* s4 = */ nfa.newState(0);
+  NfaId s5 = nfa.newState(1);
+  addTrans(nfa, s2, s2, 'a');
+  addTrans(nfa, s2, s2, 'b');
+  addTrans(nfa, s2, s3, 'a');
+  addTrans(nfa, s3, s5, 'b');
+  NfaId sum = 0;
+  NfaConstIter it = nfa.citer(s2);
+  for (; it; ++it)
+    sum += 100 + it.id();
+  EXPECT_EQ(310, sum);
+  EXPECT_EQ(3, it.seen().size());
+}

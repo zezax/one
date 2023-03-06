@@ -44,6 +44,14 @@ TEST(Dfa, maxchar) {
   ASSERT_EQ(5, dfa.numStates());
   CharIdx maxChar = dfa.findMaxChar();
   EXPECT_EQ(gAlphabetSize + 1, maxChar);
+
+  MultiChar mc;
+  CharIdx mx = dfa.findUsedChars(mc);
+  EXPECT_EQ(mx, maxChar);
+  EXPECT_EQ(3, mc.size()); // a, b, endmark
+  EXPECT_TRUE(mc.get('a'));
+  EXPECT_TRUE(mc.get('b'));
+  EXPECT_TRUE(mc.get(gAlphabetSize + 1));
 }
 
 
@@ -230,4 +238,62 @@ TEST(Dfa, equivmapHalfChop) {
   EXPECT_EQ(2, mx); // !!! evens, odds, high-ascii
   maxChar = dfa.findMaxChar();
   EXPECT_EQ(1, maxChar); // !!! high-ascii appears in no transitions
+}
+
+
+TEST(Dfa, iter) {
+  DfaObj dfa;
+  mkState(dfa, 0);
+  DfaId s1 = mkState(dfa, 0);
+  DfaId s2 = mkState(dfa, 0);
+  mkState(dfa, 0);
+  DfaId s4 = mkState(dfa, 0);
+  DfaId s5 = mkState(dfa, 1);
+  addTrans(dfa, s1, s1, 'b');
+  addTrans(dfa, s1, s2, 'a');
+  addTrans(dfa, s2, s2, 'a');
+  addTrans(dfa, s2, s4, 'b');
+  addTrans(dfa, s4, s5, gAlphabetSize + 1);
+  EXPECT_EQ(6, dfa.numStates());
+  DfaId sum = 0;
+  DfaIter it = dfa.iter();
+  for (; it; ++it)
+    sum += 100 + it.id();
+  EXPECT_EQ(512, sum); // 0 + 1 + 2 + 4 + 5 = 12
+  EXPECT_EQ(5, it.seen().size());
+  EXPECT_TRUE(it.seen().get(0));
+  EXPECT_TRUE(it.seen().get(1));
+  EXPECT_TRUE(it.seen().get(2));
+  EXPECT_FALSE(it.seen().get(3));
+  EXPECT_TRUE(it.seen().get(4));
+  EXPECT_TRUE(it.seen().get(5));
+}
+
+
+TEST(Dfa, constiter) {
+  DfaObj dfa;
+  mkState(dfa, 0);
+  DfaId s1 = mkState(dfa, 0);
+  DfaId s2 = mkState(dfa, 0);
+  mkState(dfa, 0);
+  DfaId s4 = mkState(dfa, 0);
+  DfaId s5 = mkState(dfa, 1);
+  addTrans(dfa, s1, s1, 'b');
+  addTrans(dfa, s1, s2, 'a');
+  addTrans(dfa, s2, s2, 'a');
+  addTrans(dfa, s2, s4, 'b');
+  addTrans(dfa, s4, s5, gAlphabetSize + 1);
+  EXPECT_EQ(6, dfa.numStates());
+  DfaId sum = 0;
+  DfaConstIter it = dfa.citer();
+  for (; it; ++it)
+    sum += 100 + it.id();
+  EXPECT_EQ(512, sum); // 0 + 1 + 2 + 4 + 5 = 12
+  EXPECT_EQ(5, it.seen().size());
+  EXPECT_TRUE(it.seen().get(0));
+  EXPECT_TRUE(it.seen().get(1));
+  EXPECT_TRUE(it.seen().get(2));
+  EXPECT_FALSE(it.seen().get(3));
+  EXPECT_TRUE(it.seen().get(4));
+  EXPECT_TRUE(it.seen().get(5));
 }

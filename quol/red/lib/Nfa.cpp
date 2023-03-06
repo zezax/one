@@ -43,25 +43,6 @@ bool stateAccepts(const NfaState &ns) {
   return (ns.result_ > 0);
 }
 
-
-void allStatesRecurse(NfaIdSet &out, NfaId id, const vector<NfaState> &states) {
-  for (const NfaTransition &tr : states[id].transitions_)
-    if (!out.testAndSet(tr.next_))
-      allStatesRecurse(out, tr.next_, states);
-}
-
-
-void allMultiCharsRecurse(MultiCharSet           &out,
-                          NfaIdSet               &seen,
-                          NfaId                   id,
-                          const vector<NfaState> &states) {
-  for (const NfaTransition &tr : states[id].transitions_) {
-    out.emplace(tr.multiChar_);
-    if (!seen.testAndSet(tr.next_))
-      allMultiCharsRecurse(out, seen, tr.next_, states);
-  }
-}
-
 } // anonymous
 
 NfaObj::NfaObj(NfaObj &&rhs)
@@ -79,8 +60,10 @@ NfaObj &NfaObj::operator=(NfaObj &&rhs) {
 
 
 size_t NfaObj::activeStates() const {
-  NfaIdSet all = allStates(initId_);
-  return all.size();
+  size_t sum = 0;
+  for (NfaConstIter it = citer(initId_); it; ++it)
+    ++sum;
+  return sum;
 }
 
 
@@ -125,33 +108,29 @@ bool NfaObj::hasAccept(const NfaIdSet &nis) const {
 
 
 NfaIdSet NfaObj::allStates(NfaId id) const {
-  NfaIdSet rv;
-  if (id) {
-    rv.insert(id);
-    allStatesRecurse(rv, id, states_);
-  }
-  return rv;
+  NfaConstIter it = citer(id);
+  for (; it; ++it)
+    ;
+  return it.seen();
 }
 
 
 MultiCharSet NfaObj::allMultiChars(NfaId id) const {
   MultiCharSet rv;
-  NfaIdSet seen;
-  if (id) {
-    seen.insert(id);
-    allMultiCharsRecurse(rv, seen, id, states_);
-  }
+  for (NfaConstIter it = citer(id); it; ++it)
+    for (const NfaTransition &tr : it.state().transitions_)
+      rv.emplace(tr.multiChar_);
   return rv;
 }
 
 
-vector<NfaId> NfaObj::allAcceptingStates(NfaId id) const {
-  vector<NfaId> rv;
-  for (NfaId state : allStates(id))
-    if (accepts(state))
-      rv.push_back(state);
-  return rv;
-}
+// vector<NfaId> NfaObj::allAcceptingStates(NfaId id) const {
+//   vector<NfaId> rv;
+//   for (NfaId state : allStates(id))
+//     if (accepts(state))
+//       rv.push_back(state);
+//   return rv;
+// }
 
 
 vector<NfaStateTransition> NfaObj::allAcceptingTransitions(NfaId id) const {
@@ -276,8 +255,8 @@ NfaId NfaObj::stateClosure(NfaId id, int min, int max) {
 
 
 NfaId NfaObj::stateIgnoreCase(NfaId id) {
-  for (NfaId state : allStates(id)) {
-    for (NfaTransition &trans : states_[state].transitions_) {
+  for (NfaIter it = iter(id); it; ++it)
+    for (NfaTransition &trans : it.state().transitions_) {
       for (Byte uc = 'A'; uc <= 'Z'; ++uc)
         if (trans.multiChar_.get(uc))
           trans.multiChar_.insert(uc + 32); // lower-case in ascii
@@ -285,7 +264,6 @@ NfaId NfaObj::stateIgnoreCase(NfaId id) {
         if (trans.multiChar_.get(uc))
           trans.multiChar_.insert(uc - 32); // upper-case in ascii
     }
-  }
   return id;
 }
 

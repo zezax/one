@@ -20,6 +20,7 @@ std::string toString(const MultiChar &mc);
 std::string toString(const MultiCharSet &mcs);
 std::string toString(const NfaIdSet &nis);
 std::string toString(const Token &t);
+std::string toString(const NfaState &ns);
 std::string toString(const NfaObj &nfa);
 std::string toString(const NfaIdSet &nis, const NfaObj &nfa);
 std::string toString(const NfaStatesToTransitions &tbl);

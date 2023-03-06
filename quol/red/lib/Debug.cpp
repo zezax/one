@@ -268,12 +268,19 @@ string toString(const Token &t) {
 }
 
 
+// NfaState
+string toString(const NfaState &ns) {
+  string rv;
+  toStringAppend(rv, ns);
+  return rv;
+}
+
+
 // NfaObj state dump
 string toString(const NfaObj &nfa) {
-  NfaIdSet all = nfa.allStates(nfa.getInitial());
   vector<NfaId> vec;
-  for (NfaId id : all)
-    vec.push_back(id);
+  for (NfaConstIter it = nfa.citer(nfa.getInitial()); it; ++it)
+    vec.push_back(it.id());
   std::sort(vec.begin(), vec.end());
 
   string rv;
@@ -402,9 +409,8 @@ string toString(const DfaState &ds) {
 string toString(const DfaObj &dfa) {
   string rv = "Dfa init=" + to_string(gDfaInitialId) +
     " err=" + to_string(gDfaErrorId) + " [\n";
-  const vector<DfaState> &vec = dfa.getStates();
   DfaId ii = 0;
-  for (const DfaState &ds : vec) {
+  for (const DfaState &ds : dfa.getStates()) {
     rv += to_string(ii) + ' ';
     toStringAppend(rv, ds);
     ++ii;
