@@ -10,6 +10,7 @@ namespace zezax::red {
 
 using std::string;
 using std::string_view;
+using std::vector;
 
 Red::Red(const char *regex) {
   Parser p;
@@ -55,6 +56,13 @@ Outcome Red::partialMatch(string_view text) const {
     text.remove_prefix(1);
   }
   return Outcome::fail();
+}
+
+
+bool Red::allMatches(string_view text, vector<Outcome> *out) { // like RE2::Set
+  if (out)
+    out->clear();
+  return matchAll(program_, text, out);
 }
 
 

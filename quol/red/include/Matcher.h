@@ -29,6 +29,20 @@ Outcome match(const Executable &exec, const char *str, Style style);
 Outcome match(const Executable &exec, const std::string &s, Style style);
 Outcome match(const Executable &exec, std::string_view sv, Style style);
 
+bool matchAll(const Executable     &exec,
+              const void           *ptr,
+              size_t                len,
+              std::vector<Outcome> *out);
+bool matchAll(const Executable     &exec,
+              const char           *str,
+              std::vector<Outcome> *out);
+bool matchAll(const Executable     &exec,
+              const std::string    &s,
+              std::vector<Outcome> *out);
+bool matchAll(const Executable     &exec,
+              std::string_view      sv,
+              std::vector<Outcome> *out);
+
 std::string replace(const Executable &exec,
                     const void       *ptr,
                     size_t            len,
@@ -71,6 +85,12 @@ Result checkCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
 
 template <Style style, class InProxyT, class DfaProxyT>
 Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
+
+template <class InProxyT, class DfaProxyT>
+bool matchAllCore(const Executable     &exec, // RE2::Set style
+                  InProxyT              in,
+                  DfaProxyT             dfap,
+                  std::vector<Outcome> *out);
 
 template <Style style, class InProxyT, class DfaProxyT>
 std::string replaceCore(const Executable &exec,
@@ -220,6 +240,57 @@ Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
     rv.start_ = matchStart;
     rv.end_   = matchEnd;
   }
+  return rv;
+}
+
+
+// designed similar to RE2::Set::Match()
+template <class InProxyT, class DfaProxyT>
+bool matchAllCore(const Executable     &exec,
+                  InProxyT              in,
+                  DfaProxyT             dfap,
+                  std::vector<Outcome> *out) {
+  typedef typename decltype(dfap)::State State;
+
+  const FileHeader *hdr = exec.getHeader();
+  const char *__restrict__ base = exec.getBase();
+  const Byte *__restrict__ equivMap = exec.getEquivMap();
+
+  dfap.init(base, hdr->initialOff_);
+  const State *__restrict__ init = dfap.state();
+  Result result = dfap.result();
+  Result prevResult = 0;
+  size_t idx = 0;
+  size_t matchStart = 0;
+  bool rv = false;
+
+  for (; in; ++in, ++idx) {
+    Byte byte = equivMap[*in];
+
+    if (UNLIKELY(dfap.state() == init)) {
+      const State *__restrict__ prevState = dfap.state();
+      dfap.next(base, byte);
+      if (dfap.state() != prevState)
+        matchStart = idx;
+    }
+    else
+      dfap.next(base, byte);
+    result = dfap.result();
+    if (UNLIKELY(result > 0)) {
+      rv = true;
+      if (out) {
+        if (result == prevResult)
+          out->back().end_ = idx + 1;
+        else {
+          prevResult = result;
+          out->emplace_back(result, matchStart, idx + 1);
+        }
+      }
+    }
+    else if (dfap.pureDeadEnd())
+      break;
+  }
+
   return rv;
 }
 

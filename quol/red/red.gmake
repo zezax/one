@@ -39,6 +39,12 @@ else
   LDLIBS += -lasan
 endif
 
+# for comparison benchmarks...
+ifneq (,$(wildcard /usr/include/re2/re2.h))
+  HAS_RE2 := 1
+  CPPFLAGS += -DHAS_RE2
+endif
+
 WARN := -Wall -Wextra -Wshadow -Wpointer-arith -Wwrite-strings -Wsign-promo \
 -Wuninitialized -Wconversion -Wfloat-equal -Wrestrict \
 -Wdisabled-optimization -Wduplicated-branches -Wduplicated-cond -Wformat=2 \

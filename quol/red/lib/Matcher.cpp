@@ -8,6 +8,7 @@ namespace zezax::red {
 
 using std::string;
 using std::string_view;
+using std::vector;
 
 // Lots of macro magic here follows.  This reduces repetitive code and gives
 // fewer places for special-case bugs to hide.
@@ -55,6 +56,59 @@ using std::string_view;
 
 SUITE(Result, check)
 SUITE(Outcome, match)
+
+
+// stuff for matchAll()
+#define MALL_FMT(A_name, ...)                  \
+  switch (exec.getFormat()) {                  \
+  case fmtDirect1: {                           \
+    DfaProxy<fmtDirect1> proxy;                \
+    return A_name(__VA_ARGS__);                \
+  }                                            \
+  case fmtDirect2: {                           \
+    DfaProxy<fmtDirect2> proxy;                \
+    return A_name(__VA_ARGS__);                \
+  }                                            \
+  case fmtDirect4: {                           \
+    DfaProxy<fmtDirect4> proxy;                \
+    return A_name(__VA_ARGS__);                \
+  }                                            \
+  default:                                     \
+    throw RedExceptExec("unsupported format"); \
+  }
+
+
+bool matchAll(const Executable &exec,
+              const void       *ptr,
+              size_t            len,
+              vector<Outcome>  *out) {
+  RangeIter it(ptr, len);
+  MALL_FMT(matchAllCore, exec, it, proxy, out)
+}
+
+
+bool matchAll(const Executable &exec,
+              const char       *str,
+              vector<Outcome>  *out) {
+  NullTermIter it(str);
+  MALL_FMT(matchAllCore, exec, it, proxy, out)
+}
+
+
+bool matchAll(const Executable  &exec,
+              std::string       &s,
+              vector<Outcome>   *out) {
+  RangeIter it(s);
+  MALL_FMT(matchAllCore, exec, it, proxy, out)
+}
+
+
+bool matchAll(const Executable &exec,
+              string_view       sv,
+              vector<Outcome>  *out) {
+  RangeIter it(sv);
+  MALL_FMT(matchAllCore, exec, it, proxy, out)
+}
 
 
 // generate replace functions with different prototypes

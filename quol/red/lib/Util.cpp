@@ -22,6 +22,7 @@ using std::generic_category;
 using std::numeric_limits;
 using std::string;
 using std::system_error;
+using std::vector;
 
 char fromHexDigit(Byte x) {
   if ((x >= '0') && (x <= '9'))
@@ -98,6 +99,31 @@ string readFileToString(const char *path) {
   close(fd);
   return str;
 }
+
+
+vector<string> sampleLines(const string &buf, size_t n) {
+  size_t lines = 0;
+  for (char ch : buf)
+    if (ch == '\n')
+      ++lines;
+
+  size_t ratio = lines / n;
+  size_t seq = 0;
+  size_t hits = 0;
+  vector<string> rv;
+  auto start = buf.cbegin();
+  for (auto it = buf.cbegin(); it < buf.cend(); ++it)
+    if (*it == '\n') {
+      if ((++seq % ratio) == 0) {
+        rv.emplace_back(start, it);
+        if (++hits >= n)
+          break;
+      }
+      start = it + 1;
+    }
+  return rv;
+}
+
 
 size_t bytesUsed() {
 

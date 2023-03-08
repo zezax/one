@@ -4,6 +4,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "Outcome.h"
 #include "Exec.h"
@@ -34,6 +35,9 @@ public:
 
   // any subset of text matches re
   Outcome partialMatch(std::string_view text) const;
+
+  // sort of like RE2::Set::Match()...
+  bool allMatches(std::string_view text, std::vector<Outcome> *out);
 
   // for easy one-liners...
   static Outcome fullMatch(std::string_view text, const Red &re);

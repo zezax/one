@@ -14,6 +14,7 @@ char fromHexDigit(Byte x);
 
 void writeStringToFile(const std::string &str, const char *path);
 std::string readFileToString(const char *path);
+std::vector<std::string> sampleLines(const std::string &buf, size_t n);
 
 size_t bytesUsed(); // generally reports resident set size
 

@@ -6,6 +6,10 @@
 - document keep results low
 - document ascii
 - public api
+- single-pattern comparative benchmark
+- test overlapping matches: new, new york, york
+- test replace multiple times
+- try to limit contiguous to same-result
 - optional line prefix arg in debug strings
 - executable dump to file
 - consider allowing non-accepting patterns

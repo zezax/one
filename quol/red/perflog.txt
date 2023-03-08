@@ -164,3 +164,15 @@ COMMIT bc1cc4c
   Fix equiv-map logic.  DFA iterators.  Reduce findMaxChar() calls.
   TEST: bench 1000 matchLast
   RESULT: ucpu 17.635 ???
+
+COMPARISON - SET
+----------------
+  Compile N words from /usr/dict/words as patterns, then match M times
+  against full content of same file.  Compares Red against RE2::Set.
+  User CPU time reported.
+
+N     M     big_red   big_re2   factor
+100   100   0:03:020  0:26.901  8.91
+100   1000  0:30.017  4:20.186  8.67
+1000  100   0:03.863  0:36.313  9.40
+1000  1000  0:35.962  6:05.206  10.16
