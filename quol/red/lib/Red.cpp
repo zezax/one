@@ -33,6 +33,13 @@ Red::Red(string_view regex) {
 }
 
 
+Red::Red(string_view regex, Flags flags) {
+  Parser p;
+  p.add(regex, 1, flags);
+  program_ = compile(p);
+}
+
+
 Red::Red(Parser &parser) { // for power users
   program_ = compile(parser);
 }
@@ -56,6 +63,30 @@ Outcome Red::partialMatch(string_view text) const {
     text.remove_prefix(1);
   }
   return Outcome::fail();
+}
+
+
+// like RE2::Consume()
+Result Red::prefixConsume(string_view &text) const {
+  Outcome oc = match<styFirst>(program_, text);
+  if (oc) {
+    text.remove_prefix(oc.end_);
+    return oc.result_;
+  }
+  return 0;
+}
+
+
+// like RE2::FindAndConsume()
+Result Red::partialConsume(string_view &text) const {
+  for (; !text.empty(); text.remove_prefix(1)) {
+    Outcome oc = match<styFirst>(program_, text);
+    if (oc) {
+      text.remove_prefix(oc.end_);
+      return oc.result_;
+    }
+  }
+  return 0;
 }
 
 

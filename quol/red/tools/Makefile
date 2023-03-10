@@ -7,10 +7,10 @@ include ../red.gmake
 
 .PRECIOUS: $(BUILDSUB)/%.o
 
-NAMES := scan parse match serialize words bench big_red
+NAMES := scan parse match serialize words bench big_red skim_red
 
 ifdef HAS_RE2
-  NAMES += big_re2
+  NAMES += big_re2 skim_re2
 endif
 
 EXES := $(NAMES:%=$(BUILDSUB)/%)
@@ -21,6 +21,9 @@ clean:
 	$(RM) -r $(BUILDSUB)
 
 $(BUILDSUB)/big_re2: $(BUILDSUB)/big_re2.o $(DEPLIBS)
+	$(CXX) $(LDFLAGS) $< -L$(BUILD)/lib -lred -lre2 $(LDLIBS) -o $@
+
+$(BUILDSUB)/skim_re2: $(BUILDSUB)/skim_re2.o $(DEPLIBS)
 	$(CXX) $(LDFLAGS) $< -L$(BUILD)/lib -lred -lre2 $(LDLIBS) -o $@
 
 ifneq ($(wildcard $(BUILDSUB)/*.d), )

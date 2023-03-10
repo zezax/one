@@ -6,9 +6,12 @@
 - document keep results low
 - document ascii
 - public api
-- single-pattern comparative benchmark
+- test new functions
+- fixed prefix optimization - file format change
 - test overlapping matches: new, new york, york
 - test replace multiple times
+- see if result != 0 is better than result > 0
+- consider fast scan for required first char
 - try to limit contiguous to same-result
 - optional line prefix arg in debug strings
 - executable dump to file

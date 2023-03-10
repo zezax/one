@@ -1,11 +1,9 @@
-// red benchmark that builds a large dfa and then uses it for matching
+// re2 grep-like benchmark
 
 #include <charconv>
 #include <iostream>
-#include <fstream>
 #include <vector>
 
-#include "Parser.h"
 #include "Red.h"
 #include "Util.h"
 
@@ -17,8 +15,7 @@ using std::string_view;
 using std::vector;
 
 int main(int argc, char **argv) {
-  constexpr int iters = 1000;
-  int goal = 1000;
+  int iters = 1000;
   Flags flags = fIgnoreCase;
 
   for (int ii = 1; ii < argc; ++ii) {
@@ -26,34 +23,29 @@ int main(int argc, char **argv) {
     if (arg == "-cs")
       flags &= ~fIgnoreCase;
     else
-      from_chars(arg.data(), arg.data() + arg.size(), goal);
+      from_chars(arg.data(), arg.data() + arg.size(), iters);
   }
 
   string blob = readFileToString("/usr/share/dict/words");
-  vector<string> words = sampleLines(blob, goal);
 
   std::cout << "Passes " << iters << std::endl;
-  std::cout << "Patterns " << words.size() << std::endl;
   std::cout << "Blob size " << blob.size() << std::endl;
 
   try {
-    Parser p;
-    Result res = 0;
-    for (const string &word : words)
-      p.add(word, ++res, flags);
-    Red red(p);
+    // all the vowels, in order
+    Red re(".*a[^\\n]*e[^\\n]*i[^\\n]*o[^\\n]*u", flags);
 
     size_t sum = 0;
-    vector<Outcome> outs;
     for (int ii = 0; ii < iters; ++ii) {
       string_view sv = blob;
-      for (; !sv.empty(); sv.remove_prefix(1))
-        if (red.allMatches(sv, &outs))
-          for (const Outcome &out : outs)
-            sum += out.result_;
+      while (!sv.empty())
+        if (re.prefixConsume(sv) > 0)
+          ++sum;
+        else
+          break;
     }
 
-    std::cout << "Checksum " << sum << std::endl;
+    std::cout << "Total " << sum << std::endl;
     return 0;
   }
   catch (const std::exception &ex) {

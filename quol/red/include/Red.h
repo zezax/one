@@ -25,6 +25,7 @@ public:
   Red(const char *regex);
   Red(const std::string &regex);
   Red(std::string_view regex);
+  Red(std::string_view regex, Flags flags);
   Red(Parser &parser);
 
   // entire text matches re
@@ -35,6 +36,12 @@ public:
 
   // any subset of text matches re
   Outcome partialMatch(std::string_view text) const;
+
+  // like RE2::Consume()...
+  Result prefixConsume(std::string_view &text) const;
+
+  // like RE2::FindAndConsume()...
+  Result partialConsume(std::string_view &text) const;
 
   // sort of like RE2::Set::Match()...
   bool allMatches(std::string_view text, std::vector<Outcome> *out);
