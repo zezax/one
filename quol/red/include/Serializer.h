@@ -24,11 +24,14 @@ struct FileHeader {
   uint32_t checksum_; // FNV-1a of all that follows
   uint8_t  format_;
   uint8_t  maxChar_;
-  uint16_t pad0_;
+  uint8_t  leaderLen_; // leader is a fixed prefix required by the dfa
+  uint8_t  pad0_;
   uint32_t stateCnt_;
   uint32_t initialOff_;
   uint8_t  equivMap_[256];
-  uint8_t  bytes_[0]; // gcc-ism; offsets are from here
+  uint8_t  bytes_[0]; // gcc-ism; offsets start after leader
+  // leader, if any, goes first, padded to 8-byte alignment
+  // next, all the states in id order, as per format
 };
 
 
@@ -71,6 +74,7 @@ private:
   const DfaObj        &dfa_;
   CharIdx              maxChar_;
   Result               maxResult_;
+  std::string          leader_;
   std::vector<size_t>  offsets_;
   CompStats           *stats_;
 };

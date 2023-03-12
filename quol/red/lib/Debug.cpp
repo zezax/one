@@ -187,7 +187,8 @@ void toStringAppend(string &out, const FileHeader &hdr) {
     '.' + to_string(static_cast<unsigned>(hdr.minVer_)) + '\n';
   out += "csum=0x" + toHexString(hdr.checksum_) +
     " fmt=" + to_string(static_cast<unsigned>(hdr.format_)) +
-    " maxChar=" + to_string(static_cast<unsigned>(hdr.maxChar_)) + '\n';
+    " maxChar=" + to_string(static_cast<unsigned>(hdr.maxChar_)) +
+    " leaderLen=" + to_string(static_cast<unsigned>(hdr.leaderLen_)) + '\n';
   out += "states=" + to_string(hdr.stateCnt_) +
     " init=$" + toHexString(hdr.initialOff_) + '\n';
 }
@@ -511,6 +512,18 @@ string toString(const char *buf, size_t len) {
   toStringAppend(rv, *hdr);
   toStringAppendEquivMap(rv, hdr->equivMap_, sizeof(hdr->equivMap_));
 
+  unsigned leaderLen = hdr->leaderLen_;
+  if (leaderLen > 0) {
+    rv += "leader=";
+    for (unsigned uu = 0; uu < leaderLen; ++uu) {
+      rv += to_string(static_cast<unsigned>(hdr->bytes_[uu]));
+      rv += ',';
+    }
+    rv.pop_back();
+    rv += '\n';
+  }
+  leaderLen = (leaderLen + 7) & ~7U; // round up to nearest 8
+
   Format fmt = static_cast<Format>(hdr->format_);
   switch (fmt) {
   case fmtDirect1:
@@ -524,7 +537,7 @@ string toString(const char *buf, size_t len) {
 
   CharIdx maxChar = hdr->maxChar_;
   const char *end = buf + len;
-  const char *base = buf + sizeof(FileHeader);
+  const char *base = buf + sizeof(FileHeader) + leaderLen;
 
   size_t inc;
   switch (fmt) {

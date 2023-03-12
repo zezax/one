@@ -80,11 +80,23 @@ template <Style style> Outcome match(const Executable  &exec,
 template <Style style> Outcome match(const Executable &exec,
                                      std::string_view  sv);
 
+template <Style style> Outcome search(const Executable &exec,
+                                     const void       *ptr,
+                                     size_t            len);
+template <Style style> Outcome search(const Executable &exec, const char *str);
+template <Style style> Outcome search(const Executable  &exec,
+                                     const std::string &s);
+template <Style style> Outcome search(const Executable &exec,
+                                     std::string_view  sv);
+
 template <Style style, class InProxyT, class DfaProxyT>
 Result checkCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
 
 template <Style style, class InProxyT, class DfaProxyT>
 Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
+
+template <Style style, class InProxyT, class DfaProxyT>
+Outcome searchCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
 
 template <class InProxyT, class DfaProxyT>
 bool matchAllCore(const Executable     &exec, // RE2::Set style
@@ -147,17 +159,39 @@ std::string replaceCore(const Executable &exec,
 
 ZEZAX_RED_FUNC_DEFS(Result, check, exec, it, proxy)
 ZEZAX_RED_FUNC_DEFS(Outcome, match, exec, it, proxy)
+ZEZAX_RED_FUNC_DEFS(Outcome, search, exec, it, proxy)
 
 // don't #undef ZEZAX_RED_FMT_SWITCH
 #undef ZEZAX_RED_FUNC_DEFS
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <class InProxyT>
+bool lookingAt(InProxyT    in,
+               const Byte *equivMap,
+               const Byte *leader,
+               size_t      leaderLen) {
+  for (size_t ii = 0; ii < leaderLen; ++ii, ++in) {
+    if (!in)
+      return false;
+    if (leader[ii] != equivMap[*in])
+      return false;
+  }
+  return true;
+}
+
+
 template <Style style, class InProxyT, class DfaProxyT>
 Result checkCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
   const FileHeader *hdr = exec.getHeader();
   const char *__restrict__ base = exec.getBase();
   const Byte *__restrict__ equivMap = exec.getEquivMap();
+  const Byte *__restrict__ leader = exec.getLeader();
+  size_t leaderLen = exec.getLeaderLen();
+
+  // if there's a required leader, fail if it's not there
+  if (!lookingAt(in, equivMap, leader, leaderLen))
+    return 0;
 
   dfap.init(base, hdr->initialOff_);
   Result result = dfap.result();
@@ -190,9 +224,21 @@ template <Style style, class InProxyT, class DfaProxyT>
 Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
   typedef typename decltype(dfap)::State State;
 
+  Outcome rv;
+
   const FileHeader *hdr = exec.getHeader();
   const char *__restrict__ base = exec.getBase();
   const Byte *__restrict__ equivMap = exec.getEquivMap();
+  const Byte *__restrict__ leader = exec.getLeader();
+  size_t leaderLen = exec.getLeaderLen();
+
+  // if there's a required leader, fail if it's not there
+  if (!lookingAt(in, equivMap, leader, leaderLen)) {
+    rv.result_ = 0;
+    rv.start_ = 0;
+    rv.end_ = 0;
+    return rv;
+  }
 
   dfap.init(base, hdr->initialOff_);
   const State *__restrict__ init = dfap.state();
@@ -230,7 +276,78 @@ Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
     if ((result == 0) && (prevResult > 0))
       result = prevResult;
 
+  rv.result_ = result;
+  if (result == 0) {
+    rv.start_ = 0;
+    rv.end_   = 0;
+  }
+  else {
+    rv.start_ = matchStart;
+    rv.end_   = matchEnd;
+  }
+  return rv;
+}
+
+
+template <Style style, class InProxyT, class DfaProxyT>
+Outcome searchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
+  typedef typename DfaProxyT::State State;
+
   Outcome rv;
+
+  const FileHeader *hdr = exec.getHeader();
+  const char *__restrict__ base = exec.getBase();
+  const Byte *__restrict__ equivMap = exec.getEquivMap();
+  const Byte *__restrict__ leader = exec.getLeader();
+  size_t leaderLen = exec.getLeaderLen();
+
+  dfap.init(base, hdr->initialOff_);
+  const State *__restrict__ init = dfap.state();
+  Result result = dfap.result();
+  size_t idx = 0;
+  size_t matchStart = 0;
+  size_t matchEnd = 0;
+
+  for (; in; ++in, ++idx) {
+    if (!lookingAt(in, equivMap, leader, leaderLen))
+      continue;
+
+    DfaProxyT dproxy = dfap;
+    Result prevResult = 0;
+    size_t innerIdx = idx;
+    matchStart = 0;
+    matchEnd = 0;
+    for (InProxyT inner(in); inner; ++inner, ++innerIdx) {
+      Byte byte = equivMap[*inner];
+
+      if (UNLIKELY(dproxy.state() == init)) {
+        const State *__restrict__ prevState = dproxy.state();
+        dproxy.next(base, byte);
+        if (dproxy.state() != prevState)
+          matchStart = innerIdx;
+      }
+      else
+        dproxy.next(base, byte);
+      result = dproxy.result();
+      if (UNLIKELY(result > 0)) {
+        matchEnd = innerIdx + 1;
+        if ((style == styContiguous) || (style == styLast))
+          prevResult = result;
+        if (style == styFirst)
+          break;
+      }
+      else if (((style == styContiguous) && (prevResult > 0)) ||
+               dproxy.pureDeadEnd())
+        break;
+    }
+
+    if ((style == styContiguous) || (style == styLast))
+      if ((result == 0) && (prevResult > 0))
+        result = prevResult;
+    if (result > 0)
+      break;
+  }
+
   rv.result_ = result;
   if (result == 0) {
     rv.start_ = 0;

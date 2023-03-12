@@ -17,8 +17,10 @@ Executable::Executable(Executable &&other)
     buf_(std::exchange(other.buf_, nullptr)),
     end_(std::exchange(other.end_, nullptr)),
     equivMap_(std::exchange(other.equivMap_, nullptr)),
+    leader_(std::exchange(other.leader_, nullptr)),
     base_(std::exchange(other.base_, nullptr)),
     fmt_(std::exchange(other.fmt_, fmtInvalid)),
+    leaderLen_(std::exchange(other.leaderLen_, 0)),
     inStr_(std::exchange(other.inStr_, true)),
     usedNew_(std::exchange(other.usedNew_, false)),
     usedMalloc_(std::exchange(other.usedMalloc_, false)) {}
@@ -29,8 +31,10 @@ Executable::Executable(string &&buf)
     buf_(nullptr),
     end_(nullptr),
     equivMap_(nullptr),
+    leader_(nullptr),
     base_(nullptr),
     fmt_(fmtInvalid),
+    leaderLen_(0),
     inStr_(true),
     usedNew_(false),
     usedMalloc_(false) {
@@ -47,8 +51,10 @@ Executable::Executable(const string &buf)
     buf_(nullptr),
     end_(nullptr),
     equivMap_(nullptr),
+    leader_(nullptr),
     base_(nullptr),
     fmt_(fmtInvalid),
+    leaderLen_(0),
     inStr_(true),
     usedNew_(false),
     usedMalloc_(false) {
@@ -65,8 +71,10 @@ Executable::Executable(string_view sv)
     buf_(nullptr),
     end_(nullptr),
     equivMap_(nullptr),
+    leader_(nullptr),
     base_(nullptr),
     fmt_(fmtInvalid),
+    leaderLen_(0),
     inStr_(true),
     usedNew_(false),
     usedMalloc_(false) {
@@ -83,8 +91,10 @@ Executable::Executable(const CopyBuf &, const void *ptr, size_t len)
     buf_(nullptr),
     end_(nullptr),
     equivMap_(nullptr),
+    leader_(nullptr),
     base_(nullptr),
     fmt_(fmtInvalid),
+    leaderLen_(0),
     inStr_(true),
     usedNew_(false),
     usedMalloc_(false) {
@@ -100,8 +110,10 @@ Executable::Executable(const StealNew &, const void *ptr, size_t len)
   : buf_(static_cast<const char *>(ptr)),
     end_(nullptr),
     equivMap_(nullptr),
+    leader_(nullptr),
     base_(nullptr),
     fmt_(fmtInvalid),
+    leaderLen_(0),
     inStr_(false),
     usedNew_(true),
     usedMalloc_(false) {
@@ -116,8 +128,10 @@ Executable::Executable(const StealMalloc &, const void *ptr, size_t len)
   : buf_(static_cast<const char *>(ptr)),
     end_(nullptr),
     equivMap_(nullptr),
+    leader_(nullptr),
     base_(nullptr),
     fmt_(fmtInvalid),
+    leaderLen_(0),
     inStr_(false),
     usedNew_(false),
     usedMalloc_(true) {
@@ -132,8 +146,10 @@ Executable::Executable(const ReferenceBuf &, const void *ptr, size_t len)
   : buf_(static_cast<const char *>(ptr)),
     end_(nullptr),
     equivMap_(nullptr),
+    leader_(nullptr),
     base_(nullptr),
     fmt_(fmtInvalid),
+    leaderLen_(0),
     inStr_(false),
     usedNew_(false),
     usedMalloc_(false) {
@@ -148,8 +164,10 @@ Executable::Executable(const char *path)
   : buf_(nullptr),
     end_(nullptr),
     equivMap_(nullptr),
+    leader_(nullptr),
     base_(nullptr),
     fmt_(fmtInvalid),
+    leaderLen_(0),
     inStr_(true),
     usedNew_(false),
     usedMalloc_(false) {
@@ -172,6 +190,7 @@ Executable::~Executable() {
   buf_ = nullptr;
   end_ = nullptr;
   equivMap_ = nullptr;
+  leader_ = nullptr;
   base_ = nullptr;
 }
 
@@ -181,8 +200,10 @@ Executable &Executable::operator=(Executable &&rhs) {
   buf_ = std::exchange(rhs.buf_, nullptr);
   end_ = std::exchange(rhs.end_, nullptr);
   equivMap_ = std::exchange(rhs.equivMap_, nullptr);
+  leader_ = std::exchange(rhs.leader_, nullptr);
   base_ = std::exchange(rhs.base_, nullptr);
   fmt_ = std::exchange(rhs.fmt_, fmtInvalid);
+  leaderLen_ = std::exchange(rhs.leaderLen_, 0);
   inStr_ = std::exchange(rhs.inStr_, true);
   usedNew_ = std::exchange(rhs.usedNew_, false);
   usedMalloc_ = std::exchange(rhs.usedMalloc_, false);
@@ -197,7 +218,10 @@ void Executable::validate() {
     throw RedExceptApi(msg);
   const FileHeader *hdr = reinterpret_cast<const FileHeader *>(buf_);
   equivMap_ = reinterpret_cast<const Byte *>(hdr->equivMap_);
-  base_ = reinterpret_cast<const char *>(hdr->bytes_);
+  leaderLen_ = hdr->leaderLen_;
+  unsigned pad = (hdr->leaderLen_ + 7) & ~7U; // 8-byte alignment
+  leader_ = (leaderLen_ == 0) ? nullptr : hdr->bytes_;
+  base_ = reinterpret_cast<const char *>(hdr->bytes_ + pad);
   fmt_ = static_cast<Format>(hdr->format_);
 }
 

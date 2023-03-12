@@ -21,6 +21,15 @@ void append(string &s, const void *p, size_t n) {
 }
 
 
+void appendLeader(string &s, const string &leader) {
+  s.append(leader);
+  size_t size = leader.size();
+  size_t pad = (size + 7) & ~7UL;
+  for (size_t ii = size; ii < pad; ++ii) // round up to multiple of 8
+    s.push_back(0);
+}
+
+
 template <Format fmt>
 void appendStateImpl(std::string          &buf,
                      const DfaState       &ds,
@@ -87,6 +96,9 @@ void Serializer::prepareToSerialize() {
   if (maxChar_ >= gAlphabetSize)
     throw RedExceptLimit("maxChar out of range");
   maxResult_ = dfa_.findMaxResult();
+  leader_ = dfa_.fixedPrefix();
+  if (leader_.size() > 255)
+    throw RedExceptSerialize("leader too long");
 }
 
 
@@ -147,6 +159,8 @@ string Serializer::serialize(Format fmt) {
     append(buf, &hdr, sizeof(hdr));
   }
 
+  appendLeader(buf, leader_);
+
   for (const DfaState &ds : dfa_.getStates())
     appendState(fmt, buf, ds);
 
@@ -169,6 +183,7 @@ void Serializer::populateHeader(FileHeader &hdr, Format fmt) {
   hdr.minVer_     = 0;
   hdr.format_     = fmt;
   hdr.maxChar_    = static_cast<uint8_t>(maxChar_);
+  hdr.leaderLen_  = static_cast<uint8_t>(leader_.size());
   hdr.stateCnt_   = static_cast<uint32_t>(dfa_.numStates());
   hdr.initialOff_ = static_cast<uint32_t>(initOff);
   for (size_t ii = 0; ii < gAlphabetSize; ++ii)

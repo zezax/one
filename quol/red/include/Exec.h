@@ -59,6 +59,8 @@ public:
   const char *getBase() const { return base_; }
   const Byte *getEquivMap() const { return equivMap_; }
   Format getFormat() const { return fmt_; }
+  Byte getLeaderLen() const { return leaderLen_; }
+  const Byte *getLeader() const { return leader_; }
 
 private:
   void validate();
@@ -67,8 +69,10 @@ private:
   const char  *buf_;
   const char  *end_;
   const Byte  *equivMap_;
+  const Byte  *leader_;
   const char  *base_;
   Format       fmt_;
+  Byte         leaderLen_;
   bool         inStr_;
   bool         usedNew_;
   bool         usedMalloc_;

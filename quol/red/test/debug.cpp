@@ -177,11 +177,13 @@ TEST(Debug, header) {
   hdr.checksum_ = 1234567890;
   hdr.format_ = 3;
   hdr.maxChar_ = 12;
+  hdr.leaderLen_ = 2;
   hdr.pad0_ = 0; // shouldn't matter
   hdr.stateCnt_ = 7;
   hdr.initialOff_ = 24;
   for (int ii = 0; ii < 256; ++ii)
     hdr.equivMap_[ii] = 0;
-  EXPECT_EQ("REDB/3.14\ncsum=0x499602d2 fmt=3 maxChar=12\nstates=7 init=$18\n",
+  EXPECT_EQ("REDB/3.14\ncsum=0x499602d2 fmt=3 maxChar=12 leaderLen=2\n"
+            "states=7 init=$18\n",
             toString(hdr));
 }

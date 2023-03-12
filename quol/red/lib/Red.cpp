@@ -79,12 +79,10 @@ Result Red::prefixConsume(string_view &text) const {
 
 // like RE2::FindAndConsume()
 Result Red::partialConsume(string_view &text) const {
-  for (; !text.empty(); text.remove_prefix(1)) {
-    Outcome oc = match<styFirst>(program_, text);
-    if (oc) {
-      text.remove_prefix(oc.end_);
-      return oc.result_;
-    }
+  Outcome oc = search<styFirst>(program_, text);
+  if (oc) {
+    text.remove_prefix(oc.end_);
+    return oc.result_;
   }
   return 0;
 }

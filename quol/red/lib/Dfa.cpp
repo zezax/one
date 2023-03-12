@@ -11,6 +11,7 @@
 namespace zezax::red {
 
 using std::numeric_limits;
+using std::string;
 using std::string_view;
 using std::unordered_map;
 using std::vector;
@@ -125,6 +126,29 @@ CharIdx DfaObj::installEquivalenceMap() {
   remapStates(states_, map);
   equivMap_.swap(map);
   return maxChar;
+}
+
+
+string DfaObj::fixedPrefix() const {
+  string rv;
+  DfaId id = gDfaInitialId;
+  for (int ii = 0; ii < 256; ++ii) { // so length fits in one byte
+    const DfaState &ds = states_[id];
+    if (ds.result_ > 0) // if we're already accepting, it's not required
+      break;
+    const std::unordered_map<CharIdx, DfaId> &sparse = ds.trans_.getMap();
+    if (sparse.size() != 1) // only looking for unique non-error transitions
+      break;
+    auto it = sparse.cbegin();
+    CharIdx ch = it->first;
+    if (ch >= gAlphabetSize)
+      break;
+    rv.push_back(static_cast<char>(ch));
+    if (it->second == id) // avoid loop
+      break;
+    id = it->second;
+  }
+  return rv;
 }
 
 
