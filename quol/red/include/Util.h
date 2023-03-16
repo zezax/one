@@ -53,4 +53,11 @@ bool contains(const SparseVec<T> &vec, const T &seek) {
   return false;
 }
 
+
+template <class T>
+void zeroVec(std::vector<T> &vec) {
+  constexpr T zero{};
+  std::fill(vec.begin(), vec.end(), zero);
+}
+
 } // namespace zezax::red

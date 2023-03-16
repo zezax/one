@@ -30,14 +30,6 @@ bool determineDeadEnd(const DfaState &ds, DfaId id, CharIdx maxChar) {
   return true;
 }
 
-
-bool shareFate(const vector<DfaState> &states, CharIdx aa, CharIdx bb) {
-  for (const DfaState &ds : states)
-    if (ds.trans_[aa] != ds.trans_[bb])
-      return false;
-  return true;
-}
-
 } // anonymous
 
 void DfaObj::clear() {
@@ -173,61 +165,96 @@ void flagDeadEnds(vector<DfaState> &states, CharIdx maxChar) {
     ds.deadEnd_ = determineDeadEnd(ds, id++, maxChar);
 }
 
+/* makeEquivalenceMap() - compress alphabet to semantic-preserving minimum
 
-// this can be a performance-sensitive function
+ Insight: If any two characters have different transitions from any state,
+          they must be in different equivalence classes.
+ Method:  Start with all characters in a single partition.  Iterate all states.
+          For each state, iterate all partitions.  Within a partition, any
+          character with a non-conforming transition goes to a new partition,
+          based on destination state.  When done, each partition is an
+          equivalence class.
+ Speedup: All characters that don't appear in any transitions form their own
+          partition.
+ Runtime: Roughly O(nStates * alphabetSize)
+          Previous was O(nStates * alphabetSize ^ 2)
+          For small alphabets, old approach might be a bit faster, but this
+          approach is asymptotically better behaved.
+*/
 vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
                                    CharIdx                &maxChar, // in-out
-                                   MultiChar              &charMask) {
-  CharIdx limit = maxChar + 1;
-  CharIdx size = std::max(limit, gAlphabetSize);
-  vector<CharIdx> map;
-  map.reserve(size);
-  CharIdx cur = 0;
-
-  CharIdx unused;
-  if (charMask.bitSize() == 0)
-    unused = 0;
-  else {
-    charMask.flipAll();         // now represents un-used chars
-    auto it = charMask.begin(); // look for first unused character
-    if (it == charMask.end())
-      unused = numeric_limits<CharIdx>::max();
-    else
-      unused = *it;
+                                   MultiChar              &usedChars) {
+  CharIdx mx = std::max(gAlphabetSize - 1, maxChar);
+  CharIdx mx1 = mx + 1;
+  vector<CharIdx> charToPart;
+  charToPart.resize(mx1); // zero fill
+  if (usedChars.empty()) {
+    maxChar = 0;
+    return charToPart;
   }
 
-  CharIdx ii = 0;
-  for (; ii < limit; ++ii) {
-    CharIdx jj;
-    if (!charMask.get(ii)) { // one is used -> we really need to check fates
-      for (jj = 0; jj < ii; ++jj)
-        if (shareFate(states, ii, jj)) {
-          map.push_back(map[jj]);
-          break;
+  MultiChar unusedChars = usedChars;
+  if (unusedChars.bitSize() < gAlphabetSize)
+    unusedChars.resize(gAlphabetSize);
+  unusedChars.flipAll(); // now it represents un-used
+  for (CharIdx ii = mx + 1; ii < unusedChars.bitSize(); ++ii)
+    unusedChars.clear(ii); // clear excess bits in word
+
+  vector<MultiChar> partitions;
+  partitions.reserve(mx1); // avoid invalidation
+  partitions.emplace_back(std::move(usedChars));
+  CharIdx partSize = 1;
+
+  vector<DfaId> flatTrans; // fast-access expansion of unordered_map
+  flatTrans.resize(mx1);
+
+  DfaId numStates = static_cast<DfaId>(states.size());
+  for (DfaId id = gDfaInitialId; id < numStates; ++id) { // skip error state
+    const DfaState &ds = states[id];
+    zeroVec(flatTrans);
+    for (auto [ch, st] : ds.trans_.getMap())
+      flatTrans[ch] = st;
+
+    CharIdx numParts = partSize; // don't iterate the ones we will add
+    for (CharIdx curPart = 0; curPart < numParts; ++curPart) {
+      MultiChar &curMc = partitions[curPart];
+      MultiCharIter mcIt = curMc.begin();
+      MultiCharIter mcEnd = curMc.end();
+      CharIdx leadChar = *mcIt;
+      DfaId leadTrans = flatTrans[leadChar];
+
+      std::map<DfaId, CharIdx> transToPart; // keep track of subdivisions
+      for (++mcIt; mcIt != mcEnd; ++mcIt) {
+        CharIdx probeChar = *mcIt;
+        DfaId probeTrans = flatTrans[probeChar];
+        if (probeTrans != leadTrans) { // different fates; must subdivide
+          CharIdx destPart;
+          auto transIt = transToPart.find(probeTrans);
+          if (transIt != transToPart.end()) // already has a destination
+            destPart = transIt->second;
+          else {
+            destPart = partSize++;
+            partitions.emplace_back(); // default
+            transToPart[probeTrans] = destPart;
+          }
+          partitions[destPart].set(probeChar);
+          curMc.clear(probeChar); // should be OK while iterating
+          charToPart[probeChar] = destPart;
         }
+      }
     }
-    else {                   // one is not used -> we can cheat
-      jj = unused;           // should have same fate as any other unused
-      if (jj < ii)
-        map.push_back(map[jj]);
-    }
-
-    if (jj >= ii)
-      map.push_back(cur++);
   }
 
-  if (ii < size) {            // every char past limit is unused
-    CharIdx val;
-    if (unused != numeric_limits<CharIdx>::max())
-      val = map[unused];
-    else
-      val = cur++;
-    for (; ii < size; ++ii)
-      map.push_back(val);
+  // add partition of unused characters last, to have the largest index
+  if (!unusedChars.empty()) {
+    for (CharIdx ch : unusedChars)
+      charToPart[ch] = partSize;
+    partitions.emplace_back(std::move(unusedChars));
+    ++partSize;
   }
 
-  maxChar = (cur == 0) ? 0 : cur - 1;
-  return map;
+  maxChar = partSize - 1;
+  return charToPart;
 }
 
 

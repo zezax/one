@@ -47,6 +47,7 @@ TEST(Minimizer, invert) {
   // S0   S1 -+---> S2 -+---> S3 -+---> S4 accept
 
   CharIdx maxChar = dfa.findMaxChar();
+  EXPECT_EQ(gAlphabetSize + 1, maxChar);
 
   const vector<DfaState> &vec = dfa.getStates();
   EXPECT_EQ(0, vec[s3].result_);
@@ -56,12 +57,14 @@ TEST(Minimizer, invert) {
 
   dfa.installEquivalenceMap();
   maxChar = dfa.findMaxChar();
+  EXPECT_LE(1, maxChar);
+  EXPECT_GE(2, maxChar);
   std::cout << toString(dfa) << std::endl;
 
   DfaIdSet states = dfa.allStateIds();
   EXPECT_EQ(4, states.size());
   DfaEdgeToIds rev = invert(states, vec, maxChar);
-  EXPECT_EQ(6, rev.size());
+  EXPECT_EQ(4 + maxChar, rev.size()); // !!! depends on char ordering
   std::cout << toString(rev) << std::endl;
 
   vector<DfaIdSet> blocks;

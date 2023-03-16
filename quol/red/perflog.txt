@@ -119,6 +119,10 @@ COMMIT bc1cc4c
   Fix equiv-map logic.  DFA iterators.  Reduce findMaxChar() calls.
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:20.949 peak 2.567GB one-sec rss 2.563GB
+COMMIT 2023/3/15
+  Partitioning approach to makeEquivalenceMap().  N^2 instead of N^3.
+  TEST: words ratio 1:25 (9397)
+  RESULT: ucpu 0:20.961 peak 2.565GB one-sec rss 2.563GB
 
 MATCHING:
 ---------

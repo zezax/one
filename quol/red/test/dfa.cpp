@@ -95,10 +95,10 @@ TEST(Dfa, equivmap) {
   CharIdx maxChar = dfa.findMaxChar();
   EXPECT_EQ(gAlphabetSize + 1, maxChar);
   CharIdx mx = dfa.installEquivalenceMap();
-  ASSERT_EQ(5, dfa.numStates());
+  EXPECT_EQ(3, mx); // a, b, the rest, endmark
   maxChar = dfa.findMaxChar();
-  EXPECT_EQ(3, maxChar); // a, b, endmark, and everything else
-  EXPECT_EQ(mx, maxChar);
+  EXPECT_GE(mx, maxChar);
+  EXPECT_LE(mx, maxChar + 1); // !!! depends on which states are reachable
 }
 
 
@@ -124,9 +124,10 @@ TEST(Dfa, equivmapChop) {
   CharIdx maxChar = dfa.findMaxChar();
   EXPECT_EQ('b', maxChar);
   CharIdx mx = dfa.installEquivalenceMap();
+  EXPECT_EQ(2, mx); // a, b, the rest
   maxChar = dfa.findMaxChar();
-  EXPECT_EQ(2, maxChar); // a, b, and everything else
-  EXPECT_EQ(mx, maxChar);
+  EXPECT_GE(mx, maxChar);
+  EXPECT_LE(mx, maxChar + 1); // !!! depends on which states are reachable
 }
 
 
@@ -139,7 +140,7 @@ TEST(Dfa, equivmapZero) {
   CharIdx mx = dfa.installEquivalenceMap();
   maxChar = dfa.findMaxChar();
   EXPECT_EQ(0, maxChar);
-  EXPECT_EQ(mx, maxChar);
+  EXPECT_EQ(0, mx);
 }
 
 
@@ -161,9 +162,10 @@ TEST(Dfa, equivmapAll) {
   CharIdx maxChar = dfa.findMaxChar();
   EXPECT_EQ(gAlphabetSize + 2, maxChar);
   CharIdx mx = dfa.installEquivalenceMap();
+  EXPECT_EQ(4, mx); // 2 equivalence classes, 1 in-between, 2 endmarks
   maxChar = dfa.findMaxChar();
-  EXPECT_EQ(4, maxChar); // 2 equivalence classes, 2 endmarks, in-betweens
-  EXPECT_EQ(mx, maxChar);
+  EXPECT_GE(mx, maxChar);
+  EXPECT_LE(mx, maxChar + 1); // !!! depends on which states are reachable
 }
 
 
@@ -188,7 +190,8 @@ TEST(Dfa, equivmapAllChop) {
   CharIdx mx = dfa.installEquivalenceMap();
   maxChar = dfa.findMaxChar();
   EXPECT_EQ(1, maxChar); // 2 equivalence classes
-  EXPECT_EQ(mx, maxChar);
+  EXPECT_GE(mx, maxChar);
+  EXPECT_LE(mx, maxChar + 1); // !!! depends on which states are reachable
 }
 
 
@@ -210,9 +213,10 @@ TEST(Dfa, equivmapHalf) {
   CharIdx maxChar = dfa.findMaxChar();
   EXPECT_EQ(gAlphabetSize + 2, maxChar);
   CharIdx mx = dfa.installEquivalenceMap();
+  EXPECT_EQ(4, mx); // evens, odds, high-ascii, 2 endmarks
   maxChar = dfa.findMaxChar();
-  EXPECT_EQ(4, maxChar); // evens, odds, high-ascii, 2 endmarks
-  EXPECT_EQ(mx, maxChar);
+  EXPECT_GE(mx, maxChar);
+  EXPECT_LE(mx, maxChar + 1); // !!! depends on which states are reachable
 }
 
 
@@ -235,9 +239,10 @@ TEST(Dfa, equivmapHalfChop) {
   CharIdx maxChar = dfa.findMaxChar();
   EXPECT_EQ(127, maxChar);
   CharIdx mx = dfa.installEquivalenceMap();
-  EXPECT_EQ(2, mx); // !!! evens, odds, high-ascii
+  EXPECT_EQ(2, mx); // evens, odds, high-ascii
   maxChar = dfa.findMaxChar();
-  EXPECT_EQ(1, maxChar); // !!! high-ascii appears in no transitions
+  EXPECT_GE(mx, maxChar);
+  EXPECT_LE(mx, maxChar + 1); // !!! depends on which states are reachable
 }
 
 

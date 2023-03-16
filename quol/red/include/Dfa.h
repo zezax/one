@@ -168,7 +168,7 @@ void flagDeadEnds(std::vector<DfaState> &states, CharIdx maxChar);
 
 std::vector<CharIdx> makeEquivalenceMap(const std::vector<DfaState> &states,
                                         CharIdx                     &maxChar,
-                                        MultiChar                   &charMask);
+                                        MultiChar                   &usedChars);
 
 void remapStates(std::vector<DfaState>      &states,
                  const std::vector<CharIdx> &map);
