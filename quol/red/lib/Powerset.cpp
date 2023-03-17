@@ -1,6 +1,7 @@
 // powerset nfa to dfa converter implementation
 // rabin-scott method
 
+#include <deque>
 #include <limits>
 
 #include "Except.h"
@@ -9,6 +10,7 @@
 
 namespace zezax::red {
 
+using std::deque;
 using std::numeric_limits;
 using std::unordered_set;
 using std::vector;
@@ -141,30 +143,34 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
                                  const NfaObj            &nfa,
                                  const vector<MultiChar> &allMultiChars) {
   NfaStatesToTransitions table;
+  typedef NfaStatesToTransitions::iterator Placeholder;
 
   const size_t allSize = allMultiChars.size();
 
   NfaIdSet initialStates;
   initialStates.insert(initial);
-  unordered_set<NfaIdSet> todoSet;
-  todoSet.emplace(std::move(initialStates));
+  std::pair<NfaIdSet, IdxToNfaIdSet> tableNode;
+  tableNode.first = std::move(initialStates);
+  auto [iter, dummy] = table.emplace(std::move(tableNode));
+  deque<Placeholder> todoList;
+  todoList.emplace_back(iter);
 
-  while (!todoSet.empty()) {
-    auto todoNode = todoSet.extract(todoSet.begin());
-    NfaIdSet &todo = todoNode.value();
+  while (!todoList.empty()) {
+    Placeholder tableIt = std::move(todoList.back());
+    todoList.pop_back();
 
-    std::pair<NfaIdSet, IdxToNfaIdSet> tableNode;
-    tableNode.first = std::move(todo);
-    auto [tableIt, novel] = table.emplace(std::move(tableNode));
-    if (novel) {
-      // iterate bit-set once, as it's more expensive to do
-      for (NfaId id : tableIt->first)
-        for (const NfaTransition &trans : nfa[id].transitions_)
-          for (size_t idx = 0; idx < allSize; ++idx)
-            if (allMultiChars[idx].hasIntersection(trans.multiChar_))
-              tableIt->second[idx].insert(trans.next_);
-      for (const auto &[_, nis] : tableIt->second)
-        todoSet.insert(nis);
+    // iterate bit-set once, as it's more expensive to do
+    for (NfaId id : tableIt->first)
+      for (const NfaTransition &trans : nfa[id].transitions_)
+        for (size_t idx = 0; idx < allSize; ++idx)
+          if (allMultiChars[idx].hasIntersection(trans.multiChar_))
+            tableIt->second[idx].insert(trans.next_);
+    for (const auto &[_, nis] : tableIt->second) {
+      std::pair<NfaIdSet, IdxToNfaIdSet> tNode;
+      tNode.first = nis;
+      auto [it, novel] = table.emplace(std::move(tNode));
+      if (novel)
+        todoList.emplace_back(it);
     }
   }
 

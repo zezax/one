@@ -123,6 +123,10 @@ COMMIT 2023/3/15
   Partitioning approach to makeEquivalenceMap().  N^2 instead of N^3.
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:20.961 peak 2.565GB one-sec rss 2.563GB
+COMMIT 2023/3/17
+  Avoid redundant work in makeTable().  Use deque as stack for to-do.
+  TEST: words ratio 1:25 (9397)
+  RESULT: ucpu 0:19.942 peak 2.566GB one-sec rss 2.563GB
 
 MATCHING:
 ---------
