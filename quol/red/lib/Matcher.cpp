@@ -135,6 +135,6 @@ bool matchAll(const Executable &exec,
   }
 
 
-REPL(replace, exec, it, proxy, repl)
+REPL(replace, true, exec, it, proxy, repl)
 
 } // namespace zezax::red

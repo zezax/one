@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
     for (int ii = 0; ii < iters; ++ii) {
       string_view sv = words;
       while (!sv.empty()) {
-        Outcome oc = match<styLast>(rex, sv);
+        Outcome oc = matchNaive<styLast>(rex, sv);
         if (oc) {
           sv.remove_prefix(oc.end_);
           sum += oc.result_;

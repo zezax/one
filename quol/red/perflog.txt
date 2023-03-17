@@ -172,6 +172,10 @@ COMMIT bc1cc4c
   Fix equiv-map logic.  DFA iterators.  Reduce findMaxChar() calls.
   TEST: bench 1000 matchLast
   RESULT: ucpu 17.635 ???
+COMMIT 2023/3/17
+  Implement matchNaive() to disable leading-prefix optimization.
+  TEST: bench 1000 matchLast
+  RESULT: ucpu 18.367
 
 COMPARISON - SET
 ----------------

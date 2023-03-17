@@ -7,7 +7,6 @@
 - document ascii
 - public api
 - test new functions
-- combined runtime dispatch: fmt, style, leader
 - implement leader in matchAllCore and replaceCore
 - test overlapping matches: new, new york, york
 - test replace multiple times

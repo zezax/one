@@ -11,10 +11,10 @@ namespace zezax::red {
 
 enum Format : uint8_t {
   fmtInvalid    = 0,
-  fmtDirectAuto = 10,
-  fmtDirect1    = 11,
-  fmtDirect2    = 12,
-  fmtDirect4    = 14,
+  fmtDirect1    = 1,
+  fmtDirect2    = 2,
+  fmtDirect4    = 4,
+  fmtDirectAuto = 255,
 };
 
 struct FileHeader {

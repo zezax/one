@@ -11,6 +11,7 @@
 namespace zezax::red {
 
 enum Style {
+  styInvalid    = 0,
   styFirst      = 1,
   styContiguous = 2,
   styLast       = 3,
@@ -80,6 +81,16 @@ template <Style style> Outcome match(const Executable  &exec,
 template <Style style> Outcome match(const Executable &exec,
                                      std::string_view  sv);
 
+template <Style style> Outcome matchNaive(const Executable &exec,
+                                     const void       *ptr,
+                                     size_t            len);
+template <Style style> Outcome matchNaive(const Executable &exec,
+                                          const char *str);
+template <Style style> Outcome matchNaive(const Executable  &exec,
+                                     const std::string &s);
+template <Style style> Outcome matchNaive(const Executable &exec,
+                                     std::string_view  sv);
+
 template <Style style> Outcome search(const Executable &exec,
                                      const void       *ptr,
                                      size_t            len);
@@ -89,13 +100,13 @@ template <Style style> Outcome search(const Executable  &exec,
 template <Style style> Outcome search(const Executable &exec,
                                      std::string_view  sv);
 
-template <Style style, class InProxyT, class DfaProxyT>
+template <Style style, bool doLeader, class InProxyT, class DfaProxyT>
 Result checkCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
 
-template <Style style, class InProxyT, class DfaProxyT>
+template <Style style, bool doLeader, class InProxyT, class DfaProxyT>
 Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
 
-template <Style style, class InProxyT, class DfaProxyT>
+template <Style style, bool doLeader, class InProxyT, class DfaProxyT>
 Outcome searchCore(const Executable &exec, InProxyT in, DfaProxyT dfap);
 
 template <class InProxyT, class DfaProxyT>
@@ -104,7 +115,7 @@ bool matchAllCore(const Executable     &exec, // RE2::Set style
                   DfaProxyT             dfap,
                   std::vector<Outcome> *out);
 
-template <Style style, class InProxyT, class DfaProxyT>
+template <Style style, bool doLeader, class InProxyT, class DfaProxyT>
 std::string replaceCore(const Executable &exec,
                         InProxyT          in,
                         DfaProxyT         dfap,
@@ -117,49 +128,50 @@ std::string replaceCore(const Executable &exec,
 // special-case bugs to hide.
 
 // runtime dispatch to template functions based on format
-#define ZEZAX_RED_FMT_SWITCH(A_func, A_style, ...)      \
-  switch (exec.getFormat()) {                           \
-  case fmtDirect1: {                                    \
-    DfaProxy<fmtDirect1> proxy;                         \
-    return A_func<A_style>(__VA_ARGS__); }              \
-  case fmtDirect2: {                                    \
-    DfaProxy<fmtDirect2> proxy;                         \
-    return A_func<A_style>(__VA_ARGS__); }              \
-  case fmtDirect4: {                                    \
-    DfaProxy<fmtDirect4> proxy;                         \
-    return A_func<A_style>(__VA_ARGS__); }              \
-  default:                                              \
-    throw RedExceptExec("unsupported format");          \
+#define ZEZAX_RED_FMT_SWITCH(A_func, A_style, A_lead, ...) \
+  switch (exec.getFormat()) {                              \
+  case fmtDirect1: {                                       \
+    DfaProxy<fmtDirect1> proxy;                            \
+    return A_func<A_style, A_lead>(__VA_ARGS__); }         \
+  case fmtDirect2: {                                       \
+    DfaProxy<fmtDirect2> proxy;                            \
+    return A_func<A_style, A_lead>(__VA_ARGS__); }         \
+  case fmtDirect4: {                                       \
+    DfaProxy<fmtDirect4> proxy;                            \
+    return A_func<A_style, A_lead>(__VA_ARGS__); }         \
+  default:                                                 \
+    throw RedExceptExec("unsupported format");             \
   }
 
 
 // generate template match/check functions with different prototypes
-#define ZEZAX_RED_FUNC_DEFS(A_ret, A_func, ...)                          \
+#define ZEZAX_RED_FUNC_DEFS(A_ret, A_func, A_impl, ...)                  \
   template <Style style>                                                 \
   A_ret A_func(const Executable &exec, const void *ptr, size_t len) {    \
     RangeIter it(ptr, len);                                              \
-    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)             \
+    ZEZAX_RED_FMT_SWITCH(A_impl ## Core, style, __VA_ARGS__)             \
   }                                                                      \
   template <Style style>                                                 \
   A_ret A_func(const Executable &exec, const char *str) {                \
     NullTermIter it(str);                                                \
-    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)             \
+    ZEZAX_RED_FMT_SWITCH(A_impl ## Core, style, __VA_ARGS__)             \
   }                                                                      \
   template <Style style>                                                 \
   A_ret A_func(const Executable &exec, const std::string &s) {           \
     RangeIter it(s);                                                     \
-    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)             \
+    ZEZAX_RED_FMT_SWITCH(A_impl ## Core, style, __VA_ARGS__)             \
   }                                                                      \
   template <Style style>                                                 \
   A_ret A_func(const Executable &exec, std::string_view sv) {            \
     RangeIter it(sv);                                                    \
-    ZEZAX_RED_FMT_SWITCH(A_func ## Core, style, __VA_ARGS__)             \
+    ZEZAX_RED_FMT_SWITCH(A_impl ## Core, style, __VA_ARGS__)             \
   }
 
 
-ZEZAX_RED_FUNC_DEFS(Result, check, exec, it, proxy)
-ZEZAX_RED_FUNC_DEFS(Outcome, match, exec, it, proxy)
-ZEZAX_RED_FUNC_DEFS(Outcome, search, exec, it, proxy)
+ZEZAX_RED_FUNC_DEFS(Result, check, check, true, exec, it, proxy)
+ZEZAX_RED_FUNC_DEFS(Outcome, match, match, true, exec, it, proxy)
+ZEZAX_RED_FUNC_DEFS(Outcome, matchNaive, match, false, exec, it, proxy)
+ZEZAX_RED_FUNC_DEFS(Outcome, search, search, true, exec, it, proxy)
 
 // don't #undef ZEZAX_RED_FMT_SWITCH
 #undef ZEZAX_RED_FUNC_DEFS
@@ -181,17 +193,19 @@ bool lookingAt(InProxyT    in,
 }
 
 
-template <Style style, class InProxyT, class DfaProxyT>
+template <Style style, bool doLeader, class InProxyT, class DfaProxyT>
 Result checkCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
   const FileHeader *hdr = exec.getHeader();
   const char *__restrict__ base = exec.getBase();
   const Byte *__restrict__ equivMap = exec.getEquivMap();
-  const Byte *__restrict__ leader = exec.getLeader();
-  size_t leaderLen = exec.getLeaderLen();
 
   // if there's a required leader, fail if it's not there
-  if (!lookingAt(in, equivMap, leader, leaderLen))
-    return 0;
+  if (doLeader) {
+    const Byte *__restrict__ leader = exec.getLeader();
+    size_t leaderLen = exec.getLeaderLen();
+    if (!lookingAt(in, equivMap, leader, leaderLen))
+      return 0;
+  }
 
   dfap.init(base, hdr->initialOff_);
   Result result = dfap.result();
@@ -220,7 +234,7 @@ Result checkCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
 }
 
 
-template <Style style, class InProxyT, class DfaProxyT>
+template <Style style, bool doLeader, class InProxyT, class DfaProxyT>
 Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
   typedef typename decltype(dfap)::State State;
 
@@ -229,15 +243,17 @@ Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
   const FileHeader *hdr = exec.getHeader();
   const char *__restrict__ base = exec.getBase();
   const Byte *__restrict__ equivMap = exec.getEquivMap();
-  const Byte *__restrict__ leader = exec.getLeader();
-  size_t leaderLen = exec.getLeaderLen();
 
   // if there's a required leader, fail if it's not there
-  if (!lookingAt(in, equivMap, leader, leaderLen)) {
-    rv.result_ = 0;
-    rv.start_ = 0;
-    rv.end_ = 0;
-    return rv;
+  if (doLeader) {
+    const Byte *__restrict__ leader = exec.getLeader();
+    size_t leaderLen = exec.getLeaderLen();
+    if (!lookingAt(in, equivMap, leader, leaderLen)) {
+      rv.result_ = 0;
+      rv.start_ = 0;
+      rv.end_ = 0;
+      return rv;
+    }
   }
 
   dfap.init(base, hdr->initialOff_);
@@ -289,7 +305,7 @@ Outcome matchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
 }
 
 
-template <Style style, class InProxyT, class DfaProxyT>
+template <Style style, bool doLeader, class InProxyT, class DfaProxyT>
 Outcome searchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
   typedef typename DfaProxyT::State State;
 
@@ -309,7 +325,7 @@ Outcome searchCore(const Executable &exec, InProxyT in, DfaProxyT dfap) {
   size_t matchEnd = 0;
 
   for (; in; ++in, ++idx) {
-    if (!lookingAt(in, equivMap, leader, leaderLen))
+    if (doLeader && !lookingAt(in, equivMap, leader, leaderLen))
       continue;
 
     DfaProxyT dproxy = dfap;
@@ -412,7 +428,7 @@ bool matchAllCore(const Executable     &exec,
 }
 
 
-template <Style style, class InProxyT, class DfaProxyT>
+template <Style style, bool doLeader, class InProxyT, class DfaProxyT>
 std::string replaceCore(const Executable &exec,
                         InProxyT          in,
                         DfaProxyT         dfap,
@@ -420,27 +436,31 @@ std::string replaceCore(const Executable &exec,
   const FileHeader *hdr = exec.getHeader();
   const char *__restrict__ base = exec.getBase();
   const Byte *__restrict__ equivMap = exec.getEquivMap();
+  const Byte *__restrict__ leader = exec.getLeader();
+  size_t leaderLen = exec.getLeaderLen();
 
   dfap.init(base, hdr->initialOff_);
   std::string str;
 
   while (in) {
     const Byte *__restrict__ found = nullptr;
-    DfaProxyT dproxy = dfap;
-    for (InProxyT inner(in); inner; ++inner) {
-      Byte byte = equivMap[*inner];
-      dproxy.next(base, byte);
-      if (UNLIKELY(dproxy.result() > 0)) {
-        found = inner.ptr();
-        if (style == styFirst)
-          break;
-      }
-      else {
-        if (style == styFull)
-          found = nullptr;
-        if (((style == styContiguous) && found) ||
-            dproxy.pureDeadEnd())
-          break;
+    if (!doLeader || lookingAt(in, equivMap, leader, leaderLen)) {
+      DfaProxyT dproxy = dfap;
+      for (InProxyT inner(in); inner; ++inner) {
+        Byte byte = equivMap[*inner];
+        dproxy.next(base, byte);
+        if (UNLIKELY(dproxy.result() > 0)) {
+          found = inner.ptr();
+          if (style == styFirst)
+            break;
+        }
+        else {
+          if (style == styFull)
+            found = nullptr;
+          if (((style == styContiguous) && found) ||
+              dproxy.pureDeadEnd())
+            break;
+        }
       }
     }
 
