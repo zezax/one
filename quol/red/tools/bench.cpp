@@ -1,5 +1,6 @@
 // red benchmark that matches large text
 
+#include <charconv>
 #include <iostream>
 
 #include "Util.h"
@@ -10,13 +11,18 @@
 
 using namespace zezax::red;
 
+using std::from_chars;
 using std::string;
 using std::string_view;
 using std::vector;
 
 int main(int argc, char **argv) {
-  (void) argc;
-  (void) argv;
+  int iters = 1000;
+
+  for (int ii = 1; ii < argc; ++ii) {
+    string_view arg = argv[ii];
+    from_chars(arg.data(), arg.data() + arg.size(), iters);
+  }
 
   try {
     string words = readFileToString("/usr/share/dict/words");
@@ -51,19 +57,18 @@ int main(int argc, char **argv) {
     }
 
     int sum = 0;
-    constexpr int iters = 1000;
-    const char *beg = words.data();
-    const char *end = beg + words.size();
-    for (int ii = 0; ii < iters; ++ii)
-      for (const char *ptr = beg; ptr < end; ) {
-        Outcome oc = match<styLast>(rex, ptr, end - ptr);
+    for (int ii = 0; ii < iters; ++ii) {
+      string_view sv = words;
+      while (!sv.empty()) {
+        Outcome oc = match<styLast>(rex, sv);
         if (oc) {
-          ptr += oc.end_;
+          sv.remove_prefix(oc.end_);
           sum += oc.result_;
         }
         else
-          ++ptr;
+          sv.remove_prefix(1);
       }
+    }
 
     if (sum != (iters * 478)) { // some match multiple times
       std::cerr << "Bad sum " << sum << std::endl;

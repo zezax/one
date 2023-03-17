@@ -12,7 +12,6 @@ namespace zezax::red {
 
 using std::deque;
 using std::numeric_limits;
-using std::unordered_set;
 using std::vector;
 
 namespace {
@@ -156,7 +155,7 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
   todoList.emplace_back(iter);
 
   while (!todoList.empty()) {
-    Placeholder tableIt = std::move(todoList.back());
+    Placeholder tableIt = todoList.back();
     todoList.pop_back();
 
     // iterate bit-set once, as it's more expensive to do

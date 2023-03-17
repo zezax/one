@@ -219,7 +219,7 @@ void Executable::validate() {
   const FileHeader *hdr = reinterpret_cast<const FileHeader *>(buf_);
   equivMap_ = reinterpret_cast<const Byte *>(hdr->equivMap_);
   leaderLen_ = hdr->leaderLen_;
-  unsigned pad = (hdr->leaderLen_ + 7) & ~7U; // 8-byte alignment
+  unsigned pad = (hdr->leaderLen_ + 7U) & ~7U; // 8-byte alignment
   leader_ = (leaderLen_ == 0) ? nullptr : hdr->bytes_;
   base_ = reinterpret_cast<const char *>(hdr->bytes_ + pad);
   fmt_ = static_cast<Format>(hdr->format_);
