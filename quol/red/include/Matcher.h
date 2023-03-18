@@ -30,6 +30,12 @@ Outcome match(const Executable &exec, const char *str, Style style);
 Outcome match(const Executable &exec, const std::string &s, Style style);
 Outcome match(const Executable &exec, std::string_view sv, Style style);
 
+Outcome search(const Executable &exec, const void *ptr, size_t len,
+               Style style);
+Outcome search(const Executable &exec, const char *str, Style style);
+Outcome search(const Executable &exec, const std::string &s, Style style);
+Outcome search(const Executable &exec, std::string_view sv, Style style);
+
 bool matchAll(const Executable     &exec,
               const void           *ptr,
               size_t                len,

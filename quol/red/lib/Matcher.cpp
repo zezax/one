@@ -56,6 +56,7 @@ using std::vector;
 
 SUITE(Result, check)
 SUITE(Outcome, match)
+SUITE(Outcome, search)
 
 
 // stuff for matchAll()

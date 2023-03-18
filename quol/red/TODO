@@ -7,10 +7,8 @@
 - document ascii
 - public api
 - test new functions
-- implement leader in matchAllCore and replaceCore
-- test overlapping matches: new, new york, york
-- test replace multiple times
-- see if result != 0 is better than result > 0
+- implement leader in matchAllCore?
+- checkNaive() and searchNaive()
 - try to limit contiguous to same-result
 - optional line prefix arg in debug strings
 - executable dump to file
@@ -18,8 +16,7 @@
 - compressed transition map
 - add test suite items from re2, pcre
 - make dfa.cpp unit test.  move stuff from minimize.cpp
-- try NfaIdSet as map or unordered_map
-- detail namespace
+- detail namespace?
 - endian conversion
 - non-resetting match (save state/off across calls)
 - glob parser

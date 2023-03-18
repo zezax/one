@@ -110,6 +110,38 @@ TEST(Matcher, checkStyles) {
 }
 
 
+TEST(Matcher, contiguous) {
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+", 1, 0);
+    rex = compile(p);
+  }
+  Outcome oc = match(rex, "0123456789abcdef", styFirst);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(1, oc.end_);
+  oc = match(rex, "0123456789abcdef", styContiguous);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(10, oc.end_);
+}
+
+
+TEST(Matcher, last) {
+  Executable rex;
+  {
+    Parser p;
+    p.add("New", 1, fLooseStart);
+    p.add("New York", 2, fLooseStart);
+    p.add("York", 3, fLooseStart);
+    rex = compile(p);
+  }
+  Outcome oc = match(rex, "I love New York.", styLast);
+  EXPECT_EQ(2, oc.result_);
+  EXPECT_EQ(7, oc.start_);
+  EXPECT_EQ(15, oc.end_);
+}
+
+
 TEST(Matcher, replace) {
   Executable rex;
   {
@@ -119,6 +151,7 @@ TEST(Matcher, replace) {
   }
   EXPECT_EQ("foobar",  replace(rex, "fooac", "bar", styLast));
   EXPECT_EQ("foobarz", replace(rex, string("fooacz"), "bar", styLast));
+  EXPECT_EQ("x,y,z", replace(rex, "xacyabbcz", ",", styContiguous));
 }
 
 
