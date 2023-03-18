@@ -4,7 +4,7 @@
 
 #include "Parser.h"
 #include "Compile.h"
-#include "Exec.h"
+#include "Executable.h"
 #include "Matcher.h"
 
 using namespace zezax::red;
@@ -23,7 +23,7 @@ Result execMatch(const Executable &rex, const char *str) {
 
 } // anonymous
 
-TEST(Exec, memory) {
+TEST(Executable, memory) {
   string s1;
   {
     Parser p;
@@ -64,7 +64,7 @@ TEST(Exec, memory) {
 };
 
 
-TEST(Exec, bogus) {
+TEST(Executable, bogus) {
   EXPECT_THROW(Executable rex("/etc/passwd"), RedExceptApi);
 }
 
