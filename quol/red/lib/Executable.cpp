@@ -46,27 +46,7 @@ Executable::Executable(string &&buf)
 }
 
 
-Executable::Executable(const string &buf)
-  : str_(buf),
-    buf_(nullptr),
-    end_(nullptr),
-    equivMap_(nullptr),
-    leader_(nullptr),
-    base_(nullptr),
-    fmt_(fmtInvalid),
-    leaderLen_(0),
-    inStr_(true),
-    usedNew_(false),
-    usedMalloc_(false) {
-  if (str_.empty())
-    throw RedExceptApi("serialized dfa copy-string is empty");
-  buf_ = str_.data();
-  end_ = buf_ + str_.size();
-  validate();
-}
-
-
-Executable::Executable(string_view sv)
+Executable::Executable(const CopyTag &, string_view sv)
   : str_(sv),
     buf_(nullptr),
     end_(nullptr),
@@ -86,27 +66,7 @@ Executable::Executable(string_view sv)
 }
 
 
-Executable::Executable(const CopyBuf &, const void *ptr, size_t len)
-  : str_(static_cast<const char *>(ptr), len),
-    buf_(nullptr),
-    end_(nullptr),
-    equivMap_(nullptr),
-    leader_(nullptr),
-    base_(nullptr),
-    fmt_(fmtInvalid),
-    leaderLen_(0),
-    inStr_(true),
-    usedNew_(false),
-    usedMalloc_(false) {
-  if (str_.empty())
-    throw RedExceptApi("serialized dfa copy-ptr is empty");
-  buf_ = str_.data();
-  end_ = buf_ + str_.size();
-  validate();
-}
-
-
-Executable::Executable(const StealNew &, const void *ptr, size_t len)
+Executable::Executable(const DeleteTag &, const void *ptr, size_t len)
   : buf_(static_cast<const char *>(ptr)),
     end_(nullptr),
     equivMap_(nullptr),
@@ -124,7 +84,7 @@ Executable::Executable(const StealNew &, const void *ptr, size_t len)
 }
 
 
-Executable::Executable(const StealMalloc &, const void *ptr, size_t len)
+Executable::Executable(const FreeTag &, const void *ptr, size_t len)
   : buf_(static_cast<const char *>(ptr)),
     end_(nullptr),
     equivMap_(nullptr),
@@ -142,9 +102,9 @@ Executable::Executable(const StealMalloc &, const void *ptr, size_t len)
 }
 
 
-Executable::Executable(const ReferenceBuf &, const void *ptr, size_t len)
-  : buf_(static_cast<const char *>(ptr)),
-    end_(nullptr),
+Executable::Executable(const UnownedTag &, string_view sv)
+  : buf_(sv.data()),
+    end_(sv.data() + sv.size()),
     equivMap_(nullptr),
     leader_(nullptr),
     base_(nullptr),
@@ -154,28 +114,7 @@ Executable::Executable(const ReferenceBuf &, const void *ptr, size_t len)
     usedNew_(false),
     usedMalloc_(false) {
   if (!buf_)
-    throw RedExceptApi("serialized dfa reference-ptr is empty");
-  end_ = buf_ + len;
-  validate();
-}
-
-
-Executable::Executable(const char *path)
-  : buf_(nullptr),
-    end_(nullptr),
-    equivMap_(nullptr),
-    leader_(nullptr),
-    base_(nullptr),
-    fmt_(fmtInvalid),
-    leaderLen_(0),
-    inStr_(true),
-    usedNew_(false),
-    usedMalloc_(false) {
-  str_ = loadFromFile(path);
-  if (str_.empty())
-    throw RedExceptApi("serialized dfa from file is empty");
-  buf_ = str_.data();
-  end_ = buf_ + str_.size();
+    throw RedExceptApi("serialized dfa unowned-view is empty");
   validate();
 }
 

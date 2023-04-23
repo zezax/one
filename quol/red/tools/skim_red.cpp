@@ -1,4 +1,4 @@
-// re2 grep-like benchmark
+// red grep-like benchmark
 
 #include <charconv>
 #include <iostream>
@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     for (int ii = 0; ii < iters; ++ii) {
       string_view sv = blob;
       while (!sv.empty())
-        if (re.prefixConsume(sv) > 0)
+        if (Red::consume(sv, re) > 0)
           ++sum;
         else
           break;

@@ -27,13 +27,18 @@ namespace zezax::red {
 
   end_ is the last position at which the DFA was in an accepting state.
   This is quite reliable (unlike start_).  It will depend on the match style,
-  though.  Using styContiguous or styLast makes the most sense for this.
+  though.  Using styFirst, styTangent or styLast makes the most sense for this.
 */
 
 struct Outcome {
   Result result_;
   size_t start_;
   size_t end_;
+
+  bool operator==(const Outcome &rhs) const {
+    return ((result_ == rhs.result_) &&
+            (start_ == rhs.start_) && (end_ == rhs.end_));
+  }
 
   explicit operator bool() const { return (result_ > 0); }
 

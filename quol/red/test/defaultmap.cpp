@@ -2,11 +2,11 @@
 
 #include <gtest/gtest.h>
 
-#include "DefMap.h"
+#include "DefaultMap.h"
 
 using namespace zezax::red;
 
-TEST(DefMap, smoke) {
+TEST(DefaultMap, smoke) {
   DefaultMap<int, int> map;
   map.set(1, 1);
   map.set(2, 2);

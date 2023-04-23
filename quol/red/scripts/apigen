@@ -1,0 +1,144 @@
+#!/usr/bin/python
+
+# Generates orthogonal API for Red.h and Red.cpp
+# Emits basic tests for red.cpp
+
+styles = [
+  'Instant',
+  'First',
+  'Tangent',
+  'Last',
+  'Full',
+]
+
+args = [
+  'std::string_view ',
+  'const char *'
+]
+
+print('===== include/Red.h =====\n')
+
+for verb in ['match', 'search']:
+  for style in styles:
+    for arg in args:
+      s = '  Outcome %s%s(%stext) const;' % (verb, style, arg)
+      print(s)
+
+for verb in ['replaceOne', 'replaceAll']:
+  for style in styles:
+    for arg in args:
+      s = ('  size_t %s%s(%stext, std::string_view repl,\n' %
+           (verb, style, arg))
+      s += '                        std::string &out) const;'
+      print(s)
+
+print()
+
+for verb in ['match', 'search']:
+  for style in styles:
+    for arg in args:
+      s = ('  static Outcome %s%s(%stext, const Red &re);' %
+           (verb, style, arg))
+      print(s)
+
+for verb in ['replaceOne', 'replaceAll']:
+  for style in styles:
+    for arg in args:
+      s = ('  static size_t %s%s(' % (verb, style))
+      s += '%stext, const Red &re,\n' % arg
+      s += '                               std::string_view repl, std::string &out);'
+      print(s)
+
+###############################################################################
+
+print ('\n===== lib/Red.cpp =====')
+
+args = [
+  'string_view ',
+  'const char *'
+]
+
+for verb in ['match', 'search']:
+  for style in styles:
+    for arg in args:
+      s = '\n'
+      s += 'Outcome Red::%s%s(%stext) const {\n' % (verb, style, arg)
+      s += '  return %s<sty%s, true>(program_, text);\n' % (verb, style)
+      s += '}\n'
+      print(s)
+
+limit = ' 1'
+for verb in ['replaceOne', 'replaceAll']:
+  for style in styles:
+    for arg in args:
+      s = '\n'
+      s += 'size_t Red::%s%s(%stext,\n' % (verb, style, arg)
+      s += '                           string_view repl,\n'
+      s += '                           string &out) const {\n'
+      s += '  return red::replace<sty%s, true>(' % (style)
+      s += 'program_, text, repl, out,%s);\n' % limit
+      s += '}\n'
+      print(s)
+  limit = '\n                                     numeric_limits<size_t>::max()'
+
+for verb in ['match', 'search']:
+  for style in styles:
+    for arg in args:
+      s = '\n'
+      s += '/* static */ Outcome Red::%s%s(' % (verb, style)
+      s += '%stext, const Red &re) {\n' % arg
+      s += '  return %s<sty%s, true>(re.program_, text);\n' % (verb, style)
+      s += '}\n'
+      print(s)
+
+limit = ' 1'
+for verb in ['replaceOne', 'replaceAll']:
+  for style in styles:
+    for arg in args:
+      s = '\n'
+      s += '/* static */ size_t Red::%s%s(' % (verb, style)
+      s += '%stext,\n' % arg
+      s += '                                        const Red &re,\n'
+      s += '                                        string_view repl,\n'
+      s += '                                        string &out) {\n'
+      s += '  return red::replace<sty%s, true>(' % (style)
+      s += 're.program_, text, repl, out,%s);\n' % limit
+      s += '}\n'
+      print(s)
+  limit = '\n                                     numeric_limits<size_t>::max()'
+
+###############################################################################
+
+print ('\n===== test/red.cpp =====')
+
+args = [
+  'sv',
+  'str'
+]
+
+for verb in ['match', 'search']:
+  for style in styles:
+    for arg in args:
+      s =  '  o0 = %s<sty%s, true>(rex, %s);\n' % (verb, style, arg)
+      s += '  o1 = re.%s%s(%s);\n' % (verb, style, arg)
+      s += '  o2 = Red::%s%s(%s, re);\n' % (verb, style, arg)
+      s += '  EXPECT_EQ(o0, o1);\n'
+      s += '  EXPECT_EQ(o0, o2);\n'
+      print(s)
+  
+limit = '1'
+for verb in ['replaceOne', 'replaceAll']:
+  for style in styles:
+    for arg in args:
+      s = ('  n0 = replace<sty%s, true>(rex, %s, repl, s0, %s);\n' %
+           (style, arg, limit))
+      s += '  n1 = re.%s%s(%s, repl, s1);\n' % (verb, style, arg)
+      s += '  n2 = Red::%s%s(%s, re, repl, s2);\n' % (verb, style, arg)
+      s += '  EXPECT_EQ(n0, n1);\n'
+      s += '  EXPECT_EQ(n0, n2);\n'
+      s += '  EXPECT_EQ(s0, s1);\n'
+      s += '  EXPECT_EQ(s0, s2);\n'
+      print(s)
+  limit = '9999'
+
+##### EOF #####

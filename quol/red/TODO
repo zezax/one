@@ -1,21 +1,13 @@
-- document ^ and $ behave differently
-- document empty string matches: ()* etc.
-- document lots of .*foo.* .*bar.* patterns cause memory explosion
-- document start() is where we escape initial state
-- document null regex matches null
-- document keep results low
-- document ascii
-- public api
-- test new functions
-- implement leader in matchAllCore?
-- checkNaive() and searchNaive()
-- try to limit contiguous to same-result
+- verify start_ in collect
+- mapped replace based on result
+- jump to state after leader match
+- allocation limits
+- matchAll styles
 - optional line prefix arg in debug strings
-- executable dump to file
 - consider allowing non-accepting patterns
 - compressed transition map
 - add test suite items from re2, pcre
-- make dfa.cpp unit test.  move stuff from minimize.cpp
+- move stuff from minimize.cpp to dfa.cpp
 - detail namespace?
 - endian conversion
 - non-resetting match (save state/off across calls)

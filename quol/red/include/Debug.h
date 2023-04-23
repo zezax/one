@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <limits>
 #include <string>
 #include <iostream>
@@ -57,6 +58,35 @@ std::string toHexString(T x) {
     *--ptr = toHexDigit(nibble);
   } while (x != 0);
   return ptr;
+}
+
+
+// print durations
+template <long Base> inline std::ostream &operator<<(
+    std::ostream &os, std::chrono::duration<long, std::ratio<1, Base>> d);
+
+template<> inline std::ostream &operator<<(
+    std::ostream &os,
+    std::chrono::duration<long, std::ratio<1, 1>> d) {
+  return os << d.count() << " s";
+}
+
+template<> inline std::ostream &operator<<(
+    std::ostream &os,
+    std::chrono::duration<long, std::ratio<1, 1000>> d) {
+  return os << d.count() << " ms";
+}
+
+template<> inline std::ostream &operator<<(
+    std::ostream &os,
+    std::chrono::duration<long, std::ratio<1, 1000000>> d) {
+  return os << d.count() << " us";
+}
+
+template<> inline std::ostream &operator<<(
+    std::ostream &os,
+    std::chrono::duration<long, std::ratio<1, 1000000000>> d) {
+  return os << d.count() << " ns";
 }
 
 

@@ -21,6 +21,7 @@ namespace zezax::red {
 using std::generic_category;
 using std::numeric_limits;
 using std::string;
+using std::string_view;
 using std::system_error;
 using std::vector;
 
@@ -35,7 +36,7 @@ char fromHexDigit(Byte x) {
 }
 
 
-void writeStringToFile(const string &str, const char *path) {
+void writeStringToFile(string_view str, const char *path) {
   if (!path)
     throw RedExceptApi("write file path is null");
 
@@ -45,19 +46,16 @@ void writeStringToFile(const string &str, const char *path) {
                        "failed to open file for write");
 
   constexpr size_t maxChunk = numeric_limits<ssize_t>::max();
-  const char *ptr = str.data();
-  size_t nbytes = str.size();
-  while (nbytes > 0) {
-    size_t chunk = (nbytes > maxChunk) ? maxChunk : nbytes;
-    ssize_t did = write(fd, ptr, static_cast<ssize_t>(chunk));
+  while (!str.empty()) {
+    size_t chunk = std::min(maxChunk, str.size());
+    ssize_t did = write(fd, str.data(), static_cast<ssize_t>(chunk));
     if (did < 0) {
       if (errno == EINTR)
         continue;
       close(fd);
       throw system_error(errno, generic_category(), "failed to write file");
     }
-    ptr += did;
-    nbytes -= did;
+    str.remove_prefix(did);
   }
 
   close(fd);

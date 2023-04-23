@@ -13,44 +13,38 @@ using std::vector;
 // Lots of macro magic here follows.  This reduces repetitive code and gives
 // fewer places for special-case bugs to hide.
 
-// for match/check
-#define MCASE(A_name, A_style, ...)      \
-  case A_style:                          \
-    return A_name<A_style>(__VA_ARGS__);
+#define FCASE(A_name, A_style, A_lead, ...)      \
+  case A_style:                                  \
+    return A_name<A_style, A_lead>(__VA_ARGS__);
 
 
-// for replace
-#define RCASE(A_name, A_style, ...)                             \
-  case A_style:                                                 \
-    ZEZAX_RED_FMT_SWITCH(A_name ## Core, A_style, __VA_ARGS__);
-
-
-// runtime dispatch based on match-style; concatenate pfx & suf to expand
-#define STYLE_SWITCH(A_name, A_pfx, A_suf, ...)          \
-  switch(style) {                                        \
-    A_pfx ## A_suf(A_name, styFirst,      __VA_ARGS__)   \
-    A_pfx ## A_suf(A_name, styContiguous, __VA_ARGS__)   \
-    A_pfx ## A_suf(A_name, styLast,       __VA_ARGS__)   \
-    A_pfx ## A_suf(A_name, styFull,       __VA_ARGS__)   \
-  default:                                               \
-    throw RedExceptExec("unsupported style");            \
+// runtime dispatch based on match-style
+#define STYLE_SWITCH(A_name, ...)             \
+  switch(style) {                             \
+  FCASE(A_name, styInstant, __VA_ARGS__)      \
+  FCASE(A_name, styFirst,   __VA_ARGS__)      \
+  FCASE(A_name, styTangent, __VA_ARGS__)      \
+  FCASE(A_name, styLast,    __VA_ARGS__)      \
+  FCASE(A_name, styFull,    __VA_ARGS__)      \
+  default:                                    \
+    throw RedExceptExec("unsupported style"); \
   }
 
 
-// generate match/check functions with different prototypes
+// generate match/check/search functions with different prototypes
 #define SUITE(A_ret, A_name)                                            \
   A_ret A_name(const Executable &exec,                                  \
                const void *ptr, size_t len, Style style) {              \
-    STYLE_SWITCH(A_name, M, CASE, exec, ptr, len)                       \
+    STYLE_SWITCH(A_name, true, exec, ptr, len)                          \
   }                                                                     \
   A_ret A_name(const Executable &exec, const char *str, Style style) {  \
-    STYLE_SWITCH(A_name, M, CASE, exec, str)                            \
+    STYLE_SWITCH(A_name, true, exec, str)                               \
   }                                                                     \
   A_ret A_name(const Executable &exec, const string &s, Style style) {  \
-    STYLE_SWITCH(A_name, M, CASE, exec, s)                              \
+    STYLE_SWITCH(A_name, true, exec, s)                                 \
   }                                                                     \
   A_ret A_name(const Executable &exec, string_view sv, Style style) {   \
-    STYLE_SWITCH(A_name, M, CASE, exec, sv)                             \
+    STYLE_SWITCH(A_name, true, exec, sv)                                \
   }
 
 
@@ -59,83 +53,36 @@ SUITE(Outcome, match)
 SUITE(Outcome, search)
 
 
-// stuff for matchAll()
-#define MALL_FMT(A_name, ...)                  \
-  switch (exec.getFormat()) {                  \
-  case fmtDirect1: {                           \
-    DfaProxy<fmtDirect1> proxy;                \
-    return A_name(__VA_ARGS__);                \
-  }                                            \
-  case fmtDirect2: {                           \
-    DfaProxy<fmtDirect2> proxy;                \
-    return A_name(__VA_ARGS__);                \
-  }                                            \
-  case fmtDirect4: {                           \
-    DfaProxy<fmtDirect4> proxy;                \
-    return A_name(__VA_ARGS__);                \
-  }                                            \
-  default:                                     \
-    throw RedExceptExec("unsupported format"); \
-  }
-
-
-bool matchAll(const Executable &exec,
-              const void       *ptr,
-              size_t            len,
-              vector<Outcome>  *out) {
-  RangeIter it(ptr, len);
-  MALL_FMT(matchAllCore, exec, it, proxy, out)
-}
-
-
-bool matchAll(const Executable &exec,
-              const char       *str,
-              vector<Outcome>  *out) {
-  NullTermIter it(str);
-  MALL_FMT(matchAllCore, exec, it, proxy, out)
-}
-
-
-bool matchAll(const Executable  &exec,
-              std::string       &s,
-              vector<Outcome>   *out) {
-  RangeIter it(s);
-  MALL_FMT(matchAllCore, exec, it, proxy, out)
-}
-
-
-bool matchAll(const Executable &exec,
-              string_view       sv,
-              vector<Outcome>  *out) {
-  RangeIter it(sv);
-  MALL_FMT(matchAllCore, exec, it, proxy, out)
-}
-
-
 // generate replace functions with different prototypes
-#define REPL(A_name, ...)                                               \
-  string A_name(const Executable &exec, const void *ptr, size_t len,    \
-                string_view repl, Style style) {                        \
-    RangeIter it(ptr, len);                                             \
-    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                          \
-  }                                                                     \
-  string A_name(const Executable &exec, const char *str,                \
-                string_view repl, Style style) {                        \
-    NullTermIter it(str);                                               \
-    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                          \
-  }                                                                     \
-  string A_name(const Executable &exec, const string &s,                \
-                string_view repl, Style style) {                        \
-    RangeIter it(s);                                                    \
-    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                          \
-  }                                                                     \
-  string A_name(const Executable &exec, string_view sv,                 \
-                string_view repl, Style style) {                        \
-    RangeIter it(sv);                                                   \
-    STYLE_SWITCH(A_name, R, CASE, __VA_ARGS__)                          \
+#define REPL(A_ret, A_name, ...)                                          \
+  A_ret A_name(const Executable &exec, const void *ptr, size_t len,       \
+                string_view repl, string &out, size_t max, Style style) { \
+    STYLE_SWITCH(A_name, true, exec, ptr, len, __VA_ARGS__)               \
+  }                                                                       \
+  A_ret A_name(const Executable &exec, const char *str,                   \
+                string_view repl, string &out, size_t max, Style style) { \
+    STYLE_SWITCH(A_name, true, exec, str, __VA_ARGS__)                    \
+  }                                                                       \
+  A_ret A_name(const Executable &exec, const string &s,                   \
+                string_view repl, string &out, size_t max, Style style) { \
+    STYLE_SWITCH(A_name, true, exec, s, __VA_ARGS__)                      \
+  }                                                                       \
+  A_ret A_name(const Executable &exec, string_view sv,                    \
+                string_view repl, string &out, size_t max, Style style) { \
+    STYLE_SWITCH(A_name, true, exec, sv, __VA_ARGS__)                     \
   }
 
 
-REPL(replace, true, exec, it, proxy, repl)
+REPL(size_t, replace, repl, out, max)
+
+
+// stuff for matchAll() - just string_view for now
+
+size_t matchAll(const Executable &exec,
+                string_view       sv,
+                vector<Outcome>  &out) {
+  RangeIter it(sv);
+  ZEZAX_RED_FMT_SWITCH(matchAllCore, styTangent, true, exec, it, proxy, out)
+}
 
 } // namespace zezax::red

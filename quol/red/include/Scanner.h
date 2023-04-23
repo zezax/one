@@ -19,8 +19,6 @@ enum TokEnum {
   tRight   = 7,
 };
 
-struct TokFlag {};
-constexpr TokFlag gTokFlag;
 
 struct Token {
   Token(TokEnum type, size_t pos) : type_(type), pos_(pos) {}
@@ -28,7 +26,7 @@ struct Token {
   Token(size_t pos, int min, int max)
     : type_(tClosure), pos_(pos), min_(min), max_(max) {}
 
-  Token(const TokFlag &, Flags f, size_t pos)
+  Token(const FlagsTag &, Flags f, size_t pos)
     : type_(tFlags), pos_(pos), flags_(f) {}
 
   TokEnum   type_;

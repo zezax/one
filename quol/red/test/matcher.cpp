@@ -11,11 +11,83 @@ using namespace zezax::red;
 
 using std::string;
 using std::string_view;
+using std::vector;
 using testing::TestWithParam;
 using testing::Values;
 
 
-TEST(Matcher, checkStartEnd) {
+TEST(Matcher, case) {
+  Executable rex;
+  Executable rexi;
+  {
+    Parser p;
+    Parser pi;
+    p.add("abc", 1, 0);
+    pi.add("abc", 1, fIgnoreCase);
+    rex = compile(p);
+    rexi = compile(pi);
+  }
+  EXPECT_EQ(1, (check<styFull, false>(rex, "abc")));
+  EXPECT_EQ(0, (check<styFull, false>(rex, "aBc")));
+  EXPECT_EQ(0, (check<styFull, false>(rex, "ABC")));
+  EXPECT_EQ(0, (check<styFull, false>(rex, "xyz")));
+  EXPECT_EQ(1, (check<styFull, false>(rexi, "abc")));
+  EXPECT_EQ(1, (check<styFull, false>(rexi, "aBc")));
+  EXPECT_EQ(1, (check<styFull, false>(rexi, "ABC")));
+  EXPECT_EQ(0, (check<styFull, false>(rexi, "xyz")));
+}
+
+
+TEST(Matcher, endmarks) {
+  Executable rex;
+  {
+    Parser p;
+    p.add("abe", 1, 0);
+    p.add("ace", 2, 0);
+    rex = compile(p);
+  }
+  EXPECT_EQ(1, (check<styFull, false>(rex, "abe")));
+  EXPECT_EQ(2, (check<styFull, false>(rex, "ace")));
+  EXPECT_EQ(0, (check<styFull, false>(rex, "abc")));
+  EXPECT_EQ(0, (check<styFull, false>(rex, "age")));
+}
+
+
+TEST(Matcher, start) {
+  // degenerate case...
+  Executable rex;
+  {
+    Parser p;
+    p.add("a*", 1, 0);
+    rex = compile(p);
+  }
+  Outcome oc = search<styLast, true>(rex, "123a");
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+  oc = search<styLast, true>(rex, "123az");
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(4, oc.start_); // !!! place where we escape the initial state
+  EXPECT_EQ(4, oc.end_);
+
+  // this is the intended usage: one pattern, leading .* follow by non-optional
+  {
+    Parser p;
+    p.add(".*[a-z]+", 1, 0);
+    rex = compile(p);
+  }
+  oc = search<styLast, true>(rex, "123a");
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+  oc = search<styLast, true>(rex, "123az!");
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_); // now it's what we expect
+  EXPECT_EQ(5, oc.end_);
+}
+
+
+TEST(Matcher, startEnd) {
   Executable rex;
   {
     Parser p;
@@ -44,89 +116,28 @@ TEST(Matcher, checkStartEnd) {
   EXPECT_EQ(7, oc.end_);
 }
 
+// check & match
 
-TEST(Matcher, checkStyles) {
-  Executable rex;
-  {
-    Parser p;
-    p.add("abc",     1, 0);
-    p.add("abcd",    2, 0);
-    p.add("abcdefg", 3, 0);
-    rex = compile(p);
-  }
-  string_view in = "abcdefg";
-
-  EXPECT_EQ(1, check(rex, in, styFirst));
-  EXPECT_EQ(2, check(rex, in, styContiguous));
-  EXPECT_EQ(3, check(rex, in, styLast));
-  EXPECT_EQ(3, check(rex, in, styFull));
-
-  Outcome oc = match(rex, in, styFirst);
-  EXPECT_EQ(1, oc.result_);
-  EXPECT_EQ(0, oc.start_);
-  EXPECT_EQ(3, oc.end_);
-
-  oc = match(rex, in, styContiguous);
-  EXPECT_EQ(2, oc.result_);
-  EXPECT_EQ(0, oc.start_);
-  EXPECT_EQ(4, oc.end_);
-
-  oc = match(rex, in, styLast);
-  EXPECT_EQ(3, oc.result_);
-  EXPECT_EQ(0, oc.start_);
-  EXPECT_EQ(7, oc.end_);
-
-  oc = match(rex, in, styFull);
-  EXPECT_EQ(3, oc.result_);
-  EXPECT_EQ(0, oc.start_);
-  EXPECT_EQ(7, oc.end_);
-
-  in = "abcdefgh";
-
-  EXPECT_EQ(1, check(rex, in, styFirst));
-  EXPECT_EQ(2, check(rex, in, styContiguous));
-  EXPECT_EQ(3, check(rex, in, styLast));
-  EXPECT_EQ(0, check(rex, in, styFull));
-
-  oc = match(rex, in, styFirst);
-  EXPECT_EQ(1, oc.result_);
-  EXPECT_EQ(0, oc.start_);
-  EXPECT_EQ(3, oc.end_);
-
-  oc = match(rex, in, styContiguous);
-  EXPECT_EQ(2, oc.result_);
-  EXPECT_EQ(0, oc.start_);
-  EXPECT_EQ(4, oc.end_);
-
-  oc = match(rex, in, styLast);
-  EXPECT_EQ(3, oc.result_);
-  EXPECT_EQ(0, oc.start_);
-  EXPECT_EQ(7, oc.end_);
-
-  oc = match(rex, in, styFull);
-  EXPECT_EQ(0, oc.result_);
-  EXPECT_EQ(0, oc.start_);
-  EXPECT_EQ(0, oc.end_);
-}
-
-
-TEST(Matcher, contiguous) {
+TEST(Matcher, matchTangent) {
   Executable rex;
   {
     Parser p;
     p.add("[0-9]+", 1, 0);
     rex = compile(p);
   }
-  Outcome oc = match(rex, "0123456789abcdef", styFirst);
+  Outcome oc = match(rex, "0123456789abcdef", styInstant);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(1, oc.end_);
-  oc = match(rex, "0123456789abcdef", styContiguous);
+  oc = match(rex, "0123456789abcdef", styFirst);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(10, oc.end_);
+  oc = match(rex, "0123456789abcdef", styTangent);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(10, oc.end_);
 }
 
 
-TEST(Matcher, last) {
+TEST(Matcher, matchLast) {
   Executable rex;
   {
     Parser p;
@@ -142,6 +153,438 @@ TEST(Matcher, last) {
 }
 
 
+TEST(Matcher, verifyInstant) {
+  Style style = styInstant;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = "1";
+  Result  rs = check(rex, in, style);
+  Outcome oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(1, oc.end_);
+
+  in = "123";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(1, oc.end_);
+
+  in = "123abcd";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(1, oc.end_);
+
+  in = "123abcde";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(1, oc.end_);
+}
+
+
+TEST(Matcher, verifyFirst) {
+  Style style = styFirst;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = "1";
+  Result  rs = check(rex, in, style);
+  Outcome oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(1, oc.end_);
+
+  in = "123";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(3, oc.end_);
+
+  in = "123abcd";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(3, oc.end_);
+
+  in = "123XYZ";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(3, oc.end_);
+}
+
+
+TEST(Matcher, verifyTangent) {
+  Style style = styTangent;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = "1";
+  Result  rs = check(rex, in, style);
+  Outcome oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(1, oc.end_);
+
+  in = "123";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(3, oc.end_);
+
+  in = "123abcd";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(2, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+
+  in = "123XYZ";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(3, oc.end_);
+}
+
+
+TEST(Matcher, verifyLast) {
+  Style style = styLast;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = "1";
+  Result  rs = check(rex, in, style);
+  Outcome oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(1, oc.end_);
+
+  in = "123";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(3, oc.end_);
+
+  in = "123abcd";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(3, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(7, oc.end_);
+
+  in = "123abcde";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(3, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(7, oc.end_);
+}
+
+
+TEST(Matcher, verifyFull) {
+  Style style = styFull;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = "1";
+  Result  rs = check(rex, in, style);
+  Outcome oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(1, oc.end_);
+
+  in = "123";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(3, oc.end_);
+
+  in = "123abcd";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(3, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(7, oc.end_);
+
+  in = "123abcde";
+  rs = check(rex, in, style);
+  oc = match(rex, in, style);
+  EXPECT_EQ(oc, search(rex, in, style));
+  EXPECT_EQ(rs, oc.result_);
+  EXPECT_EQ(0, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(0, oc.end_);
+}
+
+// search
+
+TEST(Matcher, searchInstant) {
+  Style style = styInstant;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = ".,_1";
+  Outcome oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+
+  in = ".,_123";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+
+  in = ".,_123abcd";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+
+  in = ".,_123abcde";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+}
+
+
+TEST(Matcher, searchFirst) {
+  Style style = styFirst;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = ".,_1";
+  Outcome oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+
+  in = ".,_123";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(6, oc.end_);
+
+  in = ".,_123abcd";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(6, oc.end_);
+
+  in = ".,_123XYZ";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(6, oc.end_);
+}
+
+
+TEST(Matcher, searchTangent) {
+  Style style = styTangent;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = ".,_1";
+  Outcome oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+
+  in = ".,_123";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(6, oc.end_);
+
+  in = ".,_123abcd";
+  oc = search(rex, in, style);
+  EXPECT_EQ(2, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(7, oc.end_);
+
+  in = ".,_123XYZ";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(6, oc.end_);
+}
+
+
+TEST(Matcher, searchLast) {
+  Style style = styLast;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = ".,_1";
+  Outcome oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+
+  in = ".,_123";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(6, oc.end_);
+
+  in = ".,_123abcd";
+  oc = search(rex, in, style);
+  EXPECT_EQ(3, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(10, oc.end_);
+
+  in = ".,_123abcde";
+  oc = search(rex, in, style);
+  EXPECT_EQ(3, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(10, oc.end_);
+}
+
+
+TEST(Matcher, searchFull) {
+  Style style = styFull;
+  Executable rex;
+  {
+    Parser p;
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+a",    2, 0);
+    p.add("[0-9]+abcd", 3, 0);
+    rex = compile(p);
+  }
+
+  string_view in = ".,_1";
+  Outcome oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(4, oc.end_);
+
+  in = ".,_123";
+  oc = search(rex, in, style);
+  EXPECT_EQ(1, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(6, oc.end_);
+
+  in = ".,_123abcd";
+  oc = search(rex, in, style);
+  EXPECT_EQ(3, oc.result_);
+  EXPECT_EQ(3, oc.start_);
+  EXPECT_EQ(10, oc.end_);
+
+  in = ".,_123abcde";
+  oc = search(rex, in, style);
+  EXPECT_EQ(0, oc.result_);
+  EXPECT_EQ(0, oc.start_);
+  EXPECT_EQ(0, oc.end_);
+}
+
+// replace
+
 TEST(Matcher, replace) {
   Executable rex;
   {
@@ -149,9 +592,13 @@ TEST(Matcher, replace) {
     p.add("ab*c", 1, 0);
     rex = compile(p);
   }
-  EXPECT_EQ("foobar",  replace(rex, "fooac", "bar", styLast));
-  EXPECT_EQ("foobarz", replace(rex, string("fooacz"), "bar", styLast));
-  EXPECT_EQ("x,y,z", replace(rex, "xacyabbcz", ",", styContiguous));
+  string s;
+  EXPECT_EQ(1, replace(rex, "fooac", "bar", s, 9999, styLast));
+  EXPECT_EQ("foobar", s);
+  EXPECT_EQ(1, replace(rex, string("fooacz"), "bar", s, 9999, styLast));
+  EXPECT_EQ("foobarz", s);
+  EXPECT_EQ(2, replace(rex, "xacyabbcz", ",", s, 9999, styTangent));
+  EXPECT_EQ("x,y,z", s);
 }
 
 
@@ -159,18 +606,85 @@ TEST(Matcher, replaceStyles) {
   Executable rex;
   {
     Parser p;
-    p.add("abc",     1, 0);
-    p.add("abcd",    2, 0);
-    p.add("abcdefg", 3, 0);
+    p.add("[0-9]+",     1, 0);
+    p.add("[0-9]+d",    2, 0);
+    p.add("[0-9]+defg", 3, 0);
     rex = compile(p);
   }
-  EXPECT_EQ("1xyzdefg2", replace(rex, "1abcdefg2", "xyz", styFirst));
-  EXPECT_EQ("1xyzefg2", replace(rex, "1abcdefg2", "xyz", styContiguous));
-  EXPECT_EQ("1xyz2", replace(rex, "1abcdefg2", "xyz", styLast));
-  EXPECT_EQ("1abcdefg2", replace(rex, "1abcdefg2", "xyz", styFull));
-  EXPECT_EQ("1xyz", replace(rex, "1abcdefg", "xyz", styFull));
+  string s;
+  EXPECT_EQ(1 , replace(rex, "#123defg!", "xyz", s, 1, styInstant));
+  EXPECT_EQ("#xyz23defg!", s);
+  EXPECT_EQ(3 , replace(rex, "#123defg!", "xyz", s, 9999, styInstant));
+  EXPECT_EQ("#xyzxyzxyzdefg!", s);
+  EXPECT_EQ(1, replace(rex, "#123defg!", "xyz", s, 9999, styFirst));
+  EXPECT_EQ("#xyzdefg!", s);
+  EXPECT_EQ(1, replace(rex, "#123defg!", "xyz", s, 9999, styTangent));
+  EXPECT_EQ("#xyzefg!", s);
+  EXPECT_EQ(1, replace(rex, "#123defg!", "xyz", s, 9999, styLast));
+  EXPECT_EQ("#xyz!", s);
+  EXPECT_EQ(0, replace(rex, "#123defg!", "xyz", s, 9999, styFull));
+  EXPECT_EQ("#123defg!", s);
+  EXPECT_EQ(1, replace(rex, "#123defg", "xyz", s, 9999, styFull));
+  EXPECT_EQ("#xyz", s);
 }
 
+// matchAll
+
+TEST(Matcher, matchAll) {
+  Executable rex;
+  {
+    Parser p;
+    p.add("0",      1, 0);
+    p.add("0123",   2, 0);
+    p.add("[0-2]+", 3, 0);
+    p.add("[3-9]+", 4, 0);
+    p.add("012345", 5, 0);
+    rex = compile(p);
+  }
+  vector<Outcome> vec;
+  EXPECT_EQ(4, matchAll(rex, "0123456789", vec));
+  ASSERT_EQ(4, vec.size());
+  EXPECT_EQ(1, vec[0].result_);
+  EXPECT_EQ(0, vec[0].start_);
+  EXPECT_EQ(1, vec[0].end_);
+  EXPECT_EQ(3, vec[1].result_);
+  EXPECT_EQ(0, vec[1].start_);
+  EXPECT_EQ(3, vec[1].end_);
+  EXPECT_EQ(2, vec[2].result_);
+  EXPECT_EQ(0, vec[2].start_);
+  EXPECT_EQ(4, vec[2].end_);
+  EXPECT_EQ(5, vec[3].result_);
+  EXPECT_EQ(0, vec[3].start_);
+  EXPECT_EQ(6, vec[3].end_);
+}
+
+
+TEST(Matcher, matchAllLoose) {
+  Executable rex;
+  {
+    Parser p;
+    p.add("a+", 1, fLooseStart);
+    p.add("b+", 2, fLooseStart);
+    rex = compile(p);
+  }
+  vector<Outcome> vec;
+  EXPECT_EQ(6, matchAll(rex, ".aa..b.bb..abba.", vec));
+  ASSERT_EQ(6, vec.size());
+  EXPECT_EQ(1,  vec[0].result_);
+  EXPECT_EQ(3,  vec[0].end_);
+  EXPECT_EQ(2,  vec[1].result_);
+  EXPECT_EQ(6,  vec[1].end_);
+  EXPECT_EQ(2,  vec[2].result_);
+  EXPECT_EQ(9,  vec[2].end_);
+  EXPECT_EQ(1,  vec[3].result_);
+  EXPECT_EQ(12, vec[3].end_);
+  EXPECT_EQ(2,  vec[4].result_);
+  EXPECT_EQ(14, vec[4].end_);
+  EXPECT_EQ(1,  vec[5].result_);
+  EXPECT_EQ(15, vec[5].end_);
+}
+
+// formats
 
 class MatcherTest : public TestWithParam<Format> {};
 

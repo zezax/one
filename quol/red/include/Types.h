@@ -8,7 +8,7 @@
 #include <chrono>
 
 #include "BitSet.h"
-#include "DefMap.h"
+#include "DefaultMap.h"
 #include "SparseVec.h"
 
 namespace zezax::red {
@@ -21,9 +21,33 @@ typedef uint32_t CharIdx;
 typedef int64_t  DfaId;
 
 
+// Tag Classes
+
+// enforce non-interchangeability of various bit-sets...
 struct ResultTag {};
 struct NfaTag {};
 struct DfaTag {};
+
+// specify meaning of constructor arguments when not clear from context...
+
+struct FlagsTag {}; // for passing a flags bitmask
+constexpr FlagsTag gFlagsTag;
+
+struct PathTag {}; // indicate that string is a path to a file/directory
+constexpr PathTag gPathTag;
+
+struct CopyTag {}; // indicate that a copy will be made and owned
+constexpr CopyTag gCopyTag;
+
+struct DeleteTag {}; // become owner of memory from new; will later delete
+constexpr DeleteTag gDeleteTag;
+
+struct FreeTag {}; // become owner of memory from malloc; clean up via free
+constexpr FreeTag gFreeTag;
+
+struct UnownedTag {}; // provide raw pointer with no ownership or cleanup
+constexpr UnownedTag gUnownedTag;
+
 
 typedef BitSet<CharIdx, DefaultTag, uint32_t>       MultiChar;
 typedef BitSet<CharIdx, DefaultTag, uint32_t>::Iter MultiCharIter;

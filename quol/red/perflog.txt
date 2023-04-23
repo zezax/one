@@ -176,6 +176,10 @@ COMMIT 2023/3/17
   Implement matchNaive() to disable leading-prefix optimization.
   TEST: bench 1000 matchLast
   RESULT: ucpu 18.367
+COMMIT 2023/4/23
+  Build-out Red API
+  TEST: bench 1000 matchLast
+  RESULT: ucpu 18.345 (wide range)
 
 COMPARISON - SET
 ----------------
@@ -184,7 +188,7 @@ COMPARISON - SET
   User CPU time reported.
 
 N     M     big_red   big_re2   factor
-100   100   0:03:020  0:26.901  8.91
+100   100   0:03.020  0:26.901  8.91
 100   1000  0:30.017  4:20.186  8.67
 1000  100   0:03.863  0:36.313  9.40
 1000  1000  0:35.962  6:05.206  10.16

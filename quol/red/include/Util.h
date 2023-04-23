@@ -4,6 +4,7 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Types.h"
@@ -12,7 +13,7 @@ namespace zezax::red {
 
 char fromHexDigit(Byte x);
 
-void writeStringToFile(const std::string &str, const char *path);
+void writeStringToFile(std::string_view str, const char *path);
 std::string readFileToString(const char *path);
 std::vector<std::string> sampleLines(const std::string &buf, size_t n);
 

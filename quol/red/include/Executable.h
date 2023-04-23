@@ -10,21 +10,6 @@
 
 namespace zezax::red {
 
-
-// tag classes...
-struct CopyBuf {};
-constexpr CopyBuf gCopyBuf;
-
-struct StealNew {};
-constexpr StealNew gStealNew;
-
-struct StealMalloc {};
-constexpr StealMalloc gStealMalloc;
-
-struct ReferenceBuf {};
-constexpr ReferenceBuf gReferenceBuf; // no ownership or cleanup
-
-
 class Executable {
 public:
   Executable()
@@ -33,16 +18,11 @@ public:
   Executable(Executable &&other);
 
   // these take a serialized dfa...
-  explicit Executable(std::string &&buf);      // move
-  explicit Executable(const std::string &buf); // copy
-  explicit Executable(std::string_view sv);    // copy
-  Executable(const CopyBuf &, const void *ptr, size_t len);     // copy
-  Executable(const StealNew &, const void *ptr, size_t len);    // will delete[]
-  Executable(const StealMalloc &, const void *ptr, size_t len); // will free()
-  Executable(const ReferenceBuf &, const void *ptr, size_t len); // nothing
-
-  // load dfa from file
-  explicit Executable(const char *path);
+  Executable(std::string &&buf);                              // move
+  Executable(const CopyTag &, std::string_view sv);           // copy
+  Executable(const DeleteTag &, const void *ptr, size_t len); // will delete[]
+  Executable(const FreeTag &, const void *ptr, size_t len);   // will free()
+  Executable(const UnownedTag &, std::string_view sv);        // no cleanup
 
   ~Executable();
 
@@ -51,6 +31,8 @@ public:
   // no copying these potentially huge objects
   Executable(const Executable &) = delete;
   Executable &operator=(const Executable &) = delete;
+
+  std::string_view serialized() const { return std::string_view(buf_, end_); }
 
   const FileHeader *getHeader() const {
     return reinterpret_cast<const FileHeader *>(buf_);

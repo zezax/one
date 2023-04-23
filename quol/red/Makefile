@@ -31,3 +31,6 @@ all-test: all-lib
 
 cov:
 	$(MAKE) -C lib $@
+
+tidy:
+	$(MAKE) -C lib $@

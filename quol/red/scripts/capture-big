@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Generate timing data for graphs of multi-pattern matching by Red and RE2::Set.
+# This is meant for gnuplot.
+
+EXEDIR=_build/tools
+BIG_RE2=_build/tools/big_re2
+TMP=/tmp/redcc$$
+
+function trial {
+  $EXEDIR/$PROG -iter $ITER -pat $PAT > $TMP
+  TIME=$(grep totalTime $TMP | awk '{print$2}')
+  rm -f $TMP
+  echo $ITER $PAT $TIME $PROG
+}
+
+PROGS="big_red big_re2"
+ITERS="128 256 512 768 1024"
+PATS="10 50 100 300 500 750 1000"
+
+for PROG in $PROGS; do
+  for ITER in $ITERS; do
+    for PAT in $PATS; do
+      trial
+    done
+  done
+  echo; echo
+done
+
+##### EOF #####

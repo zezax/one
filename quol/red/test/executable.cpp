@@ -41,11 +41,11 @@ TEST(Executable, memory) {
 
   Executable e0;
   Executable e1(std::move(s1));
-  Executable e2(s2);
-  Executable e3(sv);
-  Executable e4(gCopyBuf, s2.data(), len);
-  Executable e5(gStealNew, p1, len);
-  Executable e6(gStealMalloc, p2, len);
+  Executable e2(gCopyTag, s2);
+  Executable e3(gCopyTag, sv);
+  Executable e4(gCopyTag, string_view(s2.data(), len));
+  Executable e5(gDeleteTag, p1, len);
+  Executable e6(gFreeTag, p2, len);
 
   EXPECT_EQ(1, execMatch(e1, "abbc"));
   EXPECT_EQ(1, execMatch(e2, "abbc"));
@@ -62,11 +62,6 @@ TEST(Executable, memory) {
   EXPECT_EQ(1, execMatch(e3, "abbc"));
   EXPECT_EQ(1, execMatch(e7, "abbc"));
 };
-
-
-TEST(Executable, bogus) {
-  EXPECT_THROW(Executable rex("/etc/passwd"), RedExceptApi);
-}
 
 
 class ExecTest : public TestWithParam<Format> {};

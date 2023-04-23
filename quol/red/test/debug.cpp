@@ -76,7 +76,7 @@ TEST(Debug, token) {
   EXPECT_EQ("error", toString(t1));
   Token t2(tEnd, 2);
   EXPECT_EQ("end", toString(t2));
-  Token t3(gTokFlag, fIgnoreCase, 3);
+  Token t3(gFlagsTag, fIgnoreCase, 3);
   EXPECT_EQ("flags 1", toString(t3));
   Token t4(tChars, 4);
   t4.multiChar_.set('a');
