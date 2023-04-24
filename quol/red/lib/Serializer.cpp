@@ -96,7 +96,7 @@ void Serializer::prepareToSerialize() {
   if (maxChar_ >= gAlphabetSize)
     throw RedExceptLimit("maxChar out of range");
   maxResult_ = dfa_.findMaxResult();
-  leader_ = dfa_.fixedPrefix();
+  leader_ = dfa_.fixedPrefix(leaderNext_);
   if (leader_.size() > 255)
     throw RedExceptSerialize("leader too long");
 }
@@ -173,9 +173,12 @@ string Serializer::serialize(Format fmt) {
 
 
 void Serializer::populateHeader(FileHeader &hdr, Format fmt) {
-  size_t initOff = measureState(fmt, dfa_[gDfaInitialId]);
+  size_t initOff = offsets_[gDfaInitialId];
   if (initOff > 0xffffffff)
     throw RedExceptSerialize("initial offset too large");
+  size_t nextOff = offsets_[leaderNext_];
+  if (nextOff > 0xffffffff)
+    throw RedExceptSerialize("leader next offset too large");
 
   memset(&hdr, 0, sizeof(hdr));
   memcpy(hdr.magic_, "REDA", 4);
@@ -186,6 +189,7 @@ void Serializer::populateHeader(FileHeader &hdr, Format fmt) {
   hdr.leaderLen_  = static_cast<uint8_t>(leader_.size());
   hdr.stateCnt_   = static_cast<uint32_t>(dfa_.numStates());
   hdr.initialOff_ = static_cast<uint32_t>(initOff);
+  hdr.leaderOff_  = static_cast<uint32_t>(nextOff);
   for (size_t ii = 0; ii < gAlphabetSize; ++ii)
     hdr.equivMap_[ii] = static_cast<uint8_t>(dfa_.getEquivMap()[ii]);
 }

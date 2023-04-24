@@ -28,6 +28,8 @@ struct FileHeader {
   uint8_t  pad0_;
   uint32_t stateCnt_;
   uint32_t initialOff_;
+  uint32_t leaderOff_; // state after leader match
+  uint32_t pad1_;
   uint8_t  equivMap_[256];
   uint8_t  bytes_[0]; // gcc-ism; offsets start after leader
   // leader, if any, goes first, padded to 8-byte alignment
@@ -74,6 +76,7 @@ private:
   const DfaObj        &dfa_;
   CharIdx              maxChar_;
   Result               maxResult_;
+  DfaId                leaderNext_;
   std::string          leader_;
   std::vector<size_t>  offsets_;
   CompStats           *stats_;

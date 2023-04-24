@@ -6,6 +6,7 @@
 
 using namespace zezax::red;
 
+using std::string;
 using std::vector;
 
 namespace {
@@ -94,6 +95,34 @@ TEST(Dfa, maxresult) {
   EXPECT_EQ(gDfaInitialId, s1);
   Result maxResult = dfa.findMaxResult();
   EXPECT_EQ(4, maxResult);
+}
+
+
+TEST(Dfa, prefix) {
+  /*
+    1: abc
+    2: abd
+    3: ab
+
+    1 -a-> 2 -b-> (3) -+-c-> (4)
+                       |
+                       +-d-> (5)
+  */
+  DfaObj dfa;
+  /* s0 = */ mkState(dfa, 0);
+  DfaId s1 = mkState(dfa, 0);
+  DfaId s2 = mkState(dfa, 0);
+  DfaId s3 = mkState(dfa, 3);
+  DfaId s4 = mkState(dfa, 1);
+  DfaId s5 = mkState(dfa, 2);
+  addTrans(dfa, s1, s2, 'a');
+  addTrans(dfa, s2, s3, 'b');
+  addTrans(dfa, s3, s4, 'c');
+  addTrans(dfa, s3, s5, 'd');
+  DfaId next;
+  string s = dfa.fixedPrefix(next);
+  EXPECT_EQ("ab", s);
+  EXPECT_EQ(3, next);
 }
 
 

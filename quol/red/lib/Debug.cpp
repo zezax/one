@@ -190,7 +190,8 @@ void toStringAppend(string &out, const FileHeader &hdr) {
     " maxChar=" + to_string(static_cast<unsigned>(hdr.maxChar_)) +
     " leaderLen=" + to_string(static_cast<unsigned>(hdr.leaderLen_)) + '\n';
   out += "states=" + to_string(hdr.stateCnt_) +
-    " init=$" + toHexString(hdr.initialOff_) + '\n';
+    " init=$" + toHexString(hdr.initialOff_) +
+    " lead=$" + toHexString(hdr.leaderOff_) + '\n';
 }
 
 } // anonymous

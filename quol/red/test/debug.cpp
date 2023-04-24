@@ -181,9 +181,11 @@ TEST(Debug, header) {
   hdr.pad0_ = 0; // shouldn't matter
   hdr.stateCnt_ = 7;
   hdr.initialOff_ = 24;
+  hdr.leaderOff_ = 80;
+  hdr.pad1_ = 0; // to be safe
   for (int ii = 0; ii < 256; ++ii)
     hdr.equivMap_[ii] = 0;
   EXPECT_EQ("REDB/3.14\ncsum=0x499602d2 fmt=3 maxChar=12 leaderLen=2\n"
-            "states=7 init=$18\n",
+            "states=7 init=$18 lead=$50\n",
             toString(hdr));
 }

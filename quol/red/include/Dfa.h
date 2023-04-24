@@ -150,7 +150,7 @@ public:
   const std::vector<DfaState> &getStates() const { return states_; }
   std::vector<DfaState> &getMutStates() { return states_; }
 
-  std::string fixedPrefix() const;
+  std::string fixedPrefix(DfaId &nextId) const;
 
   Result matchFull(std::string_view s); // for unit tests
 

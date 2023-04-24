@@ -36,8 +36,8 @@ The output should be:
 ```
 For more demanding situations, the interfaces in `Matcher.h` are recommended:
 ```
-Red re(".*<[0-9A-Za-z]+>");
-Result rs = check<stdFirst, false>(re.getExec(), text);
+Red re("<[0-9A-Za-z]+>");
+Result rs = scan<stdFirst, false>(re.getExec(), text);
 ```
 
 ## Multi-Pattern
@@ -68,6 +68,9 @@ which is designed for this purpose.
 It moves through the input once doing `styLast` matches,
 appending all non-overlapping matches to the array.
 This is useful to avoid matching "York" when "New York" is seen.
+
+Conversely, if the specific match doesn't matter, using `1` for all
+the result values is recommended.
 
 ## Orthogonal Naming
 
@@ -184,9 +187,9 @@ This is a reliable value in all cases.
 
 If `result_` is zero, `start_` and `end_` should come back zero, too.
 
-If the position infomation isn't useful, the `check()` function
-in `Matcher.h` acts like `match()` but returns just a `Result`.
-It runs faster by avoiding position accounting.
+If the position infomation isn't useful, the `check()` and `scan()` functions
+in `Matcher.h` act like `match()` and `search()` but return just a `Result`.
+They run faster by avoiding position accounting.
 
 ## addAuto()
 

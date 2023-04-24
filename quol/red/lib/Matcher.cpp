@@ -50,6 +50,7 @@ using std::vector;
 
 SUITE(Result, check)
 SUITE(Outcome, match)
+SUITE(Result, scan)
 SUITE(Outcome, search)
 
 

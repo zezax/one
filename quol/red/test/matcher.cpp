@@ -411,25 +411,33 @@ TEST(Matcher, searchInstant) {
   }
 
   string_view in = ".,_1";
+  Result rs = scan(rex, in, style);
   Outcome oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
   in = ".,_123";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
   in = ".,_123abcd";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
   in = ".,_123abcde";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(4, oc.end_);
@@ -448,25 +456,33 @@ TEST(Matcher, searchFirst) {
   }
 
   string_view in = ".,_1";
+  Result rs = scan(rex, in, style);
   Outcome oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
   in = ".,_123";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(6, oc.end_);
 
   in = ".,_123abcd";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(6, oc.end_);
 
   in = ".,_123XYZ";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(6, oc.end_);
@@ -485,25 +501,33 @@ TEST(Matcher, searchTangent) {
   }
 
   string_view in = ".,_1";
+  Result rs = scan(rex, in, style);
   Outcome oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
   in = ".,_123";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(6, oc.end_);
 
   in = ".,_123abcd";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(2, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(7, oc.end_);
 
   in = ".,_123XYZ";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(6, oc.end_);
@@ -522,25 +546,33 @@ TEST(Matcher, searchLast) {
   }
 
   string_view in = ".,_1";
+  Result rs = scan(rex, in, style);
   Outcome oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
   in = ".,_123";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(6, oc.end_);
 
   in = ".,_123abcd";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(3, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(10, oc.end_);
 
   in = ".,_123abcde";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(3, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(10, oc.end_);
@@ -559,25 +591,33 @@ TEST(Matcher, searchFull) {
   }
 
   string_view in = ".,_1";
+  Result rs = scan(rex, in, style);
   Outcome oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(4, oc.end_);
 
   in = ".,_123";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(1, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(6, oc.end_);
 
   in = ".,_123abcd";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(3, oc.result_);
   EXPECT_EQ(3, oc.start_);
   EXPECT_EQ(10, oc.end_);
 
   in = ".,_123abcde";
+  rs = scan(rex, in, style);
   oc = search(rex, in, style);
+  EXPECT_EQ(rs, oc.result_);
   EXPECT_EQ(0, oc.result_);
   EXPECT_EQ(0, oc.start_);
   EXPECT_EQ(0, oc.end_);

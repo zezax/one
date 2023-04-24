@@ -1,6 +1,5 @@
 - verify start_ in collect
 - mapped replace based on result
-- jump to state after leader match
 - allocation limits
 - matchAll styles
 - optional line prefix arg in debug strings

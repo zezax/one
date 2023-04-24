@@ -121,8 +121,9 @@ CharIdx DfaObj::installEquivalenceMap() {
 }
 
 
-string DfaObj::fixedPrefix() const {
+string DfaObj::fixedPrefix(DfaId &nextId) const {
   string rv;
+  nextId   = gDfaInitialId;
   DfaId id = gDfaInitialId;
   for (int ii = 0; ii < 256; ++ii) { // so length fits in one byte
     const DfaState &ds = states_[id];
@@ -136,6 +137,7 @@ string DfaObj::fixedPrefix() const {
     if (ch >= gAlphabetSize)
       break;
     rv.push_back(static_cast<char>(ch));
+    nextId = it->second;
     if (it->second == id) // avoid loop
       break;
     id = it->second;
