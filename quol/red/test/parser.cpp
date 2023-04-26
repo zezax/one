@@ -95,3 +95,10 @@ TEST(Parser, smoke) {
 
 )raw");
 }
+
+
+TEST(Parser, budget) {
+  Budget b(3);
+  Parser p(&b);
+  EXPECT_THROW(p.add("ab*c", 1, 0), RedExceptLimit);
+}

@@ -126,7 +126,15 @@ TEST(Red, save) {
 
 
 TEST(Red, bogus) {
-  EXPECT_THROW(Red(gPathTag, "/etc/passwd"), RedExcept);
+  EXPECT_THROW(Red(gPathTag, "/etc/passwd"), RedExceptApi);
+}
+
+
+TEST(Red, budget) {
+  Budget b(13);
+  Parser p(&b);
+  p.add("ab*c", 1, 0);
+  EXPECT_THROW(Red::matchFull("foobar", p), RedExceptLimit);
 }
 
 

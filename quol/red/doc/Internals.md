@@ -30,9 +30,10 @@ Building blocks:
 
 - `Types` - declarations of common types
 - `Consts` - commonly used constant values
-- `Compile` - wrapper convert regex into final DFA
+- `Compile` - wrapper to convert regex into final DFA
 - `Outcome` - struct returned by match and search functions
 - `Except` - exceptions thrown by library
+- `Budget` - automaton size limiter
 - `Util` - useful low-level code
 - `Debug` - string serialization of library classes
 

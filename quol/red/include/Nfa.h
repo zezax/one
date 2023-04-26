@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Consts.h"
+#include "Budget.h"
 
 namespace zezax::red {
 
@@ -132,8 +133,8 @@ private:
 
 class NfaObj {
 public:
-  NfaObj() : initId_(gNfaNullId), goal_(0) {}
-  ~NfaObj() = default;
+  explicit NfaObj(Budget *budget = nullptr);
+  ~NfaObj();
   NfaObj(const NfaObj &rhs) = delete;
   NfaObj(NfaObj &&rhs);
   NfaObj &operator=(const NfaObj &rhs) = delete;
@@ -187,9 +188,10 @@ public:
 private:
   NfaId copyRecurse(std::unordered_map<NfaId, NfaId> &map, NfaId id);
 
-  std::vector<NfaState> states_;
-  NfaId                 initId_;
-  Result                goal_; // for current regex being added
+  std::vector<NfaState>  states_;
+  Budget                *budget_;
+  NfaId                  initId_;
+  Result                 goal_; // for current regex being added
 };
 
 } // namespace zezax::red

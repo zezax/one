@@ -9,11 +9,9 @@
 namespace zezax::red {
 
 Executable compile(Parser    &rp,
-                   Format     fmt   = fmtDirectAuto,
-                   CompStats *stats = nullptr);
+                   Format     fmt   = fmtDirectAuto);
 
 std::string compileToSerialized(Parser    &rp,
-                                Format     fmt   = fmtDirectAuto,
-                                CompStats *stats = nullptr);
+                                Format     fmt   = fmtDirectAuto);
 
 } // namespace zezax::red

@@ -16,11 +16,13 @@ using namespace std::chrono_literals;
 using chrono::steady_clock;
 using std::string_view;
 
-Parser::Parser(CompStats *stats)
+Parser::Parser(Budget *budget, CompStats *stats)
   : flags_(0),
     level_(0),
     begun_(false),
     tok_(tError, gNoPos),
+    nfa_(budget),
+    budget_(budget),
     stats_(stats) {
   if (stats_) {
     stats_->preNfa_          = steady_clock::now();

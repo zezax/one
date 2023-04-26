@@ -1,6 +1,5 @@
 - verify start_ in collect
 - mapped replace based on result
-- allocation limits
 - matchAll styles
 - optional line prefix arg in debug strings
 - consider allowing non-accepting patterns

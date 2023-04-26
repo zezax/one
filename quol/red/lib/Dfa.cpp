@@ -32,7 +32,18 @@ bool determineDeadEnd(const DfaState &ds, DfaId id, CharIdx maxChar) {
 
 } // anonymous
 
+DfaObj::DfaObj(Budget *budget) : budget_(budget) {}
+
+
+DfaObj::~DfaObj() {
+  if (budget_)
+    budget_->give(states_.size());
+}
+
+
 void DfaObj::clear() {
+  if (budget_)
+    budget_->give(states_.size());
   states_.clear();
   equivMap_.clear();
 }
@@ -41,13 +52,16 @@ void DfaObj::clear() {
 void DfaObj::swap(DfaObj &other) {
   states_.swap(other.states_);
   equivMap_.swap(other.equivMap_);
+  std::swap(budget_, other.budget_);
 }
 
 
 DfaId DfaObj::newState() {
   size_t len = states_.size();
-  if (len > numeric_limits<DfaId>::max())
+  if (len >= numeric_limits<DfaId>::max())
     throw RedExceptLimit("dfa state id overflow");
+  if (budget_)
+    budget_->take(1);
   states_.resize(len + 1); // default init
   return static_cast<DfaId>(len);
 }

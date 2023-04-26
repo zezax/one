@@ -5,13 +5,14 @@
 #include <string_view>
 
 #include "Scanner.h"
+#include "Budget.h"
 #include "Nfa.h"
 
 namespace zezax::red {
 
 class Parser {
 public:
-  explicit Parser(CompStats *stats = nullptr);
+  explicit Parser(Budget *budget = nullptr, CompStats *stats = nullptr);
   ~Parser() = default;
 
   // Adds a regular expression to the automaton, to yield the specified
@@ -39,6 +40,9 @@ public:
   NfaObj &getNfa() { return nfa_; }
   NfaId getInitial() { return nfa_.getInitial(); }
 
+  Budget    *getBudget() const { return budget_; }
+  CompStats *getStats()  const { return stats_; }
+
 private:
   NfaId parseExpr();
   NfaId parsePart();
@@ -52,6 +56,7 @@ private:
   Token      tok_;
   Scanner    scanner_;
   NfaObj     nfa_;
+  Budget    *budget_;
   CompStats *stats_;
 };
 

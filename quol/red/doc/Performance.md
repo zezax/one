@@ -25,6 +25,22 @@ treating upper- and lower-case as equivalent.
 ![100 pattern RSS](comp-rss-100.png)
 ![10000 pattern RSS](comp-rss-10000.png)
 
+See the `Budget` class for a way to prevent runaway allocation.
+The budget is specified in terms of number of states.
+Actual bytes depends on the density of the automaton transitions.
+Quick tests suggest a peak memory cost of 11-22 kB per state
+on a 64-bit platform.
+Detailed curve fits suggest the relationship is quadratic.
+Assuming `b` is bytes of memory used and `s` is number of states:
+```
+b(s) = j*s^2 + k*s + l
+```
+| Regexes    | j     | k     | l      |
+| ---------- | ----- | ----- | ------ |
+| raw word   | 0.036 | 818   | 1.0    |
+| .* word    | 0.504 | 8692  | 0.871  |
+| .* word .* | 0.001 | 15843 | -3.3e6 |
+
 ## Matching
 
 In general, simple matching operations are similar in speed to **RE2**.

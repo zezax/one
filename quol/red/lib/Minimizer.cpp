@@ -44,7 +44,7 @@ void DfaMinimizer::minimize() {
   setup();
   iterate();
 
-  DfaObj work;
+  DfaObj work(src_.getBudget());
   cleanup(work);
   src_.swap(work);
 

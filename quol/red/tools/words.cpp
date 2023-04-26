@@ -97,11 +97,11 @@ int main(int argc, char **argv) {
     CompStats stats;
     Executable rex;
     {
-      Parser p(&stats);
+      Parser p(nullptr, &stats);
       Result res = 0;
       for (string &word : words)
         p.add(word, ++res, flags);
-      rex = compile(p, fmtDirectAuto, &stats);
+      rex = compile(p, fmtDirectAuto);
     }
 
     std::cout << toString(&stats) << std::endl;

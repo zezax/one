@@ -71,10 +71,10 @@ TEST_P(ExecTest, smoke) {
   CompStats stats;
   Executable rex;
   {
-    Parser p(&stats);;
+    Parser p(nullptr, &stats);;
     p.addAuto("ab*c", 1, 0);
     p.addAuto("ca*b", 2, 0);
-    rex = compile(p, fmt, &stats);
+    rex = compile(p, fmt);
   }
   EXPECT_EQ(0, match(rex, "bca", styFull).result_);
   EXPECT_EQ(1, match(rex, "bac", styFull).result_);

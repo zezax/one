@@ -10,19 +10,21 @@ namespace zezax::red {
 using std::string;
 
 
-Executable compile(Parser &rp, Format fmt, CompStats *stats) {
-  string buf = compileToSerialized(rp, fmt, stats);
+Executable compile(Parser &rp, Format fmt) {
+  string buf = compileToSerialized(rp, fmt);
   return Executable(std::move(buf));
 }
 
 
-string compileToSerialized(Parser &rp, Format fmt, CompStats *stats) {
+string compileToSerialized(Parser &rp, Format fmt) {
   string buf;
+  Budget *budget   = rp.getBudget();
+  CompStats *stats = rp.getStats();
   rp.finish(); // idempotent
   {
-    DfaObj dfa;
+    DfaObj dfa(budget);
     {
-      PowersetConverter psc(rp.getNfa(), stats);
+      PowersetConverter psc(rp.getNfa(), budget, stats);
       dfa = psc.convert();
       rp.freeAll();
     }

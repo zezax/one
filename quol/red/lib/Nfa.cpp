@@ -45,14 +45,26 @@ bool stateAccepts(const NfaState &ns) {
 
 } // anonymous
 
+NfaObj::NfaObj(Budget *budget)
+  : budget_(budget), initId_(gNfaNullId), goal_(0) {}
+
+
 NfaObj::NfaObj(NfaObj &&rhs)
   : states_(std::move(rhs.states_)),
+    budget_(std::exchange(rhs.budget_, nullptr)),
     initId_(std::exchange(rhs.initId_, gNfaNullId)),
     goal_(std::exchange(rhs.goal_, 0)) {}
 
 
+NfaObj::~NfaObj() {
+  if (budget_)
+    budget_->give(states_.size());
+}
+
+
 NfaObj &NfaObj::operator=(NfaObj &&rhs) {
   states_ = std::move(rhs.states_);
+  budget_ = std::exchange(rhs.budget_, nullptr);
   initId_ = std::exchange(rhs.initId_, gNfaNullId);
   goal_   = std::exchange(rhs.goal_, 0);
   return *this;
@@ -68,6 +80,8 @@ size_t NfaObj::activeStates() const {
 
 
 void NfaObj::freeAll() {
+  if (budget_)
+    budget_->give(states_.size());
   states_.clear();
   states_.shrink_to_fit();
 }
@@ -77,8 +91,10 @@ NfaId NfaObj::newState(Result result) {
   size_t len = states_.size();
   if (len == 0)
     len = 1; // zero is invalid state id
-  if (len > numeric_limits<NfaId>::max())
+  if (len >= numeric_limits<NfaId>::max())
     throw RedExceptLimit("nfa state id overflow");
+  if (budget_)
+    budget_->take((len == 1) ? 2 : 1);
   states_.resize(len + 1);
   NfaState &ns = states_[len];
   ns.result_ = result;

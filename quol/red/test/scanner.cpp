@@ -16,7 +16,7 @@ namespace {
 
 void failScan(string_view sv) {
   Scanner sc(sv);
-  EXPECT_THROW(sc.scanNext(), RedExcept);
+  EXPECT_THROW(sc.scanNext(), RedExceptParse);
 }
 
 void checkKleen(const char *str, int goodMin, int goodMax) {
@@ -59,11 +59,11 @@ TEST(Scanner, single) {
   Scanner sc("");
   EXPECT_LT(sc.interpretSingleChar(escape), 0);
   sc.init("\\");
-  EXPECT_THROW(sc.interpretSingleChar(escape), RedExcept);
+  EXPECT_THROW(sc.interpretSingleChar(escape), RedExceptParse);
   sc.init("\\x0");
-  EXPECT_THROW(sc.interpretSingleChar(escape), RedExcept);
+  EXPECT_THROW(sc.interpretSingleChar(escape), RedExceptParse);
   sc.init("\\xx");
-  EXPECT_THROW(sc.interpretSingleChar(escape), RedExcept);
+  EXPECT_THROW(sc.interpretSingleChar(escape), RedExceptParse);
 
   sc.init("a");
   EXPECT_EQ('a', sc.interpretSingleChar(escape));
@@ -91,8 +91,8 @@ TEST(Scanner, expansion) {
     EXPECT_TRUE(tok.multiChar_.get(ii));
   }
 
-  EXPECT_THROW(sc.doExpansion('1', true), RedExcept);
-  EXPECT_THROW(sc.doExpansion('9', true), RedExcept);
+  EXPECT_THROW(sc.doExpansion('1', true), RedExceptParse);
+  EXPECT_THROW(sc.doExpansion('9', true), RedExceptParse);
 
   tok = sc.doExpansion('d', true);
   EXPECT_EQ(10, tok.multiChar_.size());

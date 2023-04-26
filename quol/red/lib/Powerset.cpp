@@ -65,7 +65,7 @@ DfaObj PowersetConverter::convert() {
 
   NfaIdToCount counts = countAcceptingStates(table, nfa_);
 
-  DfaObj dfa;
+  DfaObj dfa(budget_);
   DfaId id = dfa.newState();
   if (id != gDfaErrorId)
     throw RedExceptCompile("dfa error state must be zero");

@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 
+#include "Budget.h"
 #include "Nfa.h"
 #include "Dfa.h"
 
@@ -23,8 +24,10 @@ typedef std::unordered_map<NfaIdSet, DfaId> NfaStatesToId;
 // converts nfa to dfa via rabin-scott
 class PowersetConverter {
 public:
-  explicit PowersetConverter(const NfaObj &input, CompStats *stats = nullptr)
-    : nfa_(input), stats_(stats) {}
+  explicit PowersetConverter(const NfaObj &input,
+                             Budget       *budget = nullptr,
+                             CompStats    *stats  = nullptr)
+    : nfa_(input), budget_(budget), stats_(stats) {}
 
   DfaObj convert();
 
@@ -36,6 +39,7 @@ private:
                    DfaObj                       &dfa);
 
   const NfaObj &nfa_;
+  Budget       *budget_;
   CompStats    *stats_;
 };
 

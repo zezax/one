@@ -126,6 +126,16 @@ TEST(Dfa, prefix) {
 }
 
 
+TEST(Dfa, budget) {
+  Budget b(3);
+  DfaObj dfa(&b);
+  dfa.newState();
+  dfa.newState();
+  dfa.newState();
+  EXPECT_THROW(dfa.newState(), RedExceptLimit);
+}
+
+
 TEST(Dfa, equivmap) {
   DfaObj dfa;
   mkState(dfa, 0); // zero is error state

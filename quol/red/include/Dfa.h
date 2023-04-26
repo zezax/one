@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Consts.h"
+#include "Budget.h"
 
 namespace zezax::red {
 
@@ -119,8 +120,8 @@ private:
 
 class DfaObj {
 public:
-  DfaObj() = default;
-  ~DfaObj() = default;
+  explicit DfaObj(Budget *budget = nullptr);
+  ~DfaObj();
   DfaObj(const DfaObj &rhs) = delete;
   DfaObj(DfaObj &&rhs) = default;
   DfaObj &operator=(const DfaObj &rhs) = delete;
@@ -152,14 +153,17 @@ public:
 
   std::string fixedPrefix(DfaId &nextId) const;
 
+  Budget *getBudget() const { return budget_; }
+
   Result matchFull(std::string_view s); // for unit tests
 
   DfaIter iter() { return DfaIter(states_); } // relevant states only
   DfaConstIter citer() const { return DfaConstIter(states_); }
 
 private:
-  std::vector<DfaState> states_;
-  std::vector<CharIdx>  equivMap_;
+  std::vector<DfaState>  states_;
+  std::vector<CharIdx>   equivMap_;
+  Budget                *budget_;
 };
 
 
