@@ -1,21 +1,27 @@
-# one
+# Repository: Zezax/One
 
-This is the first and currently only repository; so it's called "one".
+There is only one repository; so, it is called `one`.
 
-Most of what's in here is C++, Python, and shell scripts used to
-administer individual Linux servers.
+Most of what's here is C++, Python, and shell scripts.
+The bias is toward Linux/Unix infrastructure and administration.
 
-Here's a bit of a map:
-```
-+ one
-  + quol
-    + bin
+The largest sub-project is [RED](quol/red/README.md),
+a DFA-based regular expression engine.
+
+Here's a bit of a directory map:
+
+- one
+  - [quol](quol/)
+    - [red](quol/red/) - regular expression DFA
+    - [flume](quol/flume/) - tail many log files and email or update RRD for matching lines
+    - [loggle](quol/loggle/) - tail a log file and email matching lines
+    - [bin](quol/bin/)
       - hist - histogram utility
       - means - average utility
       - netblock - find smallest CIDR subnet containing a list of IPv4s
       - plotxy - front-end to gnuplot
       - rrd-add-col - add a column to an RRD
-    + sbin
+    - [sbin](quol/sbin/)
       - allsnap - call mksnap for a bunch of partitions
       - backup-desktop - script to rsync from always-on computer to backup host
       - backup-laptop - script to rsync from laptop to backup host
@@ -30,6 +36,3 @@ Here's a bit of a map:
       - newcert - get new certs from letsencrypt.org automatically
       - rbl-check - check for listing in DNSBL email blocking lists
       - ups-rrd - update RRD with UPS battery stats
-    + loggle - tail a log file and email matching lines
-    + flume - tail many log files and email or update RRD for matching lines
-```
