@@ -1,0 +1,60 @@
+#!/bin/bash
+
+SCRIPTDIR=$(dirname $(readlink -f $0))
+BUILDDIR="$SCRIPTDIR/../_build"
+mkdir -p $BUILDDIR
+
+if [[ $# < 1 ]]; then
+  DAT=$BUILDDIR/big.dat
+  $SCRIPTDIR/capture-big > $DAT
+else
+  DAT=$1
+  shift
+fi
+
+SCRIPT=/tmp/redgp$$
+
+function preamble { # <xrange> <pngfile>
+  cat > $SCRIPT <<-EOS
+	set terminal pngcairo transparent fontscale 1.1
+	set output "$BUILDDIR/$2.png"
+	set title "$TITLE"
+	set xlabel "Iterations"
+	set ylabel "Patterns"
+	set zlabel "Time (seconds)" rotate parallel
+	set xrange [$1]
+	set xtics 200
+	set ytics 200
+	set xyplane 0.25
+	set view 64, 30, , 1.5
+	unset key
+	set style data pm3d
+	set pm3d depthorder hidden3d 3
+	set dgrid3d
+	splot \\
+	EOS
+}
+
+function plotone { # <index> <name> <end>
+  cat >> $SCRIPT <<-EOS
+	'$DAT' index $1 using 1:2:(\$3/1000) title "$2"$3 \\
+	EOS
+}
+
+function postamble {
+  echo >> $SCRIPT
+}
+
+# TIME
+
+TITLE="Multi-Pattern Matching Time"
+
+preamble 0:1024 big-time
+plotone 0 "Red" ,
+plotone 1 "RE2"
+postamble
+gnuplot -c $SCRIPT
+
+rm -f $SCRIPT
+
+##### EOF #####

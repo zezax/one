@@ -1,0 +1,519 @@
+// unit tests for RED API
+
+#include <gtest/gtest.h>
+
+#include "Red.h"
+#include "Parser.h"
+#include "Matcher.h"
+#include "Except.h"
+
+using namespace zezax::red;
+
+using std::string;
+using std::string_view;
+using std::to_string;
+using std::vector;
+
+TEST(Red, smoke) {
+  EXPECT_TRUE(Red::matchFull("hello", "h.*o"));
+  EXPECT_FALSE(Red::matchFull("hello", "e"));
+  EXPECT_TRUE(Red::matchLast("hello", "h.*l"));
+  EXPECT_FALSE(Red::matchLast("hello", "e"));
+  EXPECT_TRUE(Red::searchTangent("hello", "e"));
+  EXPECT_FALSE(Red::searchTangent("hello", "z"));
+
+  Parser p;
+  p.add("alex", 1, 0);
+  p.add("meyer", 2, 0);
+  EXPECT_TRUE(Red::searchLast("alexmeyer.com", p));
+}
+
+
+TEST(Red, constructors) {
+  string s = "ab*c";
+  string_view sv = s;
+  Red r0(s);
+  Red r1(sv);
+  Red r2(sv, 0);
+  EXPECT_TRUE(r0.matchFull("abbbc"));
+  EXPECT_TRUE(r1.matchFull("abbbc"));
+  EXPECT_TRUE(r2.matchFull("abbbc"));
+}
+
+
+TEST(Red, serialized) {
+  string s0;
+  {
+    Red re("ab*c");
+    s0 = re.serialized();
+  }
+  {
+    string s = s0;
+    Red re(std::move(s));
+    EXPECT_TRUE(re.matchFull("abbc"));
+  }
+  {
+    string s = s0;
+    Red re(gCopyTag, s);
+    for (char &ch : s)
+      ++ch; // scramble in place
+    EXPECT_TRUE(re.matchLast("abcd"));
+  }
+  {
+    string s = s0;
+    string_view sv = s;
+    Red re(gCopyTag, sv);
+    for (char &ch : s)
+      ++ch; // scramble in place
+    EXPECT_TRUE(re.searchTangent("aabbcc"));
+  }
+  {
+    string s = s0;
+    const char *ptr = s.data();
+    size_t len = s.size();
+    Red re(gCopyTag, ptr, len);
+    for (char &ch : s)
+      ++ch; // scramble in place
+    EXPECT_TRUE(re.matchFirst("ace"));
+  }
+  {
+    size_t len = s0.size();
+    char *ptr = new char[len];
+    s0.copy(ptr, len);
+    Red re(gDeleteTag, ptr, len);
+    EXPECT_TRUE(re.matchFirst("abcd"));
+  }
+  {
+    size_t len = s0.size();
+    char *ptr = static_cast<char *>(malloc(len));
+    s0.copy(ptr, len);
+    Red re(gFreeTag, ptr, len);
+    EXPECT_TRUE(re.matchTangent("abcde"));
+  }
+  {
+    size_t len = s0.size();
+    char *ptr = new char[len];
+    s0.copy(ptr, len);
+    string_view sv(ptr, len);
+    Red re(gUnownedTag, sv);
+    EXPECT_TRUE(re.matchFull("abbc"));
+    delete[] ptr;
+  }
+  {
+    size_t len = s0.size();
+    char *ptr = new char[len];
+    s0.copy(ptr, len);
+    Red re(gUnownedTag, ptr, len);
+    EXPECT_TRUE(re.searchFull("aabbc"));
+    delete[] ptr;
+  }
+}
+
+
+TEST(Red, save) {
+  string fn = "/tmp/reda" + to_string(getpid());
+  {
+    Red r0("ab*c");
+    r0.save(fn.c_str());
+  }
+  {
+    Red r1(gPathTag, fn.c_str());
+    EXPECT_TRUE(r1.matchFull("abbbc"));
+    EXPECT_FALSE(r1.matchFull("abe"));
+  }
+  unlink(fn.c_str());
+}
+
+
+TEST(Red, bogus) {
+  EXPECT_THROW(Red(gPathTag, "/etc/passwd"), RedExceptApi);
+}
+
+
+TEST(Red, budget) {
+  Budget b(13);
+  Parser p(&b);
+  p.add("ab*c", 1, 0);
+  EXPECT_THROW(Red::matchFull("foobar", p), RedExceptLimit);
+}
+
+
+TEST(Red, doc) {
+  Parser p;
+  p.add("[0-9]+", 1, 0);
+  p.add("[a-z]+", 2, 0);
+  Red re(p);
+  string s = "...foo123...";
+  Outcome oc = re.searchTangent(s);
+  string m = s.substr(oc.start_, oc.end_ - oc.start_);
+  EXPECT_EQ(2, oc.result_);
+  EXPECT_EQ("foo", m);
+}
+
+
+TEST(Red, compat) {
+  Red re("ab*c");
+  EXPECT_TRUE(Red::fullMatch("abbc", re));
+  EXPECT_FALSE(Red::fullMatch("abbcc", re));
+  EXPECT_TRUE(Red::partialMatch("aabbcc", re));
+  EXPECT_FALSE(Red::partialMatch("aaddcc", re));
+  string_view sv = "abcd";
+  EXPECT_EQ(1, Red::consume(sv, re));
+  EXPECT_EQ("d", sv);
+  sv = "aabbcc";
+  EXPECT_EQ(1, Red::findAndConsume(sv, re));
+  EXPECT_EQ("c", sv);
+
+  string s = "aabbccaabbcc";
+  EXPECT_EQ(1, Red::replace(&s, re, "X"));
+  EXPECT_EQ("aXcaabbcc", s);
+  EXPECT_EQ(1, Red::globalReplace(&s, re, "X"));
+  EXPECT_EQ("aXcaXc", s);
+}
+
+
+TEST(Red, allMatches) {
+  Parser p;
+  p.add("0",      1, 0);
+  p.add("0123",   2, 0);
+  p.add("[0-2]+", 3, 0);
+  p.add("[3-9]+", 4, 0);
+  p.add("012345", 5, 0);
+  Red re(p);
+  vector<Outcome> out;
+  EXPECT_EQ(4, re.allMatches("0123456789", &out));
+  EXPECT_EQ(4, out.size());
+}
+
+
+TEST(Red, collect) {
+  Parser p;
+  p.add("new york", 1, 0);
+  p.add("new",      2, 0);
+  p.add("york",     3, 0);
+  p.add("[0-9]+",   4, 0);
+  Red re(p);
+  const char *str = "in new york12345, a new 6789 york city";
+  string_view sv = str;
+  vector<Outcome> out;
+  EXPECT_EQ(5, re.collect(str, out));
+  ASSERT_EQ(5, out.size());
+  EXPECT_EQ(1,  out[0].result_);
+  EXPECT_EQ(3,  out[0].start_);
+  EXPECT_EQ(11, out[0].end_);
+  EXPECT_EQ(4,  out[1].result_);
+  EXPECT_EQ(11, out[1].start_);
+  EXPECT_EQ(16, out[1].end_);
+  EXPECT_EQ(2,  out[2].result_);
+  EXPECT_EQ(20, out[2].start_);
+  EXPECT_EQ(23, out[2].end_);
+  EXPECT_EQ(4,  out[3].result_);
+  EXPECT_EQ(24, out[3].start_);
+  EXPECT_EQ(28, out[3].end_);
+  EXPECT_EQ(3,  out[4].result_);
+  EXPECT_EQ(29, out[4].start_);
+  EXPECT_EQ(33, out[4].end_);
+
+  EXPECT_EQ(5, re.collect(sv, out));
+  str = "new york";
+  EXPECT_EQ(1, re.collect(str, out));
+}
+
+
+// mostly generated by apigen...
+TEST(Red, combinations) {
+  Red re("ab*c");
+  const Executable &rex = re.getExec();
+  const char *str = "aabbcc";
+  string_view sv(str);
+  string_view repl = "XYZ";
+  Outcome o0;
+  Outcome o1;
+  Outcome o2;
+  size_t n0;
+  size_t n1;
+  size_t n2;
+  string s0;
+  string s1;
+  string s2;
+
+  o0 = match<styInstant, true>(rex, sv);
+  o1 = re.matchInstant(sv);
+  o2 = Red::matchInstant(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = match<styInstant, true>(rex, str);
+  o1 = re.matchInstant(str);
+  o2 = Red::matchInstant(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = match<styFirst, true>(rex, sv);
+  o1 = re.matchFirst(sv);
+  o2 = Red::matchFirst(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = match<styFirst, true>(rex, str);
+  o1 = re.matchFirst(str);
+  o2 = Red::matchFirst(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = match<styTangent, true>(rex, sv);
+  o1 = re.matchTangent(sv);
+  o2 = Red::matchTangent(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = match<styTangent, true>(rex, str);
+  o1 = re.matchTangent(str);
+  o2 = Red::matchTangent(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = match<styLast, true>(rex, sv);
+  o1 = re.matchLast(sv);
+  o2 = Red::matchLast(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = match<styLast, true>(rex, str);
+  o1 = re.matchLast(str);
+  o2 = Red::matchLast(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = match<styFull, true>(rex, sv);
+  o1 = re.matchFull(sv);
+  o2 = Red::matchFull(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = match<styFull, true>(rex, str);
+  o1 = re.matchFull(str);
+  o2 = Red::matchFull(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styInstant, true>(rex, sv);
+  o1 = re.searchInstant(sv);
+  o2 = Red::searchInstant(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styInstant, true>(rex, str);
+  o1 = re.searchInstant(str);
+  o2 = Red::searchInstant(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styFirst, true>(rex, sv);
+  o1 = re.searchFirst(sv);
+  o2 = Red::searchFirst(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styFirst, true>(rex, str);
+  o1 = re.searchFirst(str);
+  o2 = Red::searchFirst(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styTangent, true>(rex, sv);
+  o1 = re.searchTangent(sv);
+  o2 = Red::searchTangent(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styTangent, true>(rex, str);
+  o1 = re.searchTangent(str);
+  o2 = Red::searchTangent(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styLast, true>(rex, sv);
+  o1 = re.searchLast(sv);
+  o2 = Red::searchLast(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styLast, true>(rex, str);
+  o1 = re.searchLast(str);
+  o2 = Red::searchLast(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styFull, true>(rex, sv);
+  o1 = re.searchFull(sv);
+  o2 = Red::searchFull(sv, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  o0 = search<styFull, true>(rex, str);
+  o1 = re.searchFull(str);
+  o2 = Red::searchFull(str, re);
+  EXPECT_EQ(o0, o1);
+  EXPECT_EQ(o0, o2);
+
+  n0 = replace<styInstant, true>(rex, sv, repl, s0, 1);
+  n1 = re.replaceOneInstant(sv, repl, s1);
+  n2 = Red::replaceOneInstant(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styInstant, true>(rex, str, repl, s0, 1);
+  n1 = re.replaceOneInstant(str, repl, s1);
+  n2 = Red::replaceOneInstant(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styFirst, true>(rex, sv, repl, s0, 1);
+  n1 = re.replaceOneFirst(sv, repl, s1);
+  n2 = Red::replaceOneFirst(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styFirst, true>(rex, str, repl, s0, 1);
+  n1 = re.replaceOneFirst(str, repl, s1);
+  n2 = Red::replaceOneFirst(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styTangent, true>(rex, sv, repl, s0, 1);
+  n1 = re.replaceOneTangent(sv, repl, s1);
+  n2 = Red::replaceOneTangent(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styTangent, true>(rex, str, repl, s0, 1);
+  n1 = re.replaceOneTangent(str, repl, s1);
+  n2 = Red::replaceOneTangent(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styLast, true>(rex, sv, repl, s0, 1);
+  n1 = re.replaceOneLast(sv, repl, s1);
+  n2 = Red::replaceOneLast(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styLast, true>(rex, str, repl, s0, 1);
+  n1 = re.replaceOneLast(str, repl, s1);
+  n2 = Red::replaceOneLast(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styFull, true>(rex, sv, repl, s0, 1);
+  n1 = re.replaceOneFull(sv, repl, s1);
+  n2 = Red::replaceOneFull(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styFull, true>(rex, str, repl, s0, 1);
+  n1 = re.replaceOneFull(str, repl, s1);
+  n2 = Red::replaceOneFull(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styInstant, true>(rex, sv, repl, s0, 9999);
+  n1 = re.replaceAllInstant(sv, repl, s1);
+  n2 = Red::replaceAllInstant(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styInstant, true>(rex, str, repl, s0, 9999);
+  n1 = re.replaceAllInstant(str, repl, s1);
+  n2 = Red::replaceAllInstant(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styFirst, true>(rex, sv, repl, s0, 9999);
+  n1 = re.replaceAllFirst(sv, repl, s1);
+  n2 = Red::replaceAllFirst(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styFirst, true>(rex, str, repl, s0, 9999);
+  n1 = re.replaceAllFirst(str, repl, s1);
+  n2 = Red::replaceAllFirst(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styTangent, true>(rex, sv, repl, s0, 9999);
+  n1 = re.replaceAllTangent(sv, repl, s1);
+  n2 = Red::replaceAllTangent(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styTangent, true>(rex, str, repl, s0, 9999);
+  n1 = re.replaceAllTangent(str, repl, s1);
+  n2 = Red::replaceAllTangent(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styLast, true>(rex, sv, repl, s0, 9999);
+  n1 = re.replaceAllLast(sv, repl, s1);
+  n2 = Red::replaceAllLast(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styLast, true>(rex, str, repl, s0, 9999);
+  n1 = re.replaceAllLast(str, repl, s1);
+  n2 = Red::replaceAllLast(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styFull, true>(rex, sv, repl, s0, 9999);
+  n1 = re.replaceAllFull(sv, repl, s1);
+  n2 = Red::replaceAllFull(sv, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+
+  n0 = replace<styFull, true>(rex, str, repl, s0, 9999);
+  n1 = re.replaceAllFull(str, repl, s1);
+  n2 = Red::replaceAllFull(str, re, repl, s2);
+  EXPECT_EQ(n0, n1);
+  EXPECT_EQ(n0, n2);
+  EXPECT_EQ(s0, s1);
+  EXPECT_EQ(s0, s2);
+}

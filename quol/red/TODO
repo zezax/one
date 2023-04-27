@@ -1,0 +1,14 @@
+- verify start_ in collect
+- mapped replace based on result
+- matchAll styles
+- optional line prefix arg in debug strings
+- consider allowing non-accepting patterns
+- compressed transition map
+- add test suite items from re2, pcre
+- move stuff from minimize.cpp to dfa.cpp
+- detail namespace?
+- endian conversion
+- non-resetting match (save state/off across calls)
+- glob parser
+- 3-byte direct format
+- make install/shared libs

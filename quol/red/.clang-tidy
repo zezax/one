@@ -1,0 +1,24 @@
+Checks: "\
+bugprone-*,cert-*,concurrency-*,cppcoreguidelines-*,google-*,hicpp-*,\
+misc-*,modernize-*,performance-*,portability-*,readability-*,\
+-bugprone-easily-swappable-parameters,\
+-cppcoreguidelines-pro-bounds-pointer-arithmetic,\
+-cppcoreguidelines-pro-type-member-init,\
+-cppcoreguidelines-init-variables,\
+-cppcoreguidelines-pro-type-reinterpret-cast,\
+-cppcoreguidelines-pro-type-const-cast,\
+-cppcoreguidelines-pro-bounds-array-to-pointer-decay,\
+-cppcoreguidelines-macro-usage,\
+-cppcoreguidelines-pro-bounds-constant-array-index,\
+-cppcoreguidelines-pro-type-vararg,\
+-cppcoreguidelines-avoid-magic-numbers,\
+-hicpp-use-auto,-hicpp-braces-around-statements,-hicpp-member-init,\
+-hicpp-no-array-decay,-hicpp-vararg,-hicpp-named-parameter,\
+-google-readability-braces-around-statements,\
+-google-readability-namespace-comments,\
+-misc-const-correctness,-misc-no-recursion,\
+-modernize-use-trailing-return-type,-modernize-use-auto,\
+-modernize-return-braced-init-list,\
+-readability-identifier-length,-readability-braces-around-statements,\
+-readability-implicit-bool-conversion,-readability-use-anyofallof,\
+-readability-magic-numbers,-readability-named-parameter"

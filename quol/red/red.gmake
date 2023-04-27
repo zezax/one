@@ -1,0 +1,87 @@
+# red common definitions for gmake
+
+.SUFFIXES:
+
+BUILD := $(ROOT)/_build
+BUILDSUB := $(BUILD)/$(SUB)
+
+# MODE options:
+# opt       = optimized for speed
+# pic       = position-independent and optimized, for shared library
+# dbgo      = debugging symbols and optimized
+# dbg       = debugging symbols, no optimization
+# cov       = code coverage build, with symbols, no optimization
+# jemalloc  = use jemalloc library, with symbols, no optimization
+# jemo      = use jemalloc, with symbols and optimized
+# <default> = debugging symbols and address sanitized, no optimization
+
+ifeq ($(MODE), opt)
+  OPT := -O3 -march=native
+else ifeq ($(MODE), pic)
+  OPT := -O3 -march=native -fPIC
+else ifeq ($(MODE), dbgo)
+  OPT := -g -O3 -march=native
+else ifeq ($(MODE), dbg)
+  OPT := -g
+else ifeq ($(MODE), cov)
+  OPT := -g -fprofile-arcs -ftest-coverage
+  LDLIBS += -lgcov
+else ifeq ($(MODE), jemalloc)
+  OPT := -g
+  LDLIBS += -ljemalloc
+  CPPFLAGS += -I/usr/include/jemalloc -DUSE_JEMALLOC
+else ifeq ($(MODE), jemo)
+  OPT := -g -O3 -march=native
+  LDLIBS += -ljemalloc
+  CPPFLAGS += -I/usr/include/jemalloc -DUSE_JEMALLOC
+else
+  OPT := -g -fsanitize=address
+  LDLIBS += -lasan
+endif
+
+# for comparison benchmarks...
+ifneq (,$(wildcard /usr/include/re2/re2.h))
+  HAS_RE2 := 1
+  CPPFLAGS += -DHAS_RE2
+endif
+
+WARN := -Wall -Wextra -Wshadow -Wpointer-arith -Wwrite-strings -Wsign-promo \
+-Wuninitialized -Wconversion -Wfloat-equal -Wrestrict \
+-Wdisabled-optimization -Wduplicated-branches -Wduplicated-cond -Wformat=2 \
+-Wlogical-op -Wnull-dereference -Woverloaded-virtual -Wuseless-cast \
+-Wimplicit-fallthrough=2 -Wmissing-include-dirs -Werror
+CPPFLAGS += -iquote ../include
+
+CXX := g++
+CXXFLAGS := -std=c++20 $(OPT) $(WARN)
+CXXDEPEND = -MMD -MT $(BUILDSUB)/$*.o -MT $(BUILDSUB)/$*.d
+CXXDEPENDONLY = -MM -MT $(BUILDSUB)/$*.o -MT $(BUILDSUB)/$*.d
+
+ifeq ($(MODE), pic)
+  DEPLIBS := $(BUILD)/lib/libred.so
+else
+  DEPLIBS := $(BUILD)/lib/libred.a
+endif
+
+.PHONY: all sure clean distclean
+
+$(BUILDSUB)/%.o: %.cpp
+	mkdir -p $(BUILDSUB)
+	$(CXX) -c $(CXXDEPEND) $(CXXFLAGS) $(CPPFLAGS) $< -o $@
+
+$(BUILDSUB)/%.d: %.cpp
+	mkdir -p $(BUILDSUB)
+	$(CXX) $(CXXDEPENDONLY) $(CPPFLAGS) $< > $@
+
+$(BUILDSUB)/%: %.cpp
+
+$(BUILDSUB)/%: $(BUILDSUB)/%.o $(DEPLIBS)
+	$(CXX) $(LDFLAGS) $< -L$(BUILD)/lib -lred $(LDLIBS) -o $@
+
+%.ii: %.cpp
+	mkdir -p $(BUILDSUB)
+	$(CXX) -E $(CXXFLAGS) $(CPPFLAGS) $< -o $@
+
+%.s: %.cpp
+	mkdir -p $(BUILDSUB)
+	$(CXX) -S $(CXXFLAGS) $(CPPFLAGS) $< -o $@
