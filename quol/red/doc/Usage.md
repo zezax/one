@@ -2,6 +2,9 @@
 
 The simplest usage looks like:
 ```
+#include "Red.h"
+using namespace zezax::red;
+
 Outcome oc = Red::matchFull("0123456789", "[0-9]+");
 ```
 This is achieved by implicit construction of a `Red` object from a string.
@@ -26,7 +29,7 @@ p.add("[0-9]+", 1, 0);
 p.add("[a-z]+", 2, 0);
 Red re(p);
 string input = "...foo123...";
-Outcome oc = re.searchTangent(s);
+Outcome oc = re.searchTangent(input);
 string match = input.substr(oc.start_, oc.end_ - oc.start_);
 cout << oc.result_ << ':' << match << endl;
 ```
