@@ -1,21 +1,26 @@
-quol
+# Project: Zezax/One/Quol
 
-The name of this project directory is quol, because it needed a name.  There
-is an obscure animal called the quoll, but I decided to drop the last L
-becasuse I'm lazy.
+The name of this project directory is `quol`, because it needed a name.
+There is an obscure animal called the quoll,
+but I wanted a four-letter name becasuse I'm lazy.
+It sounds like the beginning of "quality".
 
-The stuff in here is biased toward Debian using systemd.  There is a lot
-of RRD.
+The largest sub-project is `RED`, the DFA regex engine.
+Much of the rest is biased toward Debian using systemd.
+There is a fair amount of RRD.
 
-Possibly outdated directory map:
+Directory map:
 
-+ bin
+- [red](red/) - regular expression DFA library
+- [flume](flume/) - tail many log files and email or update RRD for matching lines
+- [loggle](loggle/) - tail a log file and email matching lines
+- [bin](bin/)
   - hist - histogram utility
   - means - average utility
   - netblock - find smallest CIDR subnet containing a list of IPv4s
   - plotxy - front-end to gnuplot
   - rrd-add-col - add a column to an RRD
-+ sbin
+- [sbin](sbin/)
   - allsnap - call mksnap for a bunch of partitions
   - backup-desktop - script to rsync from always-on computer to backup host
   - backup-laptop - script to rsync from laptop to backup host
@@ -30,6 +35,3 @@ Possibly outdated directory map:
   - newcert - get new certs from letsencrypt.org automatically
   - rbl-check - check for listing in DNSBL email blocking lists
   - ups-rrd - update RRD with UPS battery stats
-+ loggle - tail a log file and email matching lines
-+ flume - tail many log files and email or update RRD for matching lines
-+ red - regular expression dfa library

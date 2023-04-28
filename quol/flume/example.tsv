@@ -1,0 +1,39 @@
+# auth.log
+scan	/var/log/auth.log	sshd.*Accepted password for	rrd	/var/log/attack.rrd	sshokpw	1
+scan	/var/log/auth.log	sshd.*Accepted publickey for	rrd	/var/log/attack.rrd	sshokpk	1
+scan	/var/log/auth.log	sshd.*Failed password for root	rrd	/var/log/attack.rrd	sshbadroot	1
+scan	/var/log/auth.log	sshd.*Failed password for invalid user	rrd	/var/log/attack.rrd	sshbadusr	1
+scan	/var/log/auth.log	sshd.*Failed password for	rrd	/var/log/attack.rrd	sshbadpw	1
+scan	/var/log/auth.log	sshd.*Connection closed by.*preauth	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Did not receive identification string	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Received disconnect from.*preauth	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Bad protocol	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Protocol	rrd	/var/log/attack.rrd	ssherr	1
+scan	/var/log/auth.log	sshd.*Unable to negotiate	rrd	/var/log/attack.rrd	ssherr	1
+# mail.log
+scan	/var/log/mail.log	smtp.*status=sent	rrd	/var/log/spam.rrd	sent	1
+scan	/var/log/mail.log	smtpd.*: client=	rrd	/var/log/spam.rrd	total	1
+scan	/var/log/mail.log	smtpd.*lost connection	rrd	/var/log/attack.rrd	errconn	1
+scan	/var/log/mail.log	smtpd.*does not resolve to address	rrd	/var/log/spam.rrd	baddns	1
+scan	/var/log/mail.log	smtpd.*Helo.*Host not found	rrd	/var/log/spam.rrd	badhelo	1
+scan	/var/log/mail.log	smtpd.*cannot find your hostname	rrd	/var/log/spam.rrd	badrev	1
+scan	/var/log/mail.log	smtpd.*Sender.*Domain not found	rrd	/var/log/spam.rrd	badfrom	1
+scan	/var/log/mail.log	smtpd.*blocked using zen.spamhaus.org	rrd	/var/log/spam.rrd	rblzen	1
+scan	/var/log/mail.log	smtpd.*blocked using bl.spamcop.net	rrd	/var/log/spam.rrd	rblsc	1
+scan	/var/log/mail.log	smtpd.*blocked using b.barracudacentral.org	rrd	/var/log/spam.rrd	rblbc	1
+scan	/var/log/mail.log	smtpd.*too many errors	rrd	/var/log/spam.rrd	errnum	1
+scan	/var/log/mail.log	smtpd.*Relay access denied	rrd	/var/log/spam.rrd	badrelay	1
+scan	/var/log/mail.log	smtpd.*User unknown in local recipient table	rrd	/var/log/spam.rrd	badusr	1
+scan	/var/log/mail.log	lmtp.*status=sent	rrd	/var/log/spam.rrd	deliver	1
+scan	/var/log/mail.log	smtp.*status=deferred	rrd	/var/log/spam.rrd	defer	1
+scan	/var/log/mail.log	smtp.*status=bounced	rrd	/var/log/spam.rrd	bounce	1
+scan	/var/log/mail.log	smtpd.*SSL_accept error	rrd	/var/log/attack.rrd	saslerr	1
+scan	/var/log/mail.log	smtpd.*SASL LOGIN authentication	rrd	/var/log/attack.rrd	saslbadlogin	1
+scan	/var/log/mail.log	smtpd.*SASL PLAIN authentication	rrd	/var/log/attack.rrd	saslbadplain	1
+scan	/var/log/mail.log	smtpd.*SASL authentication failure	rrd	/var/log/attack.rrd	saslbadauth	1
+scan	/var/log/mail.log	smtpd.*non-SMTP command from	rrd	/var/log/attack.rrd	badsmtp	1
+# daemon.log
+scan	/var/log/daemon.log	sensord.*Sensor alarm	mail	name@example.com	ALERT	\*
+scan	/var/log/daemon.log	DHCP	mail	name@example.com	DHCP	\*
+# apache
+scan	/var/log/apache2/access.log	/etc/passwd	rrd	/var/log/attack.rrd	wwwprobe
