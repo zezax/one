@@ -1,2 +1,4 @@
+- rrd.prefix
+- trigger to use regcomp/regexec
 - flush update/email at shutdown
 - ratio graphs

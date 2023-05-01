@@ -12,8 +12,8 @@
 #include "sink.h"
 #include "tailer.h"
 
+using std::make_unique;
 using std::string;
-using std::unique_ptr;
 using std::vector;
 using std::thread;
 
@@ -22,7 +22,7 @@ namespace flume {
 ConfigT::ConfigT()
 : queue_(1024)
 {
-  actor_.reset(new ActorT(this));
+  actor_ = make_unique<ActorT>(this);
 }
 
 
@@ -80,10 +80,9 @@ ConfigT::readCfg(const char *path)
 void
 ConfigT::start()
 {
-  actor_->registerSink("ignore",
-                       unique_ptr<SinkIgnoreT>(new SinkIgnoreT(this)));
-  actor_->registerSink("rrd", unique_ptr<SinkRrdT>(new SinkRrdT(this)));
-  actor_->registerSink("mail", unique_ptr<SinkMailT>(new SinkMailT(this)));
+  actor_->registerSink("ignore", make_unique<SinkIgnoreT>(this));
+  actor_->registerSink("rrd", make_unique<SinkRrdT>(this));
+  actor_->registerSink("mail", make_unique<SinkMailT>(this));
   actor_->start();
   for (auto &it : log2tailer_)
     it.second.start();
