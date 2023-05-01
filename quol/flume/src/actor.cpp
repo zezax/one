@@ -32,7 +32,7 @@ ActorT::~ActorT()
 
 
 void
-ActorT::registerSink(const std::string &key, std::unique_ptr<SinkBaseT> sink)
+ActorT::registerSink(const std::string &key, unique_ptr<SinkBaseT> sink)
 {
   auto it = key2sink_.find(key);
   if (it != key2sink_.end())

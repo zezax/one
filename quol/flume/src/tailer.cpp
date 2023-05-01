@@ -85,7 +85,7 @@ TailerT::run() {
     for (auto &trigger : triggers_) {
       std::smatch mat;
       if (trigger.matches(buf, mat)) {
-        unique_ptr<ActionT> act(new ActionT);
+        unique_ptr<ActionT> act = std::make_unique<ActionT>();
         act->args_.push_back(buf); // whole line first
         trigger.appendArgs(act->args_, mat);
         cfg_->getQueue().enqueue(act.release());
