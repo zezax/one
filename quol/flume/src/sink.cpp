@@ -64,6 +64,7 @@ void SinkIgnoreT::handle(const ActionT *) { }
 
 SinkRrdT::SinkRrdT(ConfigT *cfg)
 : SinkThreadT(cfg),
+  prefix_("/var/log/"),
   interval_(60000),
   debug_(0)
 {
@@ -73,6 +74,7 @@ SinkRrdT::SinkRrdT(ConfigT *cfg)
 void
 SinkRrdT::start()
 {
+  cfg_->getString("rrd.prefix", prefix_);
   cfg_->getInt("rrd.debug", debug_);
   double dd;
   if (cfg_->getDouble("rrd.interval", dd)) {
@@ -94,7 +96,7 @@ SinkRrdT::handle(const ActionT *act)
   }
   if (debug_ >= 1)
     cout << "RRD: " << act->args_[0] << endl;
-  const string &rrd = act->args_[2];
+  const string rrd = prefix_ + act->args_[2];
   const string &name = act->args_[3];
   const string &val = (len > 4) ? act->args_[4] : "1";
   {

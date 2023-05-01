@@ -65,6 +65,7 @@ protected:
   void updateRrd(const std::string &rrd, StateT &state);
 
   std::map<std::string, StateT>  rrd2state_;
+  std::string                    prefix_;
   std::chrono::milliseconds      interval_;
   int                            debug_;
 };

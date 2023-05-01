@@ -86,6 +86,7 @@ Here is a list with descriptions and defaults for documentation purposes:
 - `mail.interval` - maximum time a message can be buffered before sending (300.0)
 - `rrd.debug` - debug output level for RRD sink (0)
 - `rrd.interval` - seconds between RRD updates (60.0)
+- `rrd.prefix` - string to put before rrd_path (/var/log/)
 - `tailer.bufsize` - read buffer size; maximum bytes per line (8192)
 
 ### Implementation
