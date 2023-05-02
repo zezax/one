@@ -11,23 +11,23 @@ TriggerT::TriggerT(const string &pat, const vector<string> &args)
   : args_(args)
 {
   if (pat.find("(?i)") == 0) {
-    regex_.assign(pat.c_str() + 4, std::regex::icase);;
+    regex_.assign(pat.c_str() + 4, REG_EXTENDED | REG_ICASE);;
   }
   else {
-    regex_ = pat;
+    regex_.assign(pat.c_str(), REG_EXTENDED);
   }
 }
 
 
 bool
-TriggerT::matches(const string &str, std::smatch &mat)
+TriggerT::matches(const string &str, MatchT &mat)
 {
-  return std::regex_search(str, mat, regex_);
+  return regex_.search(str, mat);
 }
 
 
 void
-TriggerT::appendArgs(vector<string> &ref, const std::smatch &mat)
+TriggerT::appendArgs(vector<string> &ref, const MatchT &mat)
 {
   size_t nmat = mat.size();
   if (nmat > 10)

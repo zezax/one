@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <chrono>
 #include <iostream>
@@ -83,7 +84,7 @@ TailerT::run() {
   while (!quitReq_) {
     readLine(buf);
     for (auto &trigger : triggers_) {
-      std::smatch mat;
+      MatchT mat;
       if (trigger.matches(buf, mat)) {
         unique_ptr<ActionT> act = std::make_unique<ActionT>();
         act->args_.push_back(buf); // whole line first
