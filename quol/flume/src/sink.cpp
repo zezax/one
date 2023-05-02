@@ -45,11 +45,15 @@ fullWrite(int fd, const string &str)
 
 namespace flume {
 
-SinkThreadT::~SinkThreadT() {
-  quitReq_ = true;
-  cond_.notify_all();
-  if (thr_.joinable())
+void SinkThreadT::stop() {
+  {
+    unique_lock<std::mutex> lock(mtx_);
+    quitReq_ = true;
+    cond_.notify_all();
+  }
+  if (thr_.joinable()) {
     thr_.join();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,6 +72,11 @@ SinkRrdT::SinkRrdT(ConfigT *cfg)
   interval_(60000),
   debug_(0)
 {
+}
+
+
+SinkRrdT::~SinkRrdT() {
+  stop();
 }
 
 
@@ -174,6 +183,11 @@ SinkMailT::SinkMailT(ConfigT *cfg)
 }
 
 
+SinkMailT::~SinkMailT() {
+  stop();
+}
+
+
 void
 SinkMailT::start()
 {
@@ -237,17 +251,21 @@ SinkMailT::run()
 
   while (!quitReq_) {
     cond_.wait_for(lock, sleep_);
-    if (quitReq_)
-      break;
+
+    auto ticks = chrono::system_clock::now();
+    if (!quitReq_) {
+      ticks -= interval_;
+    }
+    time_t longAgo = chrono::system_clock::to_time_t(ticks);
 
     for (auto &item : key2dest_) {
       DestT &dest = item.second;
-
-      auto ticks = chrono::system_clock::now() - interval_;
-      time_t longAgo = chrono::system_clock::to_time_t(ticks);
+      if (dest.msgs_.empty()) {
+	continue;
+      }
 
       if ((dest.msgs_.size() > limit_) ||
-	  ((dest.msgs_.size() > 0) && (dest.msgs_[0].arrival_ < longAgo))) {
+	  (dest.msgs_[0].arrival_ <= longAgo)) {
 	vector<MsgT> vec;
 	dest.msgs_.swap(vec);
 	lock.unlock();
