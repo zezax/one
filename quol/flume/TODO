@@ -1,4 +1,3 @@
-- trigger to use regcomp/regexec
 - accurate interval loops
 - flush update/email at shutdown
 - ratio graphs

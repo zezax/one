@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include <regex>
 #include <string>
 #include <vector>
+
+#include "regex.h"
 
 namespace flume {
 
@@ -12,11 +13,11 @@ class TriggerT {
 public:
   TriggerT(const std::string &pat, const std::vector<std::string> &args);
   ~TriggerT() { }
-  bool matches(const std::string &str, std::smatch &mat);
-  void appendArgs(std::vector<std::string> &ref, const std::smatch &mat);
+  bool matches(const std::string &str, MatchT &mat);
+  void appendArgs(std::vector<std::string> &ref, const MatchT &mat);
 
 protected:
-  std::regex                regex_;
+  RegexT                    regex_;
   std::vector<std::string>  args_;
 };
 
