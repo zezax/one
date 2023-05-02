@@ -32,9 +32,10 @@ protected:
 class SinkThreadT : public SinkBaseT {
 public:
   SinkThreadT(ConfigT *cfg) : SinkBaseT(cfg), quitReq_(false) { }
-  virtual ~SinkThreadT() override;
 
 protected:
+  void stop();
+
   std::thread              thr_;
   std::mutex               mtx_;
   std::condition_variable  cond_;
@@ -53,6 +54,7 @@ public:
 class SinkRrdT : public SinkThreadT {
 public:
   SinkRrdT(ConfigT *cfg);
+  virtual ~SinkRrdT() override;
   virtual void start() override;
   virtual void handle(const ActionT *act) override;
 
@@ -74,6 +76,7 @@ protected:
 class SinkMailT : public SinkThreadT {
 public:
   SinkMailT(ConfigT *cfg);
+  virtual ~SinkMailT() override;
   virtual void start() override;
   virtual void handle(const ActionT *act) override;
 
