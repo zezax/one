@@ -41,8 +41,8 @@ set <TAB> rrd.interval <TAB> 60
 scan <TAB> /var/log/auth.log <TAB> sshd.*Invalid user <TAB> rrd <TAB> /var/log/example.rrd <TAB> invalcnt <TAB> 1
 scan <TAB> /var/log/daemon.log <TAB> (?i)temperature alarm <TAB> mail <TAB> name@example.com <TAB> ALERT <TAB> \*
 ```
-The regular expression is of the ECMAScript type, as implemented by
-`std::regex`.  If it is preceded with the four characters `(?i)`, then it will
+The regular expression is the POSIX extended type, as implemented by
+`regcomp()`.  If it is preceded with the four characters `(?i)`, then it will
 be interpreted as case-insensitive.
 
 Substitution is performed on the remainder of the line.  The special sequence
