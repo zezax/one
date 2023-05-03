@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <condition_variable>
 #include <map>
 #include <mutex>
@@ -68,7 +69,7 @@ protected:
 
   std::map<std::string, StateT>  rrd2state_;
   std::string                    prefix_;
-  std::chrono::milliseconds      interval_;
+  std::chrono::nanoseconds       interval_;
   int                            debug_;
 };
 
@@ -81,9 +82,10 @@ public:
   virtual void handle(const ActionT *act) override;
 
   struct MsgT {
-    time_t       arrival_;
-    std::string  text_;
-    MsgT(time_t t, const std::string &s) : arrival_(t), text_(s) { }
+    std::chrono::system_clock::time_point  arrival_;
+    std::string                            text_;
+    MsgT(std::chrono::system_clock::time_point t, const std::string &s)
+      : arrival_(t), text_(s) { }
   };
 
   struct DestT {
@@ -101,10 +103,10 @@ protected:
 		   const std::vector<MsgT> &msgs);
 
   std::map<std::string, DestT>  key2dest_;
-  std::chrono::milliseconds  sleep_;
-  std::chrono::milliseconds  interval_;
-  size_t                     limit_;
-  int                        debug_;
+  std::chrono::nanoseconds      sleep_;
+  std::chrono::nanoseconds      interval_;
+  size_t                        limit_;
+  int                           debug_;
 };
 
 }

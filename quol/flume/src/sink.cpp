@@ -10,9 +10,13 @@
 
 #include <chrono>
 #include <iostream> // FIXME
+#include <ratio>
 
 namespace chrono = std::chrono;
 
+using namespace std::chrono_literals;
+
+using chrono::system_clock;
 using std::cout; // FIXME
 using std::endl; // FIXME
 using std::string;
@@ -69,7 +73,7 @@ void SinkIgnoreT::handle(const ActionT *) { }
 SinkRrdT::SinkRrdT(ConfigT *cfg)
 : SinkThreadT(cfg),
   prefix_("/var/log/"),
-  interval_(60000),
+  interval_(60s),
   debug_(0)
 {
 }
@@ -89,7 +93,7 @@ SinkRrdT::start()
   if (cfg_->getDouble("rrd.interval", dd)) {
     if (dd < 0.1)
       throw std::invalid_argument("invalid rrd.interval");
-    interval_ = chrono::milliseconds(static_cast<long>(dd * 1000.0));
+    interval_ = chrono::nanoseconds(static_cast<long>(dd * std::nano::den));
   }
   thr_ = std::thread(&SinkRrdT::run, this);
 }
@@ -124,14 +128,16 @@ void
 SinkRrdT::run()
 {
   cout << "rrd update thread start" << endl;
+  auto next = system_clock::now() + interval_;
   unique_lock<std::mutex> lock(mtx_);
 
   while (!quitReq_) {
-    cond_.wait_for(lock, interval_);
+    cond_.wait_until(lock, next);
     if (quitReq_)
       break;
     for (auto &pr : rrd2state_)
       updateRrd(pr.first, pr.second);
+    next += interval_;
   }
 
   cout << "rrd update thread exit" << endl;
@@ -175,8 +181,8 @@ SinkRrdT::updateRrd(const string &rrd, StateT &state)
 
 SinkMailT::SinkMailT(ConfigT *cfg)
 : SinkThreadT(cfg),
-  sleep_(10000),
-  interval_(300000),
+  sleep_(10s),
+  interval_(300s),
   limit_(100),
   debug_(0)
 {
@@ -202,12 +208,12 @@ SinkMailT::start()
   if (cfg_->getDouble("mail.sleep", dd)) {
     if (dd < 0.1)
       throw std::invalid_argument("invalid mail.sleep");
-    sleep_ = chrono::milliseconds(static_cast<long>(dd * 1000.0));
+    sleep_ = chrono::nanoseconds(static_cast<long>(dd * std::nano::den));
   }
   if (cfg_->getDouble("mail.interval", dd)) {
     if (dd < 0.1)
       throw std::invalid_argument("invalid mail.interval");
-    interval_ = chrono::milliseconds(static_cast<long>(dd * 1000.0));
+    interval_ = chrono::nanoseconds(static_cast<long>(dd * std::nano::den));
   }
 
   // run the thread
@@ -223,8 +229,7 @@ SinkMailT::handle(const ActionT *act)
     cout << "MAIL: too few parameters" << endl;
     return;
   }
-  auto ticks = chrono::system_clock::now();
-  time_t now = chrono::system_clock::to_time_t(ticks);
+  auto now = system_clock::now();
   const string &addr = act->args_[2];
   const string &subj = act->args_[3];
   const string &line = act->args_[4];
@@ -252,11 +257,10 @@ SinkMailT::run()
   while (!quitReq_) {
     cond_.wait_for(lock, sleep_);
 
-    auto ticks = chrono::system_clock::now();
+    auto longAgo = system_clock::now();
     if (!quitReq_) {
-      ticks -= interval_;
+      longAgo -= interval_;
     }
-    time_t longAgo = chrono::system_clock::to_time_t(ticks);
 
     for (auto &item : key2dest_) {
       DestT &dest = item.second;
@@ -350,7 +354,8 @@ SinkMailT::composeMail(int fd, const string &addr, const vector<MsgT> &msgs)
     return;
 
   struct tm stm;
-  localtime_r(&msgs[0].arrival_, &stm);
+  time_t arrival = system_clock::to_time_t(msgs[0].arrival_);
+  localtime_r(&arrival, &stm);
   string buf;
   buf.resize(512);
   size_t nb = strftime(&buf[0], buf.size(),

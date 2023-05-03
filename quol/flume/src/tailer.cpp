@@ -14,6 +14,8 @@
 namespace chrono = std::chrono;
 namespace this_thread = std::this_thread;
 
+using namespace std::chrono_literals;
+
 using std::cout;
 using std::endl;
 using std::string;
@@ -137,15 +139,18 @@ TailerT::waitForData()
     }
 
     fstat(fd_, &st);
-    if (st.st_size != off_)
+    if (st.st_size > off_)
       break;
 
     if (++tries > 10) {
       tries = 0;
       doClose();
+      if (st.st_size < off_) { // file truncated
+	off_ = 0;
+      }
     }
     else
-      this_thread::sleep_for(chrono::seconds(1));
+      this_thread::sleep_for(1s);
   }
 }
 
@@ -201,7 +206,7 @@ TailerT::doOpen()
     fd_ = open(path_.c_str(), O_RDONLY | O_CLOEXEC);
     if (fd_ >= 0)
       return;
-    this_thread::sleep_for(chrono::seconds(1));
+    this_thread::sleep_for(1s);
   }
 }
 
