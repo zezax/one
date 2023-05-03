@@ -12,15 +12,16 @@ import subprocess
 
 def usage():
   m = '''Usage: rrd-reorder-col <options>
-  -n           just emit xml to stdout
-  -old <path>  path to existing rrd
-  -new <path>  path to rrd to be created
-  -l           list columns in existing rrd and exit
-  -cols <str>  colon separated list of new column order
-  -type <str>  type to use for non-preexisting columns (GAUGE)
-  -hb <num>    default heartbeat for created columns (300)
-  -min <num>   default minimum for created columns (NaN)
-  -max <num>   default maximum for created columns (NaN)'''
+  -n             just emit xml to stdout
+  -old <path>    path to existing rrd
+  -new <path>    path to rrd to be created
+  -l             list columns in existing rrd and exit
+  -cols <str>    colon separated list of new column order
+  -rename <str>  colon separated pair of column names old:new
+  -type <str>    type to use for non-preexisting columns (GAUGE)
+  -hb <num>      default heartbeat for created columns (300)
+  -min <num>     default minimum for created columns (NaN)
+  -max <num>     default maximum for created columns (NaN)'''
   print(m)
 
 ###############################################################################
@@ -36,6 +37,7 @@ class ReorderT:
     self.defMin = 'NaN'
     self.defMax = 'NaN'
     self.spec = None
+    self.renames = {}  # new -> old
     self.out = None
     self.newOrder = []
     self.new2old = {}
@@ -48,7 +50,7 @@ class ReorderT:
 
     proc = None
     self.out = sys.stdout
-    if self.newPath and (self.newPath != '-'):
+    if not self.nop and self.newPath and (self.newPath != '-'):
       args = ['rrdtool', 'restore', '-', self.newPath]
       proc = subprocess.Popen(args,
                               stdin = subprocess.PIPE,
@@ -166,7 +168,8 @@ class ReorderT:
       name2old[rec['name']] = oidx
 
     for nidx, name in enumerate(self.newOrder):
-      oidx = name2old.get(name)
+      oldName = self.renames.get(name, name)
+      oidx = name2old.get(oldName)
       self.new2old[nidx] = oidx
 
 
@@ -174,8 +177,8 @@ class ReorderT:
     s = ''
     for nidx, oidx in self.new2old.items():
       s += '<ds>\n'
+      s += '  <name>' + self.newOrder[nidx] + '</name>\n'
       if oidx is None:
-        s += '  <name>' + self.newOrder[nidx] + '</name>\n'
         s += '  <type>' + self.defType + '</type>\n'
         s += '  <minimal_heartbeat>%d</minimal_heartbeat>\n' % self.defHb
         s += '  <min>%s</min>\n' % self.defMin
@@ -185,7 +188,7 @@ class ReorderT:
         s += '  <unknown_sec>0</unknown_sec>\n'
       else:
         ds = self.dss[oidx]
-        for key in ['name', 'type', 'minimal_heartbeat', 'min', 'max',
+        for key in ['type', 'minimal_heartbeat', 'min', 'max',
                     'last_ds', 'value', 'unknown_sec']:
           s += '  <%s>%s</%s>\n' % (key, ds[key], key)
       s += '</ds>\n'
@@ -241,6 +244,9 @@ def main(args = None):
         obj.newPath = args.pop(0)
       elif arg == '-cols':
         obj.spec = args.pop(0)
+      elif arg == '-rename':
+        old, new = args.pop(0).split(':')
+        obj.renames[new] = old
       elif arg == '-type':
         obj.defType = args.pop(0)
       elif arg == '-hb':
