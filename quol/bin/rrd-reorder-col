@@ -1,0 +1,283 @@
+#!/usr/bin/python3
+#
+# 5/2/2023 - Initial version
+#
+
+import sys
+import os
+import re
+import subprocess
+
+###############################################################################
+
+def usage():
+  m = '''Usage: rrd-reorder-col <options>
+  -n           just emit xml to stdout
+  -old <path>  path to existing rrd
+  -new <path>  path to rrd to be created
+  -l           list columns in existing rrd and exit
+  -cols <str>  colon separated list of new column order
+  -type <str>  type to use for non-preexisting columns (GAUGE)
+  -hb <num>    default heartbeat for created columns (300)
+  -min <num>   default minimum for created columns (NaN)
+  -max <num>   default maximum for created columns (NaN)'''
+  print(m)
+
+###############################################################################
+
+class ReorderT:
+
+  def __init__(self):
+    self.nop = False
+    self.oldPath = None
+    self.newPath = None
+    self.defType = 'GAUGE'
+    self.defHb = 300
+    self.defMin = 'NaN'
+    self.defMax = 'NaN'
+    self.spec = None
+    self.out = None
+    self.newOrder = []
+    self.new2old = {}
+
+
+  def run(self):
+    if self.spec is None:
+      raise RuntimeError('no -cols specified')
+    self.newOrder = self.spec.split(':')
+
+    proc = None
+    self.out = sys.stdout
+    if self.newPath and (self.newPath != '-'):
+      args = ['rrdtool', 'restore', '-', self.newPath]
+      proc = subprocess.Popen(args,
+                              stdin = subprocess.PIPE,
+                              encoding = 'latin1')
+      self.out = proc.stdin
+
+    self.transform()
+
+    if proc:
+      proc.stdin.close()
+      if proc.wait() != 0:
+        raise RuntimeError('error from rrdtool restore')
+
+
+  def list(self):
+    rv = []
+    namere = re.compile(r'<name>\s*([0-9A-Z_a-z]+)\s*</name>')
+    args = ['rrdtool', 'dump', self.oldPath]
+    with subprocess.Popen(args,
+                          stdout = subprocess.PIPE,
+                          encoding = 'latin1') as pipe:
+      for line in pipe.stdout:
+        mat = namere.search(line)
+        if mat:
+          rv.append(mat.group(1))
+    return rv
+
+
+  def transform(self):
+    state = 0
+    idx = 0
+    delim = '</v><v>'
+    singlere = re.compile(r'<([_a-z]+)>([^<]+)</[_a-z]+>')
+    rowre = re.compile(r'<row><v>(.*)</v></row>')
+    
+    args = ['rrdtool', 'dump', self.oldPath]
+    with subprocess.Popen(args,
+                          stdout = subprocess.PIPE,
+                          encoding = 'latin1') as pipe:
+      for line in pipe.stdout:
+
+        if state == 0:  # header
+          if '<ds>' in line:
+            self.dss = []
+            idx = 0
+            state = 1
+          else:
+            self.out.write(line)
+
+        elif state == 1:  # ds definitions
+          if '<rra>' in line:
+            self.calcOrder()
+            self.out.write(self.formatDss())
+            self.out.write(line)
+            state = 2
+          elif '</ds>' in line:
+            idx += 1
+          else:
+            mat = singlere.search(line)
+            if mat:
+              tag = mat.group(1)
+              val = mat.group(2).strip()
+              while len(self.dss) <= idx:
+                self.dss.append({})
+              self.dss[idx][tag] = val
+
+        elif state == 2:  # rra header
+          if '<ds>' in line:
+            self.preps = []
+            idx = 0
+            state = 3
+          else:
+            self.out.write(line)
+
+        elif state == 3:  # cdp prep
+          if '<database>' in line:
+            self.out.write(self.formatPreps())
+            self.out.write('</cdp_prep>\n')
+            self.out.write(line)
+            state = 4
+          elif '</ds>' in line:
+            idx += 1
+          else:
+            mat = singlere.search(line)
+            if mat:
+              tag = mat.group(1)
+              val = mat.group(2).strip()
+              while len(self.preps) <= idx:
+                self.preps.append({})
+              self.preps[idx][tag] = val
+
+        elif state == 4:  # database rows
+          if '</database>' in line:
+            self.out.write(line)
+            state = 5
+          else:
+            mat = rowre.search(line)
+            if mat:
+              prefix = line[0 : mat.start()]
+              row = mat.group(1).split(delim)
+              self.out.write(self.formatRow(prefix, row))
+
+        elif state == 5:  # next rra
+          self.out.write(line)
+          if '<rra>' in line:
+            state = 2
+
+        elif state == 6:  # end
+          self.out.write(line)
+
+
+  def calcOrder(self):
+    name2old = {}
+    for oidx, rec in enumerate(self.dss):
+      name2old[rec['name']] = oidx
+
+    for nidx, name in enumerate(self.newOrder):
+      oidx = name2old.get(name)
+      self.new2old[nidx] = oidx
+
+
+  def formatDss(self):
+    s = ''
+    for nidx, oidx in self.new2old.items():
+      s += '<ds>\n'
+      if oidx is None:
+        s += '  <name>' + self.newOrder[nidx] + '</name>\n'
+        s += '  <type>' + self.defType + '</type>\n'
+        s += '  <minimal_heartbeat>%d</minimal_heartbeat>\n' % self.defHb
+        s += '  <min>%s</min>\n' % self.defMin
+        s += '  <max>%s</max>\n' % self.defMax
+        s += '  <last_ds>NaN</last_ds>\n'
+        s += '  <value>NaN</value>\n'
+        s += '  <unknown_sec>0</unknown_sec>\n'
+      else:
+        ds = self.dss[oidx]
+        for key in ['name', 'type', 'minimal_heartbeat', 'min', 'max',
+                    'last_ds', 'value', 'unknown_sec']:
+          s += '  <%s>%s</%s>\n' % (key, ds[key], key)
+      s += '</ds>\n'
+    return s
+
+
+  def formatPreps(self):
+    s = ''
+    for nidx, oidx in self.new2old.items():
+      s += '<ds>\n'
+      if oidx is None:
+        s += '  <primary_value>NaN</primary_value>\n'
+        s += '  <secondary_value>NaN</secondary_value>\n'
+        s += '  <value>NaN</value>\n'
+        s += '  <unknown_datapoints>0</unknown_datapoints>\n'
+      else:
+        prep = self.preps[oidx]
+        for key in ['primary_value', 'secondary_value',
+                    'value', 'unknown_datapoints']:
+          s += '  <%s>%s</%s>\n' % (key, prep[key], key)
+      s += '</ds>\n'
+    return s
+
+
+  def formatRow(self, prefix, row):
+    s = prefix
+    s += '<row>'
+    for nidx, oidx in self.new2old.items():
+      if oidx is None:
+        s += '<v>NaN</v>'
+      else:
+        s += '<v>' + row[oidx] + '</v>'
+    s += '</row>\n'
+    return s
+
+###############################################################################
+
+def main(args = None):
+  if args is None:
+    args = sys.argv[1:]
+
+  obj = ReorderT()
+  doList = False
+
+  try:
+    while args and args[0].startswith('-'):
+      arg = args.pop(0)
+      if arg == '-n':
+        obj.nop = True
+      elif arg == '-old':
+        obj.oldPath = args.pop(0)
+      elif arg == '-new':
+        obj.newPath = args.pop(0)
+      elif arg == '-cols':
+        obj.spec = args.pop(0)
+      elif arg == '-type':
+        obj.defType = args.pop(0)
+      elif arg == '-hb':
+        obj.defHb = int(args.pop(0))
+      elif arg == '-min':
+        obj.defMin = args.pop(0)
+      elif arg == '-max':
+        obj.defMax = args.pop(0)
+      elif arg == '-l':
+        doList = True
+      else:
+        raise RuntimeError('unknown option ' + arg)
+    if not obj.oldPath:
+      raise RuntimeError('no -old specified')
+    if not doList:
+      if not (obj.newPath or obj.nop):
+        raise RuntimeError('no -new specified')
+      if not obj.spec:
+        raise RuntimeError('no -cols specified')
+  except Exception as se:
+    usage()
+    print(se)
+    return 1
+
+  if doList:
+    print(':'.join(obj.list()))
+  else:
+    obj.run()
+
+  return 0
+
+
+if __name__ == '__main__':
+  sys.exit(main())
+
+###############################################################################
+# Local Variables:
+# mode: indented-text
+# indent-tabs-mode: nil
+# End:
