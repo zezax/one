@@ -139,12 +139,15 @@ TailerT::waitForData()
     }
 
     fstat(fd_, &st);
-    if (st.st_size != off_)
+    if (st.st_size > off_)
       break;
 
     if (++tries > 10) {
       tries = 0;
       doClose();
+      if (st.st_size < off_) { // file truncated
+	off_ = 0;
+      }
     }
     else
       this_thread::sleep_for(1s);

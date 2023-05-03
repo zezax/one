@@ -1,4 +1,3 @@
-* don't spin on truncated log
 * non-interleaved logging
 * consider mail and rrd for same regex
 * ratio graphs
