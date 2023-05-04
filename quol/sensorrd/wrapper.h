@@ -27,30 +27,30 @@ class ChipIterT {
 public:
   ChipIterT(ContextPtrT ctx);
   ChipIterT &operator++();
-  explicit operator bool() const { return (cname_ != nullptr); }
-  const sensors_chip_name *getChip() const { return cname_; }
+  explicit operator bool() const { return (chip_ != nullptr); }
+  const sensors_chip_name *getChip() const { return chip_; }
 
 private:
   ContextPtrT              ctx_;
   int                      idx_;
-  const sensors_chip_name *cname_;
+  const sensors_chip_name *chip_;
 };
 
 
 class FeatureIterT {
 public:
-  FeatureIterT(ContextPtrT ctx, const sensors_chip_name *cname);
+  FeatureIterT(ContextPtrT ctx, const sensors_chip_name *chip);
   ~FeatureIterT();
   FeatureIterT &operator++();
   explicit operator bool() const { return (feature_ != nullptr); }
 
-  const sensors_chip_name *getChip() const { return cname_; }
+  const sensors_chip_name *getChip() const { return chip_; }
   const sensors_feature *getFeature() const { return feature_; }
   std::string_view getLabel() const { return label_; }
 
 private:
   ContextPtrT              ctx_;
-  const sensors_chip_name *cname_;
+  const sensors_chip_name *chip_;
   int                      idx_;
   const sensors_feature   *feature_;
   const char              *label_;
@@ -62,20 +62,20 @@ private:
 class SubIterT {
 public:
   SubIterT(ContextPtrT              ctx,
-           const sensors_chip_name *cname,
+           const sensors_chip_name *chip,
            const sensors_feature   *feature);
   SubIterT &operator++();
   explicit operator bool() const { return (sub_ != nullptr); }
 
-  const sensors_chip_name *getChip() const { return cname_; }
+  const sensors_chip_name *getChip() const { return chip_; }
   const sensors_feature *getFeature() const { return feature_; }
   const sensors_subfeature *getSub() const { return sub_; }
-  double getVal() const { return val_; }
   std::string_view getName() const { return sub_->name; }
+  double getVal() const { return val_; }
 
 private:
   ContextPtrT               ctx_;
-  const sensors_chip_name  *cname_;
+  const sensors_chip_name  *chip_;
   const sensors_feature    *feature_;
   int                       idx_;
   const sensors_subfeature *sub_;
@@ -85,13 +85,13 @@ private:
 
 class ChipT {
 public:
-  ChipT(ContextPtrT ctx, const sensors_chip_name *cname);
+  ChipT(ContextPtrT ctx, const sensors_chip_name *chip);
   std::string toString() const;
-  static std::string toString(const sensors_chip_name *cname);
+  static std::string toString(const sensors_chip_name *chip);
 
 private:
   ContextPtrT              ctx_;
-  const sensors_chip_name *cname_;
+  const sensors_chip_name *chip_;
 };
 
 
@@ -108,23 +108,30 @@ class AllIterT {
 public:
   AllIterT(ContextPtrT ctx);
   AllIterT &operator++();
-  explicit operator bool() const { return (bool) sIter_; }
+  explicit operator bool() const { return (sub_ != nullptr); }
 
-  const sensors_chip_name *getChip() const { return cIter_.getChip(); }
-  const sensors_feature *getFeature() const { return fIter_->getFeature(); }
-  const sensors_subfeature *getSub() const { return sIter_->getSub(); }
-  std::string_view getLabel() const { return fIter_->getLabel(); }
-  double getVal() const { return sIter_->getVal(); }
-  std::string_view getName() const { return sIter_->getName(); }
+  int getChipIdx() const { return cIdx_; }
+  int getFeatureIdx() const { return fIdx_; }
+  int getSubIdx() const { return sIdx_; }
+  const sensors_chip_name *getChip() const { return chip_; }
+  const sensors_feature *getFeature() const { return feature_; }
+  const sensors_subfeature *getSub() const { return sub_; }
+  std::string_view getLabel() const { return label_; }
+  std::string_view getName() const { return sub_->name; }
+  double getVal() const { return val_; }
 
 private:
-  ContextPtrT                   ctx_;
-  ChipIterT                     cIter_;
-  std::unique_ptr<FeatureIterT> fIter_;
-  std::unique_ptr<SubIterT>     sIter_;
-  int                           cPos_;
-  int                           fPos_;
-  int                           sPos_;
+  void clearLabel();
+
+  ContextPtrT               ctx_;
+  int                       cIdx_;
+  int                       fIdx_;
+  int                       sIdx_;
+  const sensors_chip_name  *chip_;
+  const sensors_feature    *feature_;
+  const sensors_subfeature *sub_;
+  const char               *label_;
+  double                    val_;
 };
 
 
