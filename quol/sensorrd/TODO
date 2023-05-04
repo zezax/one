@@ -1,0 +1,2 @@
+* syslog sensord: Sensor alarm: Chip nct6776-isa-0290: fan1: 0 RPM (min = 700 RPM) [ALARM]
+* RRD needs to make second temp1 into temp1_0
