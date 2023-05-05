@@ -2,7 +2,9 @@
 
 #include <chrono>
 #include <iostream>
+#include <set>
 #include <thread>
+#include <vector>
 
 #include "wrapper.h"
 
@@ -16,6 +18,8 @@ using namespace std::chrono_literals;
 using chrono::system_clock;
 using std::string;
 using std::string_view;
+using std::to_string;
+using std::vector;
 
 namespace {
 
@@ -27,16 +31,37 @@ bool endswith(string_view str, const char *tail) {
   return (suf == tv);
 }
 
+
+vector<string> makeRrdKeys(ContextPtrT ctx) {
+  vector<string> rrdKeys;
+  {
+    std::set<string> seen;
+    for (TupleIterT tpi(ctx); tpi; ++tpi) {
+      TupleT tp = tpi.getTuple();
+      string name = tp.name_;
+      int n = 0;
+      while (seen.count(name) > 0)
+        name = tp.name_ + '_' + to_string(n++);
+      seen.insert(name);
+      rrdKeys.emplace_back(std::move(name));
+    }
+  }
+  return rrdKeys;
+}
+
 } // anonymous
 
 int main(int argc, char **argv) {
   (void) argc; // FIXME rrdpath
   (void) argv;
 
+  ContextPtrT ctx = std::make_shared<ContextT>();
+
+  // one-time pass at startup to derive the rrd keys in order
+  vector<string> rrdKeys = makeRrdKeys(ctx);
+
   chrono::nanoseconds period = 5s; //FIXME
   auto when = system_clock::now();
-
-  ContextPtrT ctx = std::make_shared<ContextT>();
 
   for (int i = 0; i < 2; ++i) { // FIXME quitflag
 
@@ -57,12 +82,9 @@ int main(int argc, char **argv) {
           if (endswith(sv, "_alarm") && (siter.getVal() > 0.0))
             alarm = true;
         }
-        if (!key.empty()) {
-          if (alarm)
-            std::cout << "    " << key << '=' << val << " [ALARM]" << std::endl;
-          else
-            std::cout << "    " << key << '=' << val << std::endl;
-        }
+        if (!key.empty())
+          std::cout << "    " << key << '=' << val
+                    << (alarm ? " [ALARM]" : "") << std::endl;
       }
     }
 
@@ -73,14 +95,23 @@ int main(int argc, char **argv) {
                 << all.getVal() << std::endl;
     }
 
-    for (TupleIterT tit(ctx); tit; ++tit) {
-      TupleT t = tit.getTuple();
+    int rr = 0;
+    string tmpl;
+    string vals = "N";
+    for (TupleIterT tpi(ctx); tpi; ++tpi, ++rr) {
+      TupleT t = tpi.getTuple();
       std::cout << t.chip_ << ':'
                 << t.label_ << ':'
                 << t.name_ << '='
-                << t.val_
+                << t.val_ << ' '
                 << (t.alarm_ ? " [ALARM]" : "")
                 << std::endl;
+      if (!tmpl.empty())
+        tmpl += ':';
+      tmpl += rrdKeys[rr];
+      vals += ':';
+      vals += to_string(t.val_);
+      std::cout << "rrdtool update RRD -t " << tmpl << ' ' << vals << std::endl;
     }
 
     when += period;
