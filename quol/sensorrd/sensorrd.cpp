@@ -6,7 +6,11 @@
 #include <thread>
 #include <vector>
 
-#include "wrapper.h"
+#include <rrd.h>
+
+#include "rrdb.h"
+#include "sensor.h"
+#include "util.h"
 
 namespace chrono = std::chrono;
 namespace this_thread = std::this_thread;
@@ -22,15 +26,6 @@ using std::to_string;
 using std::vector;
 
 namespace {
-
-bool endswith(string_view str, const char *tail) {
-  string_view tv = tail;
-  if (str.size() < tv.size())
-    return false;
-  string_view suf(str.data() + (str.size() - tv.size()), tv.size());
-  return (suf == tv);
-}
-
 
 vector<string> makeRrdKeys(ContextPtrT ctx) {
   vector<string> rrdKeys;
@@ -51,50 +46,28 @@ vector<string> makeRrdKeys(ContextPtrT ctx) {
 
 } // anonymous
 
+
 int main(int argc, char **argv) {
-  (void) argc; // FIXME rrdpath
-  (void) argv;
+  if (argc != 2) {
+    std::cerr << "Usage: sensorrd <rrdPath>" << std::endl;
+    return 1;
+  }
+  string rrdPath = argv[1];
 
   ContextPtrT ctx = std::make_shared<ContextT>();
 
   // one-time pass at startup to derive the rrd keys in order
   vector<string> rrdKeys = makeRrdKeys(ctx);
 
-  chrono::nanoseconds period = 5s; //FIXME
+  if (!pathExists(rrdPath)) {
+    rrdCreate(rrdPath, rrdKeys);
+    std::cout << "created rrd " << rrdPath << std::endl;
+  }
+
+  chrono::nanoseconds period = 60s;
   auto when = system_clock::now();
 
-  for (int i = 0; i < 2; ++i) { // FIXME quitflag
-
-    for (ChipIterT citer(ctx); citer; ++citer) {
-      std::cout << ChipT::toString(citer.getChip()) << std::endl;
-      for (FeatureIterT fiter(ctx, citer.getChip()); fiter; ++fiter) {
-        std::cout << "  " << fiter.getLabel() << std::endl;
-        string key;
-        double val = 0.0;
-        bool alarm = false;
-        for (SubIterT siter(ctx, citer.getChip(), fiter.getFeature());
-             siter; ++siter) {
-          string_view sv = siter.getName();
-          if (endswith(sv, "_input")) {
-            key.assign(sv, 0, sv.size() - 6);
-            val = siter.getVal();
-          }
-          if (endswith(sv, "_alarm") && (siter.getVal() > 0.0))
-            alarm = true;
-        }
-        if (!key.empty())
-          std::cout << "    " << key << '=' << val
-                    << (alarm ? " [ALARM]" : "") << std::endl;
-      }
-    }
-
-    for (AllIterT all(ctx); all; ++all) {
-      std::cout << ChipT::toString(all.getChip()) << ':'
-                << all.getLabel() << ':'
-                << all.getName() << '='
-                << all.getVal() << std::endl;
-    }
-
+  for (;;) { // FIXME quitflag
     int rr = 0;
     string tmpl;
     string vals = "N";
@@ -106,13 +79,16 @@ int main(int argc, char **argv) {
                 << t.val_ << ' '
                 << (t.alarm_ ? " [ALARM]" : "")
                 << std::endl;
-      if (!tmpl.empty())
-        tmpl += ':';
       tmpl += rrdKeys[rr];
+      tmpl += ':';
       vals += ':';
       vals += to_string(t.val_);
-      std::cout << "rrdtool update RRD -t " << tmpl << ' ' << vals << std::endl;
     }
+    if (!tmpl.empty())
+      tmpl.erase(tmpl.end() - 1);
+
+    if (!rrdUpdate(rrdPath, tmpl, vals))
+      std::cout << "failed to update rrd " << tmpl << ' ' << vals << std::endl;
 
     when += period;
     this_thread::sleep_until(when);

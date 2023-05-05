@@ -12,9 +12,11 @@ WARN := -Wall -Wextra -Wshadow -Wpointer-arith -Wwrite-strings -Wsign-promo \
 CXX := g++
 CXXFLAGS := -std=c++17 $(OPT) $(WARN)
 
-LDLIBS += -lsensors
+LDLIBS += -lsensors -lrrd
 
 EXE := sensorrd
+CPPS := $(wildcard *.cpp)
+OBJS := $(CPPS:%.cpp=%.o)
 
 .PHONY: all clean
 
@@ -23,7 +25,7 @@ all: $(EXE)
 clean:
 	rm -f *.o $(EXE)
 
-sensorrd: sensorrd.o wrapper.o
+$(EXE): $(OBJS)
 	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 %.o: %.cpp

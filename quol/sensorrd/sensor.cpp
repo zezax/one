@@ -1,11 +1,12 @@
-// wrapper.cpp - c++ wrapper of lm-sensors api
+// sensor.cpp - c++ wrapper of lm-sensors api
 
-#include "wrapper.h"
+#include "sensor.h"
 
 #include <cstring>
 
 #include <stdexcept>
-#include <iostream> // FIXME
+
+#include "util.h"
 
 namespace zezax::sensorrd {
 
@@ -13,18 +14,6 @@ using std::make_unique;
 using std::runtime_error;
 using std::string;
 using std::string_view;
-
-namespace {
-
-void split(string_view src, string_view &pfx, string_view &suf) {
-  size_t pos = src.find('_');
-  if (pos == string_view::npos)
-    pos = src.size();
-  pfx = string_view(src.data(), pos);
-  suf = string_view(src.data() + pos, src.size() - pos);
-}
-
-} // anonymous
 
 
 ContextT::ContextT()
@@ -118,25 +107,6 @@ SubIterT &SubIterT::operator++() {
       break;
   }
   return *this;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-ChipT::ChipT(ContextPtrT ctx, const sensors_chip_name *chip)
-  : ctx_(std::move(ctx)), chip_(chip) {}
-
-
-string ChipT::toString() const {
-  return toString(chip_);
-}
-
-
-/* static */ string ChipT::toString(const sensors_chip_name *chip) {
-  char buf[1024];
-  int res = sensors_snprintf_chip_name(buf, sizeof(buf), chip);
-  if (res < 0)
-    throw runtime_error("failed to format chip name");
-  return buf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -278,7 +248,7 @@ TupleIterT &TupleIterT::operator++() {
 
     string_view pfx;
     string_view suf;
-    split(iter_.getName(), pfx, suf);
+    split(iter_.getName(), '_', pfx, suf);
     if (suf == "_input")
       val_ = iter_.getVal();
     else if (suf == "_alarm")
@@ -300,7 +270,7 @@ TupleIterT &TupleIterT::operator++() {
 TupleT TupleIterT::getTuple() const {
   string_view pfx;
   string_view suf;
-  split(prevIter_.getName(), pfx, suf);
+  split(prevIter_.getName(), '_', pfx, suf);
   TupleT rv;
   rv.chip_ = ChipT::toString(prevIter_.getChip());
   rv.label_ = prevIter_.getLabel();
@@ -308,6 +278,25 @@ TupleT TupleIterT::getTuple() const {
   rv.val_ = prevVal_;
   rv.alarm_ = prevAlarm_;
   return rv;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+ChipT::ChipT(ContextPtrT ctx, const sensors_chip_name *chip)
+  : ctx_(std::move(ctx)), chip_(chip) {}
+
+
+string ChipT::toString() const {
+  return toString(chip_);
+}
+
+
+/* static */ string ChipT::toString(const sensors_chip_name *chip) {
+  char buf[1024];
+  int res = sensors_snprintf_chip_name(buf, sizeof(buf), chip);
+  if (res < 0)
+    throw runtime_error("failed to format chip name");
+  return buf;
 }
 
 } // namespace zezax::sensorrd

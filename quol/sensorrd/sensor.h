@@ -1,4 +1,4 @@
-// wrapper.h - c++ wrapper of lm-sensors api
+// sensor.h - c++ wrapper of lm-sensors api
 
 #pragma once
 
@@ -83,18 +83,6 @@ private:
 };
 
 
-class ChipT {
-public:
-  ChipT(ContextPtrT ctx, const sensors_chip_name *chip);
-  std::string toString() const;
-  static std::string toString(const sensors_chip_name *chip);
-
-private:
-  ContextPtrT              ctx_;
-  const sensors_chip_name *chip_;
-};
-
-
 class AllIterT {
 public:
   AllIterT(ContextPtrT ctx);
@@ -155,6 +143,18 @@ private:
   bool     prevAlarm_;
   double   val_;
   double   prevVal_;
+};
+
+
+class ChipT {
+public:
+  ChipT(ContextPtrT ctx, const sensors_chip_name *chip);
+  std::string toString() const;
+  static std::string toString(const sensors_chip_name *chip);
+
+private:
+  ContextPtrT              ctx_;
+  const sensors_chip_name *chip_;
 };
 
 } // namespace zezax::sensorrd
