@@ -12,6 +12,18 @@ using std::runtime_error;
 using std::string;
 using std::string_view;
 
+namespace {
+
+void split(string_view src, string_view &pfx, string_view &suf) {
+  size_t pos = src.find('_');
+  if (pos == string_view::npos)
+    pos = src.size();
+  pfx = string_view(src.data(), pos);
+  suf = string_view(src.data() + pos, src.size() - pos);
+}
+
+} // anonymous
+
 
 ContextT::ContextT()
   : ok_(false) {
@@ -141,6 +153,49 @@ AllIterT::AllIterT(ContextPtrT ctx)
 }
 
 
+AllIterT::AllIterT(const AllIterT &other)
+  : ctx_(other.ctx_),
+    cIdx_(other.cIdx_),
+    fIdx_(other.fIdx_),
+    sIdx_(other.sIdx_),
+    chip_(other.chip_),
+    feature_(other.feature_),
+    sub_(other.sub_),
+    label_(nullptr),
+    val_(other.val_) {
+  if (other.label_) {
+    label_ = sensors_get_label(chip_, feature_); // FIXME alloc
+    if (!label_)
+      throw std::bad_alloc();
+  }
+}
+
+
+AllIterT::~AllIterT() {
+  clearLabel();
+}
+
+
+AllIterT &AllIterT::operator=(const AllIterT &rhs) {
+  if (this == &rhs)
+    return *this;
+  cIdx_    = rhs.cIdx_;
+  fIdx_    = rhs.fIdx_;
+  sIdx_    = rhs.sIdx_;
+  chip_    = rhs.chip_;
+  feature_ = rhs.feature_;
+  sub_     = rhs.sub_;
+  val_     = rhs.val_;
+  clearLabel();
+  if (rhs.label_) {
+    label_ = sensors_get_label(chip_, feature_); // FIXME alloc
+    if (!label_)
+      throw std::bad_alloc();
+  }
+  return *this;
+}
+
+
 AllIterT &AllIterT::operator++() {
   for (;;) { // sub
     if (feature_) {
@@ -194,22 +249,61 @@ void AllIterT::clearLabel() {
 ///////////////////////////////////////////////////////////////////////////////
 
 TupleIterT::TupleIterT(ContextPtrT ctx)
-  : iter_(std::move(ctx)), val_(0.0), alarm_(false) {
+  : iter_(ctx),
+    prevIter_(iter_),
+    cIdx_(-1),
+    fIdx_(-1),
+    alarm_(false),
+    prevAlarm_(false),
+    val_(0.0),
+    prevVal_(0.0) {
   ++*this;
 }
 
 
 TupleIterT &TupleIterT::operator++() {
   for (;;) {
-    if (!key_.empty())
+    prevIter_ = iter_;
+    prevAlarm_ = alarm_;
+    prevVal_ = val_;
+    bool first = (cIdx_ < 0);
+    if (!first)
       ++iter_;
     if (!iter_)
       break;
-    string_view name = iter_.getName();
-    key_ = name;
-    break;
+
+    string_view pfx;
+    string_view suf;
+    split(iter_.getName(), pfx, suf);
+    if (suf == "_input")
+      val_ = iter_.getVal();
+    else if (suf == "_alarm")
+      alarm_ = (iter_.getVal() > 0.0);
+
+    int cNew = iter_.getChipIdx();
+    int fNew = iter_.getFeatureIdx();
+    if ((cIdx_ != cNew) || (fIdx_ != fNew)) {
+      cIdx_ = cNew;
+      fIdx_ = fNew;
+      if (!first)
+        break;
+    }
   }
   return *this;
+}
+
+
+TupleT TupleIterT::getTuple() const {
+  string_view pfx;
+  string_view suf;
+  split(prevIter_.getName(), pfx, suf);
+  TupleT rv;
+  rv.chip_ = ChipT::toString(prevIter_.getChip());
+  rv.label_ = prevIter_.getLabel();
+  rv.name_ = pfx;
+  rv.val_ = prevVal_;
+  rv.alarm_ = prevAlarm_;
+  return rv;
 }
 
 } // namespace zezax::sensorrd

@@ -33,12 +33,12 @@ int main(int argc, char **argv) {
   (void) argc; // FIXME rrdpath
   (void) argv;
 
-  chrono::nanoseconds period = 60s;
+  chrono::nanoseconds period = 5s; //FIXME
   auto when = system_clock::now();
 
   ContextPtrT ctx = std::make_shared<ContextT>();
 
-  for (;;) { // FIXME quitflag
+  for (int i = 0; i < 2; ++i) { // FIXME quitflag
 
     for (ChipIterT citer(ctx); citer; ++citer) {
       std::cout << ChipT::toString(citer.getChip()) << std::endl;
@@ -71,6 +71,16 @@ int main(int argc, char **argv) {
                 << all.getLabel() << ':'
                 << all.getName() << '='
                 << all.getVal() << std::endl;
+    }
+
+    for (TupleIterT tit(ctx); tit; ++tit) {
+      TupleT t = tit.getTuple();
+      std::cout << t.chip_ << ':'
+                << t.label_ << ':'
+                << t.name_ << '='
+                << t.val_
+                << (t.alarm_ ? " [ALARM]" : "")
+                << std::endl;
     }
 
     when += period;

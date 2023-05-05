@@ -95,18 +95,12 @@ private:
 };
 
 
-struct TupleT {
-  std::string chip_;
-  std::string label_;
-  std::string name_;
-  double      val_;
-  bool        alarm_;
-};
-
-
 class AllIterT {
 public:
   AllIterT(ContextPtrT ctx);
+  AllIterT(const AllIterT &other);
+  ~AllIterT();
+  AllIterT &operator=(const AllIterT &rhs);
   AllIterT &operator++();
   explicit operator bool() const { return (sub_ != nullptr); }
 
@@ -135,19 +129,32 @@ private:
 };
 
 
+struct TupleT {
+  std::string chip_;
+  std::string label_;
+  std::string name_;
+  double      val_;
+  bool        alarm_;
+};
+
+
 class TupleIterT {
 public:
   TupleIterT(ContextPtrT ctx);
   TupleIterT &operator++();
-  explicit operator bool() const { return (bool) iter_; }
+  explicit operator bool() const { return (iter_ || prevIter_); }
 
   TupleT getTuple() const;
 
 private:
-  AllIterT     iter_;
-  std::string  key_;
-  double       val_;
-  bool         alarm_;
+  AllIterT iter_;
+  AllIterT prevIter_;
+  int      cIdx_;
+  int      fIdx_;
+  bool     alarm_;
+  bool     prevAlarm_;
+  double   val_;
+  double   prevVal_;
 };
 
 } // namespace zezax::sensorrd
