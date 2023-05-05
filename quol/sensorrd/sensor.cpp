@@ -88,7 +88,7 @@ void FeatureIterT::cleanup() {
 SubIterT::SubIterT(ContextPtrT              ctx,
                    const sensors_chip_name *chip,
                    const sensors_feature   *feature)
-  : ctx_(ctx),
+  : ctx_(std::move(ctx)),
     chip_(chip),
     feature_(feature),
     idx_(0),
@@ -223,7 +223,7 @@ void AllIterT::clearLabel() {
 ///////////////////////////////////////////////////////////////////////////////
 
 TupleIterT::TupleIterT(ContextPtrT ctx)
-  : iter_(ctx),
+  : iter_(ctx), // should be move
     prevIter_(iter_),
     cIdx_(-1),
     fIdx_(-1),
