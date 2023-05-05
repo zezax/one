@@ -2,6 +2,8 @@
 
 #include "wrapper.h"
 
+#include <cstring>
+
 #include <stdexcept>
 #include <iostream> // FIXME
 
@@ -164,7 +166,7 @@ AllIterT::AllIterT(const AllIterT &other)
     label_(nullptr),
     val_(other.val_) {
   if (other.label_) {
-    label_ = sensors_get_label(chip_, feature_); // FIXME alloc
+    label_ = sensors_get_label(chip_, feature_);
     if (!label_)
       throw std::bad_alloc();
   }
@@ -186,11 +188,13 @@ AllIterT &AllIterT::operator=(const AllIterT &rhs) {
   feature_ = rhs.feature_;
   sub_     = rhs.sub_;
   val_     = rhs.val_;
-  clearLabel();
-  if (rhs.label_) {
-    label_ = sensors_get_label(chip_, feature_); // FIXME alloc
-    if (!label_)
-      throw std::bad_alloc();
+  if (!label_ || !rhs.label_ || strcmp(label_, rhs.label_)) {
+    clearLabel();
+    if (rhs.label_) {
+      label_ = sensors_get_label(chip_, feature_);
+      if (!label_)
+        throw std::bad_alloc();
+    }
   }
   return *this;
 }
