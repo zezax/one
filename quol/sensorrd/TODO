@@ -1,3 +1,2 @@
-* graceful exit on signal
 * useless std::move()
 * make depend

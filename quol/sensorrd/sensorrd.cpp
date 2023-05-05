@@ -1,8 +1,12 @@
 // sensorrd.cpp - main file
 
+#include <signal.h>
+
+#include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <mutex>
 #include <set>
-#include <thread>
 #include <vector>
 
 #include <rrd.h>
@@ -13,19 +17,32 @@
 #include "util.h"
 
 namespace chrono = std::chrono;
-namespace this_thread = std::this_thread;
-
-using namespace zezax::sensorrd;
 
 using namespace std::chrono_literals;
+using namespace zezax::sensorrd;
 
 using chrono::system_clock;
+using std::condition_variable;
+using std::memory_order_relaxed;
 using std::string;
 using std::string_view;
 using std::to_string;
+using std::unique_lock;
 using std::vector;
 
 namespace {
+
+std::atomic<bool>  gQuitReq = false;
+std::mutex         gMutex;
+condition_variable gCond;
+
+
+void handleSig(int) {
+  gQuitReq.store(true, memory_order_relaxed);
+  unique_lock<std::mutex> lock(gMutex);
+  gCond.notify_all();
+}
+
 
 vector<string> makeRrdKeys(ContextPtrT ctx) {
   vector<string> rrdKeys;
@@ -55,6 +72,7 @@ int main(int argc, char **argv) {
   string rrdPath = argv[1];
 
   openlog("sensorrd", 0, LOG_DAEMON);
+  logSys(LOG_NOTICE, "begin");
 
   ContextPtrT ctx = std::make_shared<ContextT>();
 
@@ -70,7 +88,12 @@ int main(int argc, char **argv) {
   auto when = system_clock::now();
   int minutes = 0;
 
-  for (;;) { // FIXME quitflag
+  unique_lock<std::mutex> lock(gMutex);
+  signal(SIGINT, handleSig);
+  signal(SIGQUIT, handleSig);
+  signal(SIGTERM, handleSig);
+
+  while (!gQuitReq.load(memory_order_relaxed)) {
     int rr = 0;
     string tmpl;
     string vals = "N";
@@ -98,9 +121,11 @@ int main(int argc, char **argv) {
       logSys(LOG_ERR, "failed to update rrd ", tmpl, ' ', vals);
 
     when += period;
-    this_thread::sleep_until(when);
+    gCond.wait_until(lock, when);
     if (++minutes >= 30)
       minutes = 0;
   }
+
+  logSys(LOG_NOTICE, "exiting");
   return 0;
 }
