@@ -13,7 +13,7 @@ Directory map:
 
 - [red](red/) - regular expression DFA library
 - [flume](flume/) - tail many log files and email or update RRD for matching lines
-- [sensorrd](quol/sensorrd/) - lm-sensors logger to syslog and RRD
+- [sensorrd](sensorrd/) - lm-sensors logger to syslog and RRD
 - [loggle](loggle/) - tail a log file and email matching lines
 - [bin](bin/)
   - `hist` - histogram utility
