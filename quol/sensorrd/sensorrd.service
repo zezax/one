@@ -1,0 +1,9 @@
+[Unit]
+Description=Sensor logger and RRD updater
+After=local-fs.target
+
+[Service]
+ExecStart=/usr/local/sbin/sensorrd /var/log/sensord.rrd
+
+[Install]
+WantedBy=multi-user.target
