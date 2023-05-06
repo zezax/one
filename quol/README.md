@@ -21,7 +21,7 @@ Directory map:
   - `netblock` - find smallest CIDR subnet containing a list of IPv4s
   - `plotxy` - front-end to `gnuplot`
   - `rrd-add-col` - add a column to an RRD
-  - `rrd-reorder-col` - add, drop, and/or reorder RRD columns
+  - `rrd-reorder-col` - add, drop, reorder, and/or rename RRD columns
 - [sbin](sbin/)
   - `allsnap` - call `mksnap` for a bunch of partitions
   - `backup-desktop` - script to `rsync` from always-on computer to backup host
