@@ -16,8 +16,7 @@ The alarms are formatted to match what `sensord` did.
 sensorrd <rrdpath>
 ```
 
-In most cases, though, one should install `sensorrd.service` in
-`/etc/systemd/system` and use systemd to run it.
+In most cases, though, one should use systemd to run it.
 
 ## RRD
 
@@ -26,9 +25,21 @@ based on the available sensors.
 The RRD should be compatible with ones created by and/or used by
 `sensord`.
 The method of RRD updates is more robust than `sensord`,
-as it does not depend on the order of each DS or sensor.
+as it does not depend on the order of each DS in the RRD.
 
-## Dependencies
+## Installation
+
+The basic procedure I used is:
+```
+make MODE=opt
+sudo cp sensorrd /usr/local/sbin
+sudo cp sensorrd.service /etc/systemd/system
+sudo systemctl daemon-reload
+sudo systemctl start sensorrd
+sudo systemctl enable sensorrd
+```
+
+### Dependencies
 
 At least on Debian, these packages are needed for compilation:
 
