@@ -1,7 +1,11 @@
 # Makefile
 
-OPT := -g -fsanitize=address
-LDLIBS += -lasan
+ifeq ($(MODE), opt)
+  CFLAGS += -O3 -march=native
+else
+  OPT := -g -fsanitize=address
+  LDLIBS += -lasan
+endif
 
 WARN := -Wall -Wextra -Wshadow -Wpointer-arith -Wwrite-strings -Wsign-promo \
 -Wuninitialized -Wconversion -Wfloat-equal -Wrestrict \
