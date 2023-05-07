@@ -8,7 +8,7 @@ using `sensord` for:
 - To log alarms to syslog
 - To populate values in RRD
 
-`sensorrd` does all its logging to syslog.
+`sensorrd` does all its logging to syslog (facility daemon).
 The alarms are formatted to match what `sensord` did.
 
 ## Usage

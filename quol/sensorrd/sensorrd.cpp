@@ -65,11 +65,13 @@ vector<string> makeRrdKeys(ContextPtrT ctx) {
 
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
+  string rrdPath;
+  if (argc == 2)
+    rrdPath = argv[1];
+  else if (argc > 2) {
     logErr("Usage: sensorrd <rrdPath>");
     return 1;
   }
-  string rrdPath = argv[1];
 
   openlog("sensorrd", 0, LOG_DAEMON);
   logSys(LOG_NOTICE, "begin");
@@ -77,11 +79,17 @@ int main(int argc, char **argv) {
   ContextPtrT ctx = std::make_shared<ContextT>();
 
   // one-time pass at startup to derive the rrd keys in order
-  vector<string> rrdKeys = makeRrdKeys(ctx);
-
-  if (!pathExists(rrdPath)) {
-    rrdCreate(rrdPath, rrdKeys);
-    logSys(LOG_NOTICE, "created rrd ", rrdPath);
+  vector<string> rrdKeys;
+  if (rrdPath.empty())
+    logSys(LOG_INFO, "not logging to any rrd");
+  else {
+    rrdKeys = makeRrdKeys(ctx);
+    if (pathExists(rrdPath))
+      logSys(LOG_INFO, "logging to rrd ", rrdPath);
+    else{
+      rrdCreate(rrdPath, rrdKeys);
+      logSys(LOG_NOTICE, "created rrd ", rrdPath);
+    }
   }
 
   chrono::nanoseconds period = 60s;
@@ -109,15 +117,17 @@ int main(int argc, char **argv) {
         minutes = 0;
       }
 
-      tmpl += rrdKeys[rr];
-      tmpl += ':';
-      vals += ':';
-      append(vals, t.val_);
+      if (!rrdPath.empty()) {
+        tmpl += rrdKeys[rr];
+        tmpl += ':';
+        vals += ':';
+        append(vals, t.val_);
+      }
     }
     if (!tmpl.empty())
       tmpl.erase(tmpl.end() - 1);
 
-    if (!rrdUpdate(rrdPath, tmpl, vals))
+    if (!rrdPath.empty() && !rrdUpdate(rrdPath, tmpl, vals))
       logSys(LOG_ERR, "failed to update rrd ", tmpl, ' ', vals);
 
     when += period;
