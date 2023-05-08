@@ -13,10 +13,11 @@ The alarms are formatted to match what `sensord` did.
 
 ## Usage
 ```
-sensorrd <rrdpath>
+sensorrd [<rrdpath>]
 ```
 
 In most cases, though, one should use systemd to run it.
+If the RRD path is omitted, it only logs to syslog.
 
 ## RRD
 
@@ -26,6 +27,13 @@ The RRD should be compatible with ones created by and/or used by
 `sensord`.
 The method of RRD updates is more robust than `sensord`,
 as it does not depend on the order of each DS in the RRD.
+The default RRAs are as follows:
+```
+RRA:AVERAGE:0.5:1:1800    -- 30 hours of minutes
+RRA:AVERAGE:0.5:5:2880    -- 10 days of 5 minutes
+RRA:AVERAGE:0.5:60:960    -- 40 days of hours
+RRA:AVERAGE:0.5:1440:3653 -- 10 years of days
+```
 
 ## Installation
 
