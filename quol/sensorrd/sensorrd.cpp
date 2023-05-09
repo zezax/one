@@ -1,6 +1,7 @@
 // sensorrd.cpp - main file
 
 #include <signal.h>
+#include <stdlib.h>
 
 #include <atomic>
 #include <chrono>
@@ -58,6 +59,8 @@ vector<string> makeRrdKeys(ContextPtrT ctx) {
       rrdKeys.emplace_back(std::move(name));
     }
   }
+
+  rrdKeys.emplace_back("loadavg");
   return rrdKeys;
 }
 
@@ -118,17 +121,23 @@ int main(int argc, char **argv) {
       }
 
       if (!rrdPath.empty()) {
-        tmpl += rrdKeys[rr];
-        tmpl += ':';
-        vals += ':';
-        append(vals, t.val_);
+        concat(tmpl, rrdKeys[rr], ':');
+        concat(vals, ':', t.val_);
       }
     }
-    if (!tmpl.empty())
-      tmpl.erase(tmpl.end() - 1);
 
-    if (!rrdPath.empty() && !rrdUpdate(rrdPath, tmpl, vals))
-      logSys(LOG_ERR, "failed to update rrd ", tmpl, ' ', vals);
+    if (!rrdPath.empty()) {
+      double load;
+      if (getloadavg(&load, 1) > 0) {
+        concat(tmpl, rrdKeys[rr], ':');
+        concat(vals, ':', load);
+      }
+      if (!tmpl.empty())
+        tmpl.erase(tmpl.end() - 1);
+
+      if (!rrdUpdate(rrdPath, tmpl, vals))
+        logSys(LOG_ERR, "failed to update rrd ", tmpl, ' ', vals);
+    }
 
     when += period;
     gCond.wait_until(lock, when);

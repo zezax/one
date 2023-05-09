@@ -1,7 +1,7 @@
 # Makefile
 
 ifeq ($(MODE), opt)
-  CFLAGS += -O3 -march=native
+  OPT := -O3 -march=native
 else
   OPT := -g -fsanitize=address
   LDLIBS += -lasan

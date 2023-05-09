@@ -28,6 +28,10 @@ void guessMinMax(const string &key, string &minStr, string &maxStr) {
     minStr = "-25";
     maxStr = "25";
   }
+  else if (key == "loadavg") { // count
+    minStr = "0";
+    maxStr = "NaN";
+  }
   else {
     minStr = "NaN";
     maxStr = "NaN";
