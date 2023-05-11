@@ -4,6 +4,7 @@
 
 #include <cstring>
 
+#include <algorithm>
 #include <stdexcept>
 
 #include "util.h"
@@ -11,6 +12,7 @@
 namespace zezax::sensorrd {
 
 using std::make_unique;
+using std::make_shared;
 using std::runtime_error;
 using std::string;
 using std::string_view;
@@ -111,6 +113,31 @@ SubIterT &SubIterT::operator++() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ChipCmpT {
+  bool operator()(const sensors_chip_name *aa,
+                  const sensors_chip_name *bb) {
+    // reaching in under the covers a bit...
+    if (aa->bus.type < bb->bus.type) // primary sort: bus type
+      return true;
+    if (aa->bus.type > bb->bus.type)
+      return false;
+
+    if (aa->bus.nr < bb->bus.nr) // secondard sort: bus number
+      return true;
+    if (aa->bus.nr > bb->bus.nr)
+      return false;
+
+    int cmp = strcmp(aa->prefix, bb->prefix); // tertiary sort: name
+    if (cmp < 0)
+      return true;
+    if (cmp > 0)
+      return true;
+
+    return (aa->addr < bb->addr); // final sort: address
+  }
+};
+
+
 AllIterT::AllIterT(ContextPtrT ctx)
   : ctx_(std::move(ctx)),
     cIdx_(0),
@@ -134,7 +161,8 @@ AllIterT::AllIterT(const AllIterT &other)
     feature_(other.feature_),
     sub_(other.sub_),
     label_(nullptr),
-    val_(other.val_) {
+    val_(other.val_),
+    chipAry_(other.chipAry_) {
   if (other.label_) {
     label_ = sensors_get_label(chip_, feature_);
     if (!label_)
@@ -158,6 +186,7 @@ AllIterT &AllIterT::operator=(const AllIterT &rhs) {
   feature_ = rhs.feature_;
   sub_     = rhs.sub_;
   val_     = rhs.val_;
+  chipAry_ = rhs.chipAry_;
   if (!label_ || !rhs.label_ || strcmp(label_, rhs.label_)) {
     clearLabel();
     if (rhs.label_) {
@@ -171,6 +200,17 @@ AllIterT &AllIterT::operator=(const AllIterT &rhs) {
 
 
 AllIterT &AllIterT::operator++() {
+  // for determinism, we need the chips in sorted order
+  if (!chipAry_) {
+    chipAry_ = make_shared<ChipVecT>();
+    int nr = 0;
+    const sensors_chip_name *scn;
+    while ((scn = sensors_get_detected_chips(nullptr, &nr)))
+      chipAry_->push_back(scn);
+    ChipCmpT cmp;
+    std::sort(chipAry_->begin(), chipAry_->end(), cmp);
+  }
+
   for (;;) { // sub
     if (feature_) {
       for (;;) {
@@ -202,9 +242,9 @@ AllIterT &AllIterT::operator++() {
       }
 
       // chip
-      chip_ = sensors_get_detected_chips(nullptr, &cIdx_);
-      if (!chip_)
+      if (cIdx_ >= static_cast<int>(chipAry_->size()))
         return *this; // gotta exit, no more chips
+      chip_ = (*chipAry_)[cIdx_++];
       fIdx_ = 0;
     }
   }
