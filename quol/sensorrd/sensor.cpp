@@ -131,7 +131,7 @@ struct ChipCmpT {
     if (cmp < 0)
       return true;
     if (cmp > 0)
-      return true;
+      return false;
 
     return (aa->addr < bb->addr); // final sort: address
   }
