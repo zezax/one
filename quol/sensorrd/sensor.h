@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace zezax::sensorrd {
 
@@ -21,6 +22,8 @@ private:
 
 
 typedef std::shared_ptr<ContextT> ContextPtrT;
+typedef std::vector<const sensors_chip_name *> ChipVecT;
+typedef std::shared_ptr<ChipVecT> ChipVecPtrT;
 
 
 class ChipIterT {
@@ -114,6 +117,7 @@ private:
   const sensors_subfeature *sub_;
   const char               *label_;
   double                    val_;
+  ChipVecPtrT               chipAry_;
 };
 
 
