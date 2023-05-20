@@ -11,7 +11,7 @@ CPPS := $(wildcard *.cpp)
 EXES := $(CPPS:%.cpp=$(BUILDSUB)/%)
 TESTS := $(CPPS:%.cpp=test-%)
 
-LDLIBS += -lgtest_main -lgtest
+LDLIBS += -lgtest_main -lgtest -lpthread
 
 all: $(EXES)
 

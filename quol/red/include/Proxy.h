@@ -163,7 +163,7 @@ public:
   }
 
   static Value resultAndDeadEnd(Result res, bool de) {
-    return (res & resultMask_) | (de << deadEndShift_);
+    return static_cast<Value>((res & resultMask_) | (de << deadEndShift_));
   }
 
 private:
