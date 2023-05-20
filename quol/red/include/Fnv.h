@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <stddef.h>
+
 #include <cstdint>
 #include <type_traits>
 
