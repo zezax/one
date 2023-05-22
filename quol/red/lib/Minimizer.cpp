@@ -244,7 +244,7 @@ void handleTwins(DfaId             stateId,
 
   blocks[blockId].clear(stateId);
   blocks[twin].insert(stateId);
-  patches.emplace(blockId, twin);
+  patches.emplace(Patch{blockId, twin});
 }
 
 

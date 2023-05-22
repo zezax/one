@@ -100,7 +100,7 @@ size_t Red::collect(string_view text, vector<Outcome> &out) {
     if (!oc)
       break;
     size_t off = ptr - beg;
-    out.emplace_back(oc.result_, off + oc.start_, off + oc.end_);
+    out.emplace_back(Outcome{oc.result_, off + oc.start_, off + oc.end_});
     ptr += oc.end_;
   }
   return out.size();
@@ -114,7 +114,7 @@ size_t Red::collect(const char *text, vector<Outcome> &out) {
     if (!oc)
       break;
     size_t off = ptr - text;
-    out.emplace_back(oc.result_, off + oc.start_, off + oc.end_);
+    out.emplace_back(Outcome{oc.result_, off + oc.start_, off + oc.end_});
     ptr += oc.end_;
   }
   return out.size();
