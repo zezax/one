@@ -26,6 +26,8 @@ TEST(DefaultMap, smoke) {
   EXPECT_EQ(3, m2.size());
   m2 = m2;
   EXPECT_EQ(3, m2.size());
+#if defined(__GNUC__) && (__GNUC__ > 10)
   m2 = std::move(m2);
   EXPECT_EQ(3, m2.size()); // seems to have special case for self-move assign
+#endif /* __GNUC__ > 10 */
 }
