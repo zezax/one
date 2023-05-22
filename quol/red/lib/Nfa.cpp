@@ -153,10 +153,8 @@ vector<NfaStateTransition> NfaObj::allAcceptingTransitions(NfaId id) const {
   vector<NfaStateTransition> rv;
   for (NfaId state : allStates(id))
     for (const NfaTransition &trans : states_[state].transitions_)
-      if (accepts(trans.next_)) {
-        NfaStateTransition nst{state, trans};
-        rv.emplace_back(std::move(nst));
-      }
+      if (accepts(trans.next_))
+        rv.emplace_back(NfaStateTransition{state, trans});
   return rv;
 }
 
@@ -170,10 +168,8 @@ void NfaObj::allAcceptingStatesTransitions(
     if (accepts(state))
       accStates.push_back(state);
     for (const NfaTransition &trans : states_[state].transitions_)
-      if (accepts(trans.next_)) {
-        NfaStateTransition nst{state, trans};
-        accTrans.emplace_back(std::move(nst));
-      }
+      if (accepts(trans.next_))
+        accTrans.emplace_back(NfaStateTransition{state, trans});
   }
 }
 
@@ -200,8 +196,8 @@ NfaId NfaObj::stateConcat(NfaId xx, NfaId yy) {
   allAcceptingStatesTransitions(xx, accStates, accTrans);
 
   for (NfaStateTransition &strans : accTrans) {
-    NfaTransition tr{yy, strans.transition_.multiChar_}; // FIXME
-    addTransition(states_[strans.state_], std::move(tr));
+    addTransition(states_[strans.state_],
+                  NfaTransition{yy, strans.transition_.multiChar_});
   }
 
   NfaState &sxx = states_[xx];
@@ -290,8 +286,7 @@ NfaId NfaObj::stateWildcard() { // basically dot-star
   mc.setAll();
   NfaId init = newState(0);
   NfaId goal = newGoalState();
-  NfaTransition tr{goal, mc}; // FIXME constructor
-  states_[init].transitions_.emplace_back(std::move(tr));
+  states_[init].transitions_.emplace_back(NfaTransition{goal, mc});
   return stateKleenStar(init);
 }
 
@@ -304,8 +299,7 @@ NfaId NfaObj::stateEndMark(CharIdx res) {
   mc.insert(x);
   NfaId init = newState(0);
   NfaId goal = newGoalState();
-  NfaTransition tr{goal, mc}; // FIXME constructor
-  states_[init].transitions_.emplace_back(std::move(tr));
+  states_[init].transitions_.emplace_back(NfaTransition{goal, mc});
   return init;
 }
 

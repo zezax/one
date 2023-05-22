@@ -743,7 +743,7 @@ size_t matchAllCore(const Executable     &exec,
         out.back().end_ = idx + 1;
       else {
         prevResult = result;
-        out.emplace_back(result, matchStart, idx + 1);
+        out.emplace_back(Outcome{result, matchStart, idx + 1});
       }
     }
     else {

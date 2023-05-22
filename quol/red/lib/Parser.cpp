@@ -231,8 +231,7 @@ NfaId Parser::parseUnit() {
 NfaId Parser::parseCharBits() {
   NfaId init = nfa_.newState(0);
   NfaId goal = nfa_.newGoalState();
-  NfaTransition tr{goal, tok_.multiChar_}; // FIXME: constructor
-  nfa_[init].transitions_.emplace_back(std::move(tr));
+  nfa_[init].transitions_.emplace_back(NfaTransition{goal, tok_.multiChar_});
   return init;
 }
 
