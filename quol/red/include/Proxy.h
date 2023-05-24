@@ -133,6 +133,8 @@ public:
 
   const State *state() const { return state_; }
 
+  void restore(const void *ptr) { state_ = static_cast<const State *>(ptr); }
+
   static bool resultFits(Result maxResult) {
     return (maxResult <= maxResult_);
   }

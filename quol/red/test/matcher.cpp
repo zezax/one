@@ -774,5 +774,25 @@ TEST_P(MatcherTest, match) {
 }
 
 
+TEST_P(MatcherTest, charByChar) {
+  Format fmt = GetParam();
+  Executable rex;
+  {
+    Parser p;
+    p.add("ale+", 1, 0);
+    p.add("ale*x", 2, 0);
+    rex = compile(p, fmt);
+  }
+  StatefulMatcher sm(rex);
+  EXPECT_EQ(0, sm.result());
+  EXPECT_EQ(0, sm.advance('a'));
+  EXPECT_EQ(0, sm.advance('l'));
+  EXPECT_EQ(1, sm.advance('e'));
+  EXPECT_EQ(1, sm.advance('e'));
+  EXPECT_EQ(2, sm.advance('x'));
+  EXPECT_EQ(2, sm.result());
+}
+
+
 INSTANTIATE_TEST_SUITE_P(A, MatcherTest,
   Values(fmtDirectAuto, fmtDirect1, fmtDirect2, fmtDirect4));
