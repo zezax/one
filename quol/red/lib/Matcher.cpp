@@ -86,4 +86,60 @@ size_t matchAll(const Executable &exec,
   ZEZAX_RED_FMT_SWITCH(matchAllCore, styTangent, true, exec, it, proxy, out)
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+StatefulMatcher::StatefulMatcher(const Executable &exec)
+  : fmt_(exec.getFormat()),
+    result_(0),
+    base_(exec.getBase()),
+    state_(nullptr),
+    equivMap_(exec.getEquivMap()) {
+  const FileHeader *hdr = exec.getHeader();
+  switch (fmt_) {
+  case fmtDirect1: {
+    DfaProxy<fmtDirect1> proxy;
+    proxy.init(base_, hdr->initialOff_);
+    result_ = proxy.result();
+    state_ = proxy.state();
+    break;
+  }
+  case fmtDirect2: {
+    DfaProxy<fmtDirect2> proxy;
+    proxy.init(base_, hdr->initialOff_);
+    result_ = proxy.result();
+    state_ = proxy.state();
+    break;
+  }
+  case fmtDirect4: {
+    DfaProxy<fmtDirect4> proxy;
+    proxy.init(base_, hdr->initialOff_);
+    result_ = proxy.result();
+    state_ = proxy.state();
+    break;
+  }
+  default:
+    throw RedExceptExec("unrecognized format");
+  }
+}
+
+
+Result StatefulMatcher::advance(Byte input) {
+  switch (fmt_) {
+  case fmtDirect1: {
+    DfaProxy<fmtDirect1> proxy;
+    return advanceCore(input, proxy);
+  }
+  case fmtDirect2: {
+    DfaProxy<fmtDirect2> proxy;
+    return advanceCore(input, proxy);
+  }
+  case fmtDirect4: {
+    DfaProxy<fmtDirect4> proxy;
+    return advanceCore(input, proxy);
+  }
+  default:
+    throw RedExceptExec("unrecognized format");
+  }
+}
+
 } // namespace zezax::red

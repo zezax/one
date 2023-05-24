@@ -756,4 +756,30 @@ size_t matchAllCore(const Executable     &exec,
   return out.size();
 }
 
+
+// this is slower but more flexible than the functions above
+class StatefulMatcher {
+public:
+  StatefulMatcher(const Executable &exec); // exec must outlive this object
+
+  Result advance(Byte input);
+  Result result() const { return result_; }
+
+private:
+  template <class DfaProxyT> Result advanceCore(Byte input, DfaProxyT dfap) {
+    Byte byte = equivMap_[input];
+    dfap.restore(state_);
+    dfap.next(base_, byte);
+    state_ = dfap.state();
+    result_ = dfap.result();
+    return result_;
+  }
+
+  Format            fmt_;
+  Result            result_;
+  const char       *base_;
+  const void       *state_;
+  const Byte       *equivMap_;
+};
+
 } // namespace zezax::red
