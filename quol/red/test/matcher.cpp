@@ -16,7 +16,11 @@ using testing::TestWithParam;
 using testing::Values;
 
 
-TEST(Matcher, case) {
+class MatcherTest : public TestWithParam<Format> {};
+
+
+TEST_P(MatcherTest, case) {
+  Format fmt = GetParam();
   Executable rex;
   Executable rexi;
   {
@@ -24,8 +28,8 @@ TEST(Matcher, case) {
     Parser pi;
     p.add("abc", 1, 0);
     pi.add("abc", 1, fIgnoreCase);
-    rex = compile(p);
-    rexi = compile(pi);
+    rex = compile(p, fmt);
+    rexi = compile(pi, fmt);
   }
   EXPECT_EQ(1, (check<styFull, false>(rex, "abc")));
   EXPECT_EQ(0, (check<styFull, false>(rex, "aBc")));
@@ -38,13 +42,14 @@ TEST(Matcher, case) {
 }
 
 
-TEST(Matcher, endmarks) {
+TEST_P(MatcherTest, endmarks) {
+  Format fmt = GetParam();
   Executable rex;
   {
     Parser p;
     p.add("abe", 1, 0);
     p.add("ace", 2, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   EXPECT_EQ(1, (check<styFull, false>(rex, "abe")));
   EXPECT_EQ(2, (check<styFull, false>(rex, "ace")));
@@ -53,13 +58,15 @@ TEST(Matcher, endmarks) {
 }
 
 
-TEST(Matcher, start) {
+TEST_P(MatcherTest, start) {
+  Format fmt = GetParam();
+
   // degenerate case...
   Executable rex;
   {
     Parser p;
     p.add("a*", 1, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   Outcome oc = search<styLast, true>(rex, "123a");
   EXPECT_EQ(1, oc.result_);
@@ -74,7 +81,7 @@ TEST(Matcher, start) {
   {
     Parser p;
     p.add(".*[a-z]+", 1, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   oc = search<styLast, true>(rex, "123a");
   EXPECT_EQ(1, oc.result_);
@@ -87,13 +94,14 @@ TEST(Matcher, start) {
 }
 
 
-TEST(Matcher, startEnd) {
+TEST_P(MatcherTest, startEnd) {
+  Format fmt = GetParam();
   Executable rex;
   {
     Parser p;
     p.add("[^a]*ab*c",  1, 0);
     p.add("[^d]*dummy", 2, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   Outcome oc = match(rex, "abbc", styLast);
   EXPECT_EQ(1, oc.result_);
@@ -118,12 +126,13 @@ TEST(Matcher, startEnd) {
 
 // check & match
 
-TEST(Matcher, matchTangent) {
+TEST_P(MatcherTest, matchTangent) {
+  Format fmt = GetParam();
   Executable rex;
   {
     Parser p;
     p.add("[0-9]+", 1, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   Outcome oc = match(rex, "0123456789abcdef", styInstant);
   EXPECT_EQ(1, oc.result_);
@@ -137,14 +146,15 @@ TEST(Matcher, matchTangent) {
 }
 
 
-TEST(Matcher, matchLast) {
+TEST_P(MatcherTest, matchLast) {
+  Format fmt = GetParam();
   Executable rex;
   {
     Parser p;
     p.add("New", 1, fLooseStart);
     p.add("New York", 2, fLooseStart);
     p.add("York", 3, fLooseStart);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   Outcome oc = match(rex, "I love New York.", styLast);
   EXPECT_EQ(2, oc.result_);
@@ -153,7 +163,8 @@ TEST(Matcher, matchLast) {
 }
 
 
-TEST(Matcher, verifyInstant) {
+TEST_P(MatcherTest, verifyInstant) {
+  Format fmt = GetParam();
   Style style = styInstant;
   Executable rex;
   {
@@ -161,7 +172,7 @@ TEST(Matcher, verifyInstant) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = "1";
@@ -202,7 +213,8 @@ TEST(Matcher, verifyInstant) {
 }
 
 
-TEST(Matcher, verifyFirst) {
+TEST_P(MatcherTest, verifyFirst) {
+  Format fmt = GetParam();
   Style style = styFirst;
   Executable rex;
   {
@@ -210,7 +222,7 @@ TEST(Matcher, verifyFirst) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = "1";
@@ -251,7 +263,8 @@ TEST(Matcher, verifyFirst) {
 }
 
 
-TEST(Matcher, verifyTangent) {
+TEST_P(MatcherTest, verifyTangent) {
+  Format fmt = GetParam();
   Style style = styTangent;
   Executable rex;
   {
@@ -259,7 +272,7 @@ TEST(Matcher, verifyTangent) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = "1";
@@ -300,7 +313,8 @@ TEST(Matcher, verifyTangent) {
 }
 
 
-TEST(Matcher, verifyLast) {
+TEST_P(MatcherTest, verifyLast) {
+  Format fmt = GetParam();
   Style style = styLast;
   Executable rex;
   {
@@ -308,7 +322,7 @@ TEST(Matcher, verifyLast) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = "1";
@@ -349,7 +363,8 @@ TEST(Matcher, verifyLast) {
 }
 
 
-TEST(Matcher, verifyFull) {
+TEST_P(MatcherTest, verifyFull) {
+  Format fmt = GetParam();
   Style style = styFull;
   Executable rex;
   {
@@ -357,7 +372,7 @@ TEST(Matcher, verifyFull) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = "1";
@@ -399,7 +414,8 @@ TEST(Matcher, verifyFull) {
 
 // search
 
-TEST(Matcher, searchInstant) {
+TEST_P(MatcherTest, searchInstant) {
+  Format fmt = GetParam();
   Style style = styInstant;
   Executable rex;
   {
@@ -407,7 +423,7 @@ TEST(Matcher, searchInstant) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = ".,_1";
@@ -444,7 +460,8 @@ TEST(Matcher, searchInstant) {
 }
 
 
-TEST(Matcher, searchFirst) {
+TEST_P(MatcherTest, searchFirst) {
+  Format fmt = GetParam();
   Style style = styFirst;
   Executable rex;
   {
@@ -452,7 +469,7 @@ TEST(Matcher, searchFirst) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = ".,_1";
@@ -489,7 +506,8 @@ TEST(Matcher, searchFirst) {
 }
 
 
-TEST(Matcher, searchTangent) {
+TEST_P(MatcherTest, searchTangent) {
+  Format fmt = GetParam();
   Style style = styTangent;
   Executable rex;
   {
@@ -497,7 +515,7 @@ TEST(Matcher, searchTangent) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = ".,_1";
@@ -534,7 +552,8 @@ TEST(Matcher, searchTangent) {
 }
 
 
-TEST(Matcher, searchLast) {
+TEST_P(MatcherTest, searchLast) {
+  Format fmt = GetParam();
   Style style = styLast;
   Executable rex;
   {
@@ -542,7 +561,7 @@ TEST(Matcher, searchLast) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = ".,_1";
@@ -579,7 +598,8 @@ TEST(Matcher, searchLast) {
 }
 
 
-TEST(Matcher, searchFull) {
+TEST_P(MatcherTest, searchFull) {
+  Format fmt = GetParam();
   Style style = styFull;
   Executable rex;
   {
@@ -587,7 +607,7 @@ TEST(Matcher, searchFull) {
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+a",    2, 0);
     p.add("[0-9]+abcd", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
 
   string_view in = ".,_1";
@@ -625,12 +645,13 @@ TEST(Matcher, searchFull) {
 
 // replace
 
-TEST(Matcher, replace) {
+TEST_P(MatcherTest, replace) {
+  Format fmt = GetParam();
   Executable rex;
   {
     Parser p;
     p.add("ab*c", 1, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   string s;
   EXPECT_EQ(1, replace(rex, "fooac", "bar", s, 9999, styLast));
@@ -642,14 +663,15 @@ TEST(Matcher, replace) {
 }
 
 
-TEST(Matcher, replaceStyles) {
+TEST_P(MatcherTest, replaceStyles) {
+  Format fmt = GetParam();
   Executable rex;
   {
     Parser p;
     p.add("[0-9]+",     1, 0);
     p.add("[0-9]+d",    2, 0);
     p.add("[0-9]+defg", 3, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   string s;
   EXPECT_EQ(1 , replace(rex, "#123defg!", "xyz", s, 1, styInstant));
@@ -670,7 +692,8 @@ TEST(Matcher, replaceStyles) {
 
 // matchAll
 
-TEST(Matcher, matchAll) {
+TEST_P(MatcherTest, matchAll) {
+  Format fmt = GetParam();
   Executable rex;
   {
     Parser p;
@@ -679,7 +702,7 @@ TEST(Matcher, matchAll) {
     p.add("[0-2]+", 3, 0);
     p.add("[3-9]+", 4, 0);
     p.add("012345", 5, 0);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   vector<Outcome> vec;
   EXPECT_EQ(4, matchAll(rex, "0123456789", vec));
@@ -699,13 +722,14 @@ TEST(Matcher, matchAll) {
 }
 
 
-TEST(Matcher, matchAllLoose) {
+TEST_P(MatcherTest, matchAllLoose) {
+  Format fmt = GetParam();
   Executable rex;
   {
     Parser p;
     p.add("a+", 1, fLooseStart);
     p.add("b+", 2, fLooseStart);
-    rex = compile(p);
+    rex = compile(p, fmt);
   }
   vector<Outcome> vec;
   EXPECT_EQ(6, matchAll(rex, ".aa..b.bb..abba.", vec));
@@ -725,8 +749,6 @@ TEST(Matcher, matchAllLoose) {
 }
 
 // formats
-
-class MatcherTest : public TestWithParam<Format> {};
 
 TEST_P(MatcherTest, check) {
   Format fmt = GetParam();
@@ -773,6 +795,7 @@ TEST_P(MatcherTest, match) {
   EXPECT_EQ(3, oc2.end_);
 }
 
+// stateful
 
 TEST_P(MatcherTest, charByChar) {
   Format fmt = GetParam();
