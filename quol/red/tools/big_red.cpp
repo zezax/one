@@ -3,7 +3,6 @@
 #include <charconv>
 #include <chrono>
 #include <iostream>
-#include <fstream>
 #include <vector>
 
 #include "Parser.h"

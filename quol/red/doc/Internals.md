@@ -64,3 +64,28 @@ Heavy lifting:
 The script `apigen` is used to generate much of the repetitive code
 related to the orthogonal naming scheme.  It generates rough code for
 `Red.h` and `Red.cpp`, and tests in `red.cpp`.
+
+## Building
+
+**Red** is known to compile with the following C++20 compilers:
+
+- GCC 10.2
+- GCC 11.3
+- GCC 12.2
+- Clang 15.0
+
+The code builds on Debian and Gentoo.
+Windows probably doesn't work.
+MacOS could probably be made to work.
+
+In order to compile the library, the following packages are needed:
+
+- libstdc++ (included with GCC)
+
+These additional packages can make life easier:
+
+- libgtest-dev (AKA gtest, googletest) - to build/run unit tests
+- re2 - to build/run comparison benchmarks
+- jemalloc - for memory profiling/debugging
+- perf - for CPU profiling
+- python3 - to run the `apigen` script

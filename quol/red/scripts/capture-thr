@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Generate timing data for graphs of threaded matching by Red and RE2.
+# This is meant for gnuplot.
+
+EXEDIR=_build/tools
+TMP=/tmp/redcc$$
+
+function trial {
+  $EXEDIR/$PROG -thr $THR -iter $ITER > $TMP
+  TIME=$(grep totalTime $TMP | awk '{print$2}')
+  rm -f $TMP
+  echo $THR $ITER $TIME $PROG
+}
+
+PROGS="thr_red thr_re2"
+THRS="1 2 3 4 5 6 7 8"
+ITERS="50 100 150 200"
+
+for PROG in $PROGS; do
+  for THR in $THRS; do
+    for ITER in $ITERS; do
+      trial
+    done
+  done
+  echo; echo
+done
+
+##### EOF #####
