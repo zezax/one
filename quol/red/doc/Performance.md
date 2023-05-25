@@ -69,3 +69,73 @@ This is due to disabling the check for the fixed prefix string.
 Certain DFAs may be known not to have such a prefix,
 in which case the processing is wasted.  Using `match<styLast, false>()`
 avoids this waste.
+
+## Threads
+
+**Red** compilation and matching are inherently single-threaded
+and make no special use of shared data.  Matching is read-only.
+So, they can proceed independently in separate threads,
+with the only interactions being `malloc` locks and similar.
+
+This is in contrast to `RE2`, which uses a lock around the compiled
+program.  The cost of this can be seen in a benchmark that invokes
+matching at high rates across multiple threads of execution.
+
+Here are wall-time results for N threads doing M iterations each
+of a sliding match for a single simple regex across the contents of
+`/usr/share/dict/words`. `RE2` results are on top.
+
+![multi-threaded match time](thr-time.png)
+
+With a single thread, **Red** is 12x the speed of `RE2`,
+which is suggestive of some extra overhead acquiring an uncontended lock.
+Going to two or more threads, **Red** is around 24x the speed of `RE2`,
+suggesting that once the lock becomes contended,
+it becomes twice as expensive.
+Here are some raw numbers (times in milliseconds):
+
+| Threads | Iters |   Red |    RE2 | Factor |
+| ------- | ----- | ----- | ------ | ------ |
+| 1       |    50 |   851 |  10562 | 12.41  |
+| 1       |   100 |  1704 |  21072 | 12.37  |
+| 1       |   150 |  2551 |  31608 | 12.39  |
+| 1       |   200 |  3406 |  42177 | 12.38  |
+| 2       |    50 |   895 |  24101 | 26.93  |
+| 2       |   100 |  1790 |  48634 | 27.17  |
+| 2       |   150 |  2691 |  74036 | 27.51  |
+| 2       |   200 |  3600 |  98709 | 27.42  |
+| 3       |    50 |  1399 |  34394 | 24.58  |
+| 3       |   100 |  2636 |  68885 | 26.13  |
+| 3       |   150 |  4269 | 102789 | 24.08  |
+| 3       |   200 |  5724 | 137026 | 23.94  |
+| 4       |    50 |  1684 |  42965 | 25.51  |
+| 4       |   100 |  3351 |  85951 | 25.65  |
+| 4       |   150 |  5050 | 128654 | 25.48  |
+| 4       |   200 |  7146 | 171502 | 24.00  |
+| 5       |    50 |  2304 |  51557 | 22.38  |
+| 5       |   100 |  4678 | 105729 | 22.60  |
+| 5       |   150 |  7020 | 154494 | 22.01  |
+| 5       |   200 |  9157 | 211832 | 23.13  |
+| 6       |    50 |  2787 |  63371 | 22.74  |
+| 6       |   100 |  5586 | 126299 | 22.61  |
+| 6       |   150 |  8290 | 190480 | 22.98  |
+| 6       |   200 | 11011 | 245252 | 22.27  |
+| 7       |    50 |  3212 |  74336 | 23.14  |
+| 7       |   100 |  6486 | 148638 | 22.92  |
+| 7       |   150 |  9673 | 216505 | 22.38  |
+| 7       |   200 | 12857 | 289295 | 22.50  |
+| 8       |    50 |  3668 |  83459 | 22.75  |
+| 8       |   100 |  7348 | 162083 | 22.06  |
+| 8       |   150 | 10994 | 246128 | 22.39  |
+| 8       |   200 | 14673 | 335277 | 22.85  |
+
+Looking at `RE2`, it appears that 4 threads doing 50 iterations each
+took longer than 1 thread doing 200.
+This is consistent with serialization caused by locking.
+In contrast, **Red** can use 4 threads doing 50 to do the same work
+as 1 thread doing 200, but in less than half the time.
+Ideally, we'd like to see 4 threads use one quarter of the time,
+but this host has only 2 physical CPU cores,
+and uses Hyper-Threading to simulate 4 cores.
+Further clouding the picture is Turbo Boost technology
+that reduces the clock frequency when all cores are busy.

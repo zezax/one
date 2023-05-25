@@ -1,0 +1,59 @@
+#!/bin/bash
+
+SCRIPTDIR=$(dirname $(readlink -f $0))
+BUILDDIR="$SCRIPTDIR/../_build"
+mkdir -p $BUILDDIR
+
+if [[ $# < 1 ]]; then
+  DAT=$BUILDDIR/thr.dat
+  $SCRIPTDIR/capture-thr > $DAT
+else
+  DAT=$1
+  shift
+fi
+
+SCRIPT=/tmp/redgp$$
+
+function preamble { # <xrange> <pngfile>
+  cat > $SCRIPT <<-EOS
+	set terminal pngcairo transparent fontscale 1.1
+	set output "$BUILDDIR/$2.png"
+	set title "$TITLE"
+	set xlabel "Threads"
+	set ylabel "Iterations\nper Thread"
+	set zlabel "Time (seconds)" rotate parallel
+	set xrange [$1]
+	set ytics 50
+	set xyplane 0.1
+	set view 62, 20, , 1.5
+	unset key
+	set style data pm3d
+	set pm3d depthorder hidden3d 3
+	set dgrid3d 4, 8
+	splot \\
+	EOS
+}
+
+function plotone { # <index> <name> <end>
+  cat >> $SCRIPT <<-EOS
+	'$DAT' index $1 using 1:2:(\$3/1000) title "$2"$3 \\
+	EOS
+}
+
+function postamble {
+  echo >> $SCRIPT
+}
+
+# TIME
+
+TITLE="Multi-Threaded Matching Time"
+
+preamble 0:8 thr-time
+plotone 0 "Red" ,
+plotone 1 "RE2"
+postamble
+gnuplot -c $SCRIPT
+
+rm -f $SCRIPT
+
+##### EOF #####

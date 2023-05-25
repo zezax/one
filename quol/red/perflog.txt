@@ -4,8 +4,8 @@ Performance Optimization Log
 Testing Platform:
   Lenovo T560 laptop, 16GB RAM
   Intel(R) Core(TM) i7-6600U CPU @ 2.60GHz (2 cores * 2 hyperthreads)
-  Gentoo Linux 5.15.75
-  GCC 11.3.0 (g++ -std=c++20)
+  Gentoo Linux 5.15.75, GCC 11.3.0 (g++ -std=c++20) - until 5/2/2023
+  Gentoo Linux 6.1.19, GCC 12.2.1 (g++ -std=c++20) - current
 
 Some of the results/deltas below seem disproportionate to the code
 changes.  It's possible that aliasing effects in the instruction cache
@@ -192,3 +192,27 @@ N     M     big_red   big_re2   factor
 100   1000  0:30.017  4:20.186  8.67
 1000  100   0:03.863  0:36.313  9.40
 1000  1000  0:35.962  6:05.206  10.16
+
+COMPARISON - threads
+--------------------
+  Compile a simple regex.  Use it in N threads to find all matches in
+  /usr/dict/words, M times.  Compares Red against RE2.  Wall time
+  in seconds reported.
+
+N  M    thr_red  thr_re2  factor
+1  100    1.704   21.072  12.37
+1  200    3.406   42.177  12.38
+2  100    1.790   48.634  27.17
+2  200    3.600   98.709  27.42
+3  100    2.636   68.885  26.13
+3  200    5.724  137.026  23.94
+4  100    3.351   85.951  25.65
+4  200    7.146  171.502  24.00
+5  100    4.678  105.729  22.60
+5  200    9.157  211.832  23.13
+6  100    5.586  126.299  22.61
+6  200   11.011  245.252  22.27
+7  100    6.486  148.638  22.92
+7  200   12.857  289.295  22.50
+8  100    7.348  162.083  22.06
+8  200   14.673  335.277  22.85

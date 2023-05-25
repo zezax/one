@@ -4,7 +4,6 @@
 # This is meant for gnuplot.
 
 EXEDIR=_build/tools
-BIG_RE2=_build/tools/big_re2
 TMP=/tmp/redcc$$
 
 function trial {
