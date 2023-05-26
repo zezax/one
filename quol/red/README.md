@@ -12,6 +12,7 @@ The world already has `RE2`.  Why do we need **Red**?
 
 1. **Red** compiled patterns are read-only, concurrent, and lock-free.
 `RE2` locks the program every time it's used.
+This can make a 12-27x difference in performance.
 
 1. **Red** doesn't try to protect you from yourself.  It will compile
 expressions for which `RE2` complains "pattern too large - compile failed".
