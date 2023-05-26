@@ -1,0 +1,19 @@
+name: Flume
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: quol/flume
+    steps:
+    - uses: actions/checkout@v3
+    - name: install
+      run: sudo apt-get install -y librrd-dev
+    - name: make
+      run: make
