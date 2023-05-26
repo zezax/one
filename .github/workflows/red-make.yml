@@ -1,0 +1,22 @@
+name: Make Red
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: quol/red
+    steps:
+    - uses: actions/checkout@v3
+    - name: install gtest
+      run: sudo apt-get install -y libgtest-dev
+    - name: make
+      run: make
+    - name: test
+      run: make sure
