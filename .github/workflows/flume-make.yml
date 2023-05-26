@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: quol/flume
+        working-directory: quol/flume/src
     steps:
     - uses: actions/checkout@v3
     - name: install
