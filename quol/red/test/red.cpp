@@ -131,7 +131,8 @@ TEST(Red, bogus) {
 
 
 TEST(Red, budget) {
-  Budget b(13);
+  Budget b;
+  b.initStates(13);
   Parser p(&b);
   p.add("ab*c", 1, 0);
   EXPECT_THROW(Red::matchFull("foobar", p), RedExceptLimit);

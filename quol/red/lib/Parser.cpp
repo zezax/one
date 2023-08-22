@@ -208,9 +208,13 @@ NfaId Parser::parseUnit() {
     return nfa_.newGoalState(); // empty matches empty
   case tLeft:
     tok_ = scanner_.scanNext();
+    if (budget_)
+      budget_->takeParens(1);
     ++level_;
     state = parseExpr();
     --level_;
+    if (budget_)
+      budget_->giveParens(1);
     if (tok_.type_ != tRight)
       throw RedExceptParse("close parenthesis not found", tok_.pos_);
     begun_ = true;

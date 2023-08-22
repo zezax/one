@@ -234,6 +234,7 @@ the DFA used for matching.  This regex `.{,10000}a` takes
 5GB of memory and 3 hours of CPU to compile on a 2.6GHz i7.
 
 A `Budget` object may be supplied to `Parser` to protect against
-unbounded allocation.  It limits the number of states (NFA plus DFA)
-created.  It will throw `RedExceptLimit` when the limit is exceeded,
+unbounded allocation.  It can limit the number of states (NFA plus DFA)
+created.  It can also limit nested parsing via parentheses to avoid
+stack overflow.  It will throw `RedExceptLimit` when the limit is exceeded,
 which isn't terribly elegant.  See the Performance section for numbers.
