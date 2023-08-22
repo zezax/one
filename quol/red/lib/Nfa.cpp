@@ -58,7 +58,7 @@ NfaObj::NfaObj(NfaObj &&rhs)
 
 NfaObj::~NfaObj() {
   if (budget_)
-    budget_->give(states_.size());
+    budget_->giveStates(states_.size());
 }
 
 
@@ -81,7 +81,7 @@ size_t NfaObj::activeStates() const {
 
 void NfaObj::freeAll() {
   if (budget_)
-    budget_->give(states_.size());
+    budget_->giveStates(states_.size());
   states_.clear();
   states_.shrink_to_fit();
 }
@@ -94,7 +94,7 @@ NfaId NfaObj::newState(Result result) {
   if (len >= numeric_limits<NfaId>::max())
     throw RedExceptLimit("nfa state id overflow");
   if (budget_)
-    budget_->take((len == 1) ? 2 : 1);
+    budget_->takeStates((len == 1) ? 2 : 1);
   states_.resize(len + 1);
   NfaState &ns = states_[len];
   ns.result_ = result;

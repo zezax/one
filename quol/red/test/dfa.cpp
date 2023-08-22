@@ -127,7 +127,8 @@ TEST(Dfa, prefix) {
 
 
 TEST(Dfa, budget) {
-  Budget b(3);
+  Budget b;
+  b.initStates(3);
   DfaObj dfa(&b);
   dfa.newState();
   dfa.newState();

@@ -37,13 +37,13 @@ DfaObj::DfaObj(Budget *budget) : budget_(budget) {}
 
 DfaObj::~DfaObj() {
   if (budget_)
-    budget_->give(states_.size());
+    budget_->giveStates(states_.size());
 }
 
 
 void DfaObj::clear() {
   if (budget_)
-    budget_->give(states_.size());
+    budget_->giveStates(states_.size());
   states_.clear();
   equivMap_.clear();
 }
@@ -61,7 +61,7 @@ DfaId DfaObj::newState() {
   if (len >= numeric_limits<DfaId>::max())
     throw RedExceptLimit("dfa state id overflow");
   if (budget_)
-    budget_->take(1);
+    budget_->takeStates(1);
   states_.resize(len + 1); // default init
   return static_cast<DfaId>(len);
 }

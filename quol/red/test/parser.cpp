@@ -97,8 +97,17 @@ TEST(Parser, smoke) {
 }
 
 
-TEST(Parser, budget) {
-  Budget b(3);
+TEST(Parser, statebudget) {
+  Budget b;
+  b.initStates(3);
   Parser p(&b);
   EXPECT_THROW(p.add("ab*c", 1, 0), RedExceptLimit);
+}
+
+
+TEST(Parser, parenbudget) {
+  Budget b;
+  b.initParens(2);
+  Parser p(&b);
+  EXPECT_THROW(p.add("a(b(c(d)))", 1, 0), RedExceptLimit);
 }

@@ -26,7 +26,7 @@ treating upper- and lower-case as equivalent.
 ![10000 pattern RSS](comp-rss-10000.png)
 
 See the `Budget` class for a way to prevent runaway allocation.
-The budget is specified in terms of number of states.
+The budget can be specified in terms of number of states.
 Actual bytes depends on the density of the automaton transitions.
 Quick tests suggest a peak memory cost of 11-22 kB per state
 on a 64-bit platform.
