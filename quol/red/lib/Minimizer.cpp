@@ -1,6 +1,37 @@
-// dfa minimizer implementation after david gries 1973
+/* Minimizer.cpp - DFA minimizer implementation
 
-// Note: This is used for DFAs with end marks.  Untested without.
+   See general description in Minimizer.h
+
+   The worst-case cost of minimization is proportional to the size
+   of the alphabet.  So, this implementation uses the initial DFA
+   to find clusters of tokens that are equivalent.  These clusters
+   then become the new reduced alphabet.  The minimized DFA has an
+   equivalence map from real to reduced alphabet.
+
+   The basic flow here is probably best followed by reading the Gries
+   paper.  The idea is to build blocks which are sets of DFA state IDs
+   from the source DFA.  Blocks are successively split.  Eventually,
+   each block becomes a state in the output DFA.
+
+   The invert() operation speeds up the splitting process by
+   precomputing the inverse directed graph from edges to originating
+   states.
+
+   An initial partition is created based on the result of each state.
+   All non-accepting states are one block.  Accepting states are
+   in blocks based on the value of their result.
+
+   The algorithm begins with either the accepting or non-accepting
+   preliminary blocks added to a set of blocks to be processed
+   (called the "list").  The main loop runs until the list is empty.
+   It tries to split each block.  If posible, the resulting blocks
+   may be added to the list.  Often only the smaller block must be
+   added.  Eventually, all blocks will be handled.
+
+   After minimization, dead-end states are flagged.  These are states
+   which cannot be escaped regardless of input.  Thus the DFA result
+   can't change and no further processing of input is warranted.
+ */
 
 #include "Minimizer.h"
 

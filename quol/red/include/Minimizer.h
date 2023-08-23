@@ -1,4 +1,29 @@
-// dfa minimizer header
+/* Minimizer.h - DFA minimizer header
+
+   DfaMinimizer converts a deterministic finite automaton (DFA) into
+   another DFA which is the smallest possible with the same results.
+   Some background on this classic bit of computer science is here:
+   https://en.wikipedia.org/wiki/DFA_minimization
+
+   The DfaMinimizer interface appears to minimize the DFA in-place,
+   but really it's creating a new one and performing a swap.
+
+   The implementation here follows the 1973 David Gries paper:
+   Describing an Algorithm by Hopcroft.  Link here:
+   https://www.cs.cornell.edu/gries/TechReports/72-151.pdf
+   The basic algorithm is Hopcroft's partition refinement from 1971.
+   Runtime averages O(n log log n) and may reach O(nm log n), where
+   n = number of states
+   m = size of alphabet
+
+   The Budget passed to Parser is honored here.  A CompStats pointer
+   may also be passed to DfaMinimizer if desired.
+
+   Usage is simple:
+
+   DfaMinimizer dm(dfa, stats);
+   dm.minimize();
+ */
 
 #pragma once
 
@@ -110,7 +135,7 @@ private:
 };
 
 
-// constituent functions, public unit tests
+// constituent functions, public for unit tests
 DfaEdgeToIds invert(const DfaIdSet              &stateSet,
                     const std::vector<DfaState> &stateVec,
                     CharIdx                      maxChar);
