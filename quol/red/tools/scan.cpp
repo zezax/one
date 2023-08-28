@@ -1,6 +1,7 @@
 // red tool to lexically scan a regex
 
 #include <iostream>
+#include <stdexcept>
 
 #include "Except.h"
 #include "Scanner.h"

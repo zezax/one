@@ -50,6 +50,75 @@ TEST(Omnibus, multi) {
 }
 
 
+TEST(Omnibus, classes1) {
+  Parser p;
+  p.add("[abcd][defg][ghij][0-9]z", 1, 0);
+  p.finish();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(p.getNfa());
+    dfa = psc.convert();
+    p.freeAll();
+  }
+  EXPECT_EQ(0, dfa.matchFull("edg0z"));
+  EXPECT_EQ(0, dfa.matchFull("aai0z"));
+  EXPECT_EQ(0, dfa.matchFull("adk0z"));
+  EXPECT_EQ(0, dfa.matchFull("adgxz"));
+  EXPECT_EQ(0, dfa.matchFull("adg0y"));
+  EXPECT_EQ(1, dfa.matchFull("adg0z"));
+  EXPECT_EQ(1, dfa.matchFull("beh1z"));
+  EXPECT_EQ(1, dfa.matchFull("cfi2z"));
+  EXPECT_EQ(1, dfa.matchFull("dgj3z"));
+  EXPECT_EQ(1, dfa.matchFull("ddg9z"));
+}
+
+
+TEST(Omnibus, classes2) {
+  Parser p;
+  p.add("[abcd][defg][abcdefg][0-9]z", 1, 0);
+  p.finish();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(p.getNfa());
+    dfa = psc.convert();
+    p.freeAll();
+  }
+  EXPECT_EQ(0, dfa.matchFull("edg0z"));
+  EXPECT_EQ(0, dfa.matchFull("aag0z"));
+  EXPECT_EQ(0, dfa.matchFull("adk0z"));
+  EXPECT_EQ(0, dfa.matchFull("adgxz"));
+  EXPECT_EQ(0, dfa.matchFull("adg0y"));
+  EXPECT_EQ(1, dfa.matchFull("ada0z"));
+  EXPECT_EQ(1, dfa.matchFull("beb1z"));
+  EXPECT_EQ(1, dfa.matchFull("cfc2z"));
+  EXPECT_EQ(1, dfa.matchFull("dgd3z"));
+  EXPECT_EQ(1, dfa.matchFull("ddg9z"));
+}
+
+
+TEST(Omnibus, classes3) {
+  Parser p;
+  p.add("[abcd].[ghij][0-9]z", 1, 0);
+  p.finish();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(p.getNfa());
+    dfa = psc.convert();
+    p.freeAll();
+  }
+  EXPECT_EQ(0, dfa.matchFull("edg0z"));
+  EXPECT_EQ(1, dfa.matchFull("aai0z"));
+  EXPECT_EQ(0, dfa.matchFull("adk0z"));
+  EXPECT_EQ(0, dfa.matchFull("adgxz"));
+  EXPECT_EQ(0, dfa.matchFull("adg0y"));
+  EXPECT_EQ(1, dfa.matchFull("adg0z"));
+  EXPECT_EQ(1, dfa.matchFull("beh1z"));
+  EXPECT_EQ(1, dfa.matchFull("cfi2z"));
+  EXPECT_EQ(1, dfa.matchFull("dgj3z"));
+  EXPECT_EQ(1, dfa.matchFull("ddg9z"));
+}
+
+
 TEST(Omnibus, null) {
   Parser p;
   p.finish();

@@ -19,13 +19,13 @@ int main(int argc, char **argv) {
     Parser p;
     int cur = 0;
     for (int ii = 1; ii < argc; ++ii) {
-      string_view sv = argv[ii];
-      if (sv == "-r")
+      string_view arg = argv[ii];
+      if (arg == "-r")
         raw = true;
       else if (raw)
-        p.add(sv, ++cur, 0);
+        p.add(arg, ++cur, 0);
       else
-        p.addAuto(sv, ++cur, 0);
+        p.addAuto(arg, ++cur, 0);
     }
     p.finish();
     DfaObj dfa;
