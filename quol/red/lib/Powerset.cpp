@@ -155,7 +155,7 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
   SeqSet       last;
   MultiChar    acc;
   MultiCharSet rv;
-  for (const auto &[seqs, ch] : inv) {
+  for (auto &[seqs, ch] : inv) {
     if (seqs != last) {
       if (!acc.empty()) {
         rv.emplace(std::move(acc));
