@@ -1,6 +1,7 @@
-// red tool to lexically scan a regex
+// red tool to parse a regex
 
 #include <iostream>
+#include <stdexcept>
 
 #include "Except.h"
 #include "Parser.h"
@@ -8,11 +9,22 @@
 
 using namespace zezax::red;
 
+using std::string_view;
+
 int main(int argc, char **argv) {
+  bool raw = false;
   try {
     Parser p;
-    for (int ii = 1; ii < argc; ++ii)
-      p.addAuto(argv[ii], ii, 0);
+    int cur = 0;
+    for (int ii = 1; ii < argc; ++ii) {
+      string_view arg = argv[ii];
+      if (arg == "-r")
+        raw = true;
+      else if (raw)
+        p.add(arg, ++cur, 0);
+      else
+        p.addAuto(arg, ++cur, 0);
+    }
     p.finish();
     std::cout << toString(p.getNfa()) << std::flush;
     return 0;
