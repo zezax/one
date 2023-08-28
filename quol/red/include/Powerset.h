@@ -1,4 +1,36 @@
-// powerset nfa to dfa converter header
+/* Powerset.h - powerset NFA to DFA converter header
+
+   PowersetConverter takes a non-deterministic finite automaton (NFA)
+   as input and creates an equivalent determinitic automaton (DFA) as
+   output.  The algorithm is Rabin-Scott powerset construction (1959)
+   as described here:
+   https://en.wikipedia.org/wiki/Powerset_construction
+   https://www.cse.chalmers.se/~coquand/AUTOMATA/rs.pdf
+
+   The basic idea is to simulate the NFA by keeping track of the set
+   of states that it could be in, given each input so far.  The DFA is
+   built by mapping sets of NFA states to single DFA states.  The
+   resulting DFA is likely bloated and should be minimized.
+
+   Worst-case performance is O(2^N) in both time and memory, where N
+   is the number of NFA states.  Typical performance is better.
+
+   This implementation assumes that the source NFA employs end-marks.
+   Classic automata have only two results: reject (0) and accept (1).
+   Endmarks are a way around this limitation, enableing multiple
+   accepting result values.  End marks are extra states that are
+   reached via an out-of-alphabet transition, the value of which
+   indicates the result.  The resulting DFA will have the end marks
+   properly interpreted and removed.
+
+   If a Budget is supplied, it will be honored.  Also, a CompStats
+   object can be given, if statistics are desired.
+
+   Usage is like this:
+
+   PowersetConverter power(nfa, budget, stats);
+   DfaObj dfa = power.convert();
+ */
 
 #pragma once
 

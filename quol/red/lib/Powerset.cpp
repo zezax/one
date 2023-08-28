@@ -1,5 +1,25 @@
-// powerset nfa to dfa converter implementation
-// rabin-scott method
+/* Powerset.cpp - powerset NFA to DFA converter implementation
+
+   See general description in Powerset.h
+
+   The approach taken here is akin to this table-based description:
+   https://www.geeksforgeeks.org/conversion-from-nfa-to-dfa/
+   https://quickgrid.wordpress.com/2015/10/30/converting-nfa-to-dfa-by-complete-and-lazy-subset-construction/
+   As it turns out, makeTable() takes the lion's share of the time.
+
+   An important input to makeTable() is the set of "basis"
+   multi-chars.  These partition the set of all in-use characters
+   such that within each partition, all characters behave the same
+   in the entire NFA.  Each character could be its own partition,
+   but The smallest number of partitions is most efficient.
+
+   The actual conversion happens in dfaFromNfaRecurse() which is
+   relatively straightforward because it relies on the previously-
+   done work represented in the table and the basis set.
+
+   The convert() method is the main flow, and removes end marks
+   before returning.
+ */
 
 #include <algorithm>
 #include <deque>
