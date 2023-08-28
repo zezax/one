@@ -109,18 +109,20 @@ Result DfaObj::findMaxResult() const {
 
 void DfaObj::chopEndMarks() {
   for (DfaState &ds : states_) {
-    bool found = false;
+    CharIdx low = numeric_limits<CharIdx>::max();
     CharToStateMap::Map &tmap = ds.trans_.getMap();
-    for (auto it = tmap.begin(); it != tmap.end(); )
-      if ((it->first >= gAlphabetSize) && (it->second != gDfaErrorId)) {
-        if (!found) {
-          found = true;
-          ds.result_ = it->first - gAlphabetSize;
-        }
+    for (auto it = tmap.begin(); it != tmap.end(); ) {
+      CharIdx ch = it->first;
+      if ((ch >= gAlphabetSize) && (it->second != gDfaErrorId)) {
+        if (ch < low)
+          low = ch;
         it = tmap.erase(it);
       }
       else
         ++it;
+    }
+    if (low < numeric_limits<CharIdx>::max())
+      ds.result_ = low - gAlphabetSize;
   }
 }
 

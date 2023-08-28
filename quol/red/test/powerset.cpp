@@ -23,30 +23,66 @@ void addTrans(NfaObj &nfa, NfaId from, NfaId to, CharIdx ch) {
 
 } // anonymous
 
-TEST(Powerset, unique) {
-  MultiChar aa('a');
-  MultiChar bb('b');
-  MultiChar cc('a', 'b');
-  MultiChar dd('b', 'd');
-  MultiChar ee('a', 'c');
+TEST(Powerset, basis1) {
+  // a
+  //   b
+  // a b
+  //   b c d
+  // a b c
+  // 0 1 2 3
+  MultiChar a('a');
+  MultiChar b('b');
+  MultiChar ab('a', 'b');
+  MultiChar bcd('b', 'd');
+  MultiChar abc('a', 'c');
   MultiCharSet mcs;
-  mcs.insert(aa);
-  mcs.insert(bb);
-  mcs.insert(cc);
-  mcs.insert(dd);
-  mcs.insert(ee);
+  mcs.insert(a);
+  mcs.insert(b);
+  mcs.insert(ab);
+  mcs.insert(bcd);
+  mcs.insert(abc);
   EXPECT_EQ(5, mcs.size());
   MultiCharSet basis = basisMultiChars(mcs);
+  MultiChar c('c');
+  MultiChar d('d');
   EXPECT_EQ(4, basis.size());
-  EXPECT_TRUE(basis.contains(aa));
-  EXPECT_TRUE(basis.contains(bb));
-  EXPECT_FALSE(basis.contains(cc));
-  EXPECT_FALSE(basis.contains(dd));
-  EXPECT_FALSE(basis.contains(ee));
-  MultiChar yy('c');
-  MultiChar zz('c', 'd');
-  EXPECT_TRUE(basis.contains(yy));
-  EXPECT_TRUE(basis.contains(zz));
+  EXPECT_TRUE(basis.contains(a));
+  EXPECT_TRUE(basis.contains(b));
+  EXPECT_TRUE(basis.contains(c));
+  EXPECT_TRUE(basis.contains(d));
+  EXPECT_FALSE(basis.contains(ab));
+  EXPECT_FALSE(basis.contains(bcd));
+  EXPECT_FALSE(basis.contains(abc));
+}
+
+
+TEST(Powerset, basis2) {
+  // a b c
+  //     c d e
+  //         e f g
+  // 0 0 1 2 3 4 4
+  MultiChar abc('a', 'c');
+  MultiChar cde('c', 'e');
+  MultiChar efg('e', 'g');
+  MultiCharSet mcs;
+  mcs.insert(abc);
+  mcs.insert(cde);
+  mcs.insert(efg);
+  MultiCharSet basis = basisMultiChars(mcs);
+  MultiChar ab('a', 'b');
+  MultiChar c('c');
+  MultiChar d('c');
+  MultiChar e('c');
+  MultiChar fg('f', 'g');
+  EXPECT_EQ(5, basis.size());
+  EXPECT_TRUE(basis.contains(ab));
+  EXPECT_TRUE(basis.contains(c));
+  EXPECT_TRUE(basis.contains(d));
+  EXPECT_TRUE(basis.contains(e));
+  EXPECT_TRUE(basis.contains(fg));
+  EXPECT_FALSE(basis.contains(abc));
+  EXPECT_FALSE(basis.contains(cde));
+  EXPECT_FALSE(basis.contains(efg));
 }
 
 

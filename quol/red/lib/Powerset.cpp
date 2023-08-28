@@ -1,8 +1,10 @@
 // powerset nfa to dfa converter implementation
 // rabin-scott method
 
+#include <algorithm>
 #include <deque>
 #include <limits>
+#include <unordered_map>
 
 #include "Except.h"
 #include "Util.h"
@@ -12,6 +14,7 @@ namespace zezax::red {
 
 using std::deque;
 using std::numeric_limits;
+using std::unordered_map;
 using std::vector;
 
 namespace {
@@ -104,34 +107,46 @@ DfaId PowersetConverter::dfaFromNfa(const std::vector<MultiChar> &multiChars,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// returns a set of multi-chars that covers the input, with specific preferred
+// returns a minimal set of multi-chars that partitions the input
 MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
-  // 1. arrange multi-chars by number of chars
-  vector<MultiCharSet> sets;
-  for (const MultiChar &mc : mcs)
-    safeRef(sets, mc.size()).insert(mc);
+  typedef BitSet<size_t, DefaultTag> SeqSet;
+  typedef unordered_map<CharIdx, SeqSet> SeqSetMap;
+  typedef vector<std::pair<SeqSet, CharIdx>> Inverted;
 
-  CharIdx mostBits = static_cast<CharIdx>(sets.size());
+  Inverted inv;
 
-  // 2. calculate successive unions of multi-chars
-  vector<MultiChar> unions;
-  unions.resize(mostBits + 1);
-  for (CharIdx ii = 1; ii <= mostBits; ++ii)
-    for (CharIdx jj = 0; jj < ii; ++jj)
-      for (const MultiChar &mc : sets[jj])
-        unions[ii].unionWith(mc);
-
-  // 3. subtract off corresponding unions
-  MultiCharSet rv;
-  for (CharIdx ii = 0; ii < mostBits; ++ii)
-    for (const MultiChar &mc : sets[ii]) {
-      MultiChar copy = mc;
-      copy.subtract(unions[ii]);
-      if (!copy.empty()) {
-        copy.chopTrailingZeros(); // try to shorten vector for later
-        rv.emplace(std::move(copy));
-      }
+  { // for each character, gather all multi-chars it's part of
+    SeqSetMap appear;
+    size_t seq = 0;
+    for (const MultiChar &mc : mcs) {
+      for (CharIdx ch : mc)
+        appear[ch].insert(seq);
+      ++seq;
     }
+
+    // invert the above into an array to be sorted
+    for (auto &[ch, seqs] : appear)
+      inv.emplace_back(std::move(seqs), ch);
+  }
+
+  std::sort(inv.begin(), inv.end());
+
+  // extract groups that appear in the exact same places
+  SeqSet       last;
+  MultiChar    acc;
+  MultiCharSet rv;
+  for (const auto &[seqs, ch] : inv) {
+    if (seqs != last) {
+      if (!acc.empty()) {
+        rv.emplace(std::move(acc));
+        acc.clearAll();
+      }
+      last = std::move(seqs);
+    }
+    acc.insert(ch);
+  }
+  if (!acc.empty())
+    rv.emplace(std::move(acc));
 
   return rv;
 }
