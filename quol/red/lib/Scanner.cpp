@@ -1,4 +1,15 @@
-// regular expression scanner/tokenizer implementation
+/* Scanner.cpp - regular expression scanner/tokenizer implementation
+
+   See general description in Scanner.h
+
+   The lexical scanning here is somewhat detailed and involved.  The
+   ultimate authority is the unit tests in test/scanner.cpp.  A good
+   description is in doc/Usage.md.
+
+   Most of the complexity comes from backslash-escapes, bracket-
+   enclosed character classes, and curly-brace-enclosed closure
+   specifiers.
+ */
 
 #include "Scanner.h"
 

@@ -1,5 +1,13 @@
-// regular expression non-deterministic finite automaton parser implementation
-// recursive-descent parser produces nfa without epsilon transitions
+/* Parser.cpp - regular expression parser implementation
+
+   See general description in Parser.h
+
+   This is a recursive-descent parser that builds an NFA without
+   epsilon-transitions.  The parseXYZ() methods implement the grammar.
+
+   Internally, the parser takes advantage of the Scanner class to
+   provide a sequence of tokens as input.
+ */
 
 #include "Parser.h"
 

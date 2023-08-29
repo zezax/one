@@ -30,6 +30,8 @@
 
    PowersetConverter power(nfa, budget, stats);
    DfaObj dfa = power.convert();
+
+   PowersetConverter can throw RedExceptCompile for internal errors.
  */
 
 #pragma once

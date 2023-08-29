@@ -1,4 +1,44 @@
-// regular expression scanner/tokenizer class header
+/* Scanner.h - regular expression scanner/tokenizer class header
+
+   Scanner provides a stream of Token objects to Parser.  The
+   class is initialized with a string view as input.  Repeated
+   calls to scanNext() return Token objects, ending with a Token
+   of type tEnd.
+
+   The Token has a number of fields.  Two should always be valid:
+
+   type_ : a value from TokEnum below
+   pos_  : approximate origin location in the input
+
+   The following fields have values for specific types:
+
+   min_       : tClosure : minimum repetitions
+   max_       : tClosure : maximum repetitions, or -1 for infinity
+   flags_     : tFlags   : communicates fIgnoreCase to parser
+   multiChar_ : tChars   : represents one or more characters
+
+   The remaining types have meanings on their own:
+
+   tError : zero value, should never occur
+   tEnd   : indicates end of stream
+   tUnion : corresponds to vertical bar (|) in regex
+   tLeft  : open parenthesis for nested regex
+   tRight : close parenthesis
+
+   For technical reasons, a union could not be used.
+
+   Usage is like:
+
+   Scanner sc(".*foo(bar)?\\i");
+   for (;;) {
+     Token tok = sc.scanNext();
+     if (tok.type_ == tEnd)
+       break;
+     handle(tok);
+   }
+
+   Scanner will throw RedExcept exceptions for syntax errors.
+ */
 
 #pragma once
 

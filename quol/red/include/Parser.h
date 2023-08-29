@@ -1,4 +1,33 @@
-// regular expression non-deterministic finite automaton parser header
+/* Parser.h - regular expression parser header
+
+   This class parses one or more regular expressions.  The resulting
+   form is a single non-deterministic finite automaton (NFA) that
+   represents all the added regular expressions.  This NFA can then
+   be passed to PowersetConverter which will build an equivalent
+   deterministic finite automaton (DFA).
+
+   There are two "add" methods here.  The basic add() is the raw
+   version.  The more clever addAuto() tries to do what many people
+   expect from using regexes in other contexts.  See comments below.
+   Each add supplies a Result, which must be positive.  Different
+   result values can be used to distinguish which regex matched.
+
+   Parsing is done via recursive descent.  A Budget pointer passed to
+   the constructor can specify a recursion limit, as well as a limit
+   on total automaton states.  A CompStats pointer can also be passed
+   in order to get parsing metrics.
+
+   Regular expression syntax and grammar are described in doc/Usage.md
+
+   Usage can be like:
+
+   Parser p(budget, stats);
+   p.add("foo", 1, fIgnoreCase);
+   p.addAuto("bar\\i", 2, 0);
+   p.finish();
+
+   Parser will throw RedExcept exceptions for errors in grammar or usage.
+ */
 
 #pragma once
 
