@@ -1,14 +1,5 @@
-// memory budget header
+/* Budget.h - resource budget header
 
-#pragma once
-
-#include <limits>
-
-#include "Except.h"
-
-namespace zezax::red {
-
-/*
   A Budget object limits consumption of certain resources during
   compilation, generally memory.  The available settings are:
 
@@ -22,7 +13,18 @@ namespace zezax::red {
 
   A Budget must live longer than the compilation that uses it.
   Don't share a Budget across threads.  There's no locking here.
-*/
+
+  In general, RedExceptLimit is thrown when the budget is exceeded.
+ */
+
+#pragma once
+
+#include <limits>
+
+#include "Except.h"
+
+namespace zezax::red {
+
 class Budget {
 public:
   Budget()

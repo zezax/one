@@ -24,6 +24,8 @@
 
    DfaMinimizer dm(dfa, stats);
    dm.minimize();
+
+   DfaMinimizer will throw RedExcept exceptions for internal errors.
  */
 
 #pragma once
