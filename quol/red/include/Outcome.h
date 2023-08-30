@@ -1,12 +1,5 @@
-// outcome or result of a match - header
+/* Outcome.h - outcome or result of a match - header
 
-#pragma once
-
-#include "Types.h"
-
-namespace zezax::red {
-
-/*
   A little explanation...
 
   Result = a number indicating which match happened, if any.  Zero means no
@@ -29,6 +22,12 @@ namespace zezax::red {
   This is quite reliable (unlike start_).  It will depend on the match style,
   though.  Using styFirst, styTangent or styLast makes the most sense for this.
 */
+
+#pragma once
+
+#include "Types.h"
+
+namespace zezax::red {
 
 struct Outcome {
   Result result_;

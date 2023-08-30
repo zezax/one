@@ -1,5 +1,39 @@
-// bit set class header
-// implements set of unsigned integers as variable-size bitmask
+/* BitSet.h - bit set class header
+
+   BitSet implements a set of non-negative integers as a variable-
+   length bitmask.  An iterator over the set is also provided.
+
+   Template arguments control the exact type of the elements as well
+   as the underlying word-size of the array.  A tag type is used in
+   order to distinguish similar instantiations of BitSet.
+
+   BitSet is somewhat like a vector of bool, but provides many
+   specialized set methods implemented for high performance.
+
+   In many respects, BitSet acts like std::set, but the two are not
+   completely interchangeable.
+
+   The abstraction of an array of bits is not perfect.  Fundamentally,
+   BitSet is an array of words.  It does not keep track of sub-word
+   lengths.  This is most evident if one sets bit zero and then calls
+   flipAll().  The result will have 63 bits set and bit zero clear.
+   This is rather arbitrary.  Some users will expect just bit zero to
+   be flipped, as the size of the set should be one bit.  More
+   mathematical users may expect an infinite number of bits (other
+   than zero) to be set, which isn't very practical.
+
+   BitSet provides a hash() method, operator<(), and operator==() in
+   order to be usable in maps/sets.  The less-than operator isn't
+   particularly intuitive.  See Types.h for some supporting glue.
+
+   Usage can be like:
+
+   BitSet<size_t> bs(2, 7);
+   bs.clear(4);
+   bs.clear(6);
+   for (size_t i : bs)
+     std::cout << i << std::endl;
+ */
 
 #pragma once
 

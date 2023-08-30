@@ -1,4 +1,9 @@
-// small utility functions header
+/* Util.h - small utility functions header
+
+   Basically a hodge-podge of useful functions and templates that are
+   useful across the project and don't really belong anywhere more
+   specific.
+ */
 
 #pragma once
 
