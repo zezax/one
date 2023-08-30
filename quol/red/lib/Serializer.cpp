@@ -46,7 +46,7 @@ void appendStateImpl(std::string          &buf,
   rec.resultAndDeadEnd_ = proxy.resultAndDeadEnd(ds.result_, ds.deadEnd_);
   append(buf, &rec, sizeof(rec));
   for (CharIdx ch = 0; ch <= maxChar; ++ch) {
-    DfaId id = ds.trans_[ch];
+    DfaId id = ds.transitions_[ch];
     size_t off = offsets[id];
     proxy.appendOffset(buf, off);
   }

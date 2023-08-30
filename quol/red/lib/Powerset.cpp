@@ -250,7 +250,7 @@ DfaId dfaFromNfaRecurse(const vector<MultiChar>      &multiChars,
       DfaId subId = dfaFromNfaRecurse(
           multiChars, table, counts, nis, map, nfa, dfa);
       for (CharIdx ch : multiChars[ii]) // FIXME: why is mc[ii] valid?
-        dfa[dfaId].trans_.set(ch, subId);
+        dfa[dfaId].transitions_.set(ch, subId);
     }
   }
 
