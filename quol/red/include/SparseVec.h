@@ -1,4 +1,23 @@
-// sparse vector header
+/* SparseVec.h - sparse vector header
+
+   SparseVec acts mostly like a vector, providing acces by index,
+   but saves memory by storing elements sparsely.  This comes at the
+   cost of extra processing.  Lookups are O(log N) and storing new
+   values can be O(N).
+
+   In some ways, SparseVec acts like a map.  For instance, size()
+   returns the number of valid elements, not the contiguous size.
+   Reference to a specific index causes that element to spring into
+   existence.  Iteration is over the valid SparseRec structures.
+
+   Usage is like:
+
+   SparseVec<std::string> vec;
+   vec[69] = "bar";
+   vec[13] = "foo";
+   for (const auto &[idx, str] : vec)
+     std::cout << idx << '=' << str << std::endl;
+ */
 
 #pragma once
 

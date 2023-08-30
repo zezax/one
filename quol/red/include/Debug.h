@@ -1,4 +1,11 @@
-// general printing and debugging header
+/* Debug.h - general printing and debugging header
+
+   This is mostly string serialization and iostream stuff useful for
+   ad hoc debugging as well as making gtest output prettier.
+
+   Having all this here means that the core library, when compiled,
+   won't contain any iostream or debugging code.
+ */
 
 #pragma once
 

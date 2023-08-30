@@ -1,4 +1,8 @@
-// type definition header for zezax::red
+/* Types.h - type definition header for zezax::red
+
+   This defines types that are generally applicable across the project.
+   There is also some glue for using BitSets in unordered_map.
+*/
 
 #pragma once
 

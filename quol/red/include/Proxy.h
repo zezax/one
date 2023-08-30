@@ -1,4 +1,19 @@
-// header with proxies for different input and dfa formats
+/* Proxy.h - header with proxies for different input and dfa formats
+
+   The code here exists to abstract away differences in string access
+   and DFA state access for the code in Matcher.h.  Through the use
+   of templates and the classes below, a wide range of specialized
+   implementations can be generated from the generic code in
+   Matcher.h.
+
+   Serializer also uses DfaProxy to emit multiple formats from one
+   piece of code.
+
+   Factoring code this way reduces the number of lines of code
+   without sacrificing run-time performace.  It also prevents
+   divergence in behavior and provides fewer places where bugs can
+   hide, making testing more effective.
+ */
 
 #pragma once
 

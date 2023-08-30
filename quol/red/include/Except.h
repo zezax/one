@@ -1,4 +1,22 @@
-// regex exception header
+/* Except.h - zezax::red exception header
+
+   These are all the custom exceptions thrown by the regular expression
+   code.  All descend from std::runtime_error.  The top-level custom
+   exception is RedExcept.
+
+   Exception hierarchy:
+
+   RedExcept              - superclass
+     RedExceptInternal    - programming errors
+       RedExceptCompile   - compilation errors
+       RedExceptMinimize  - minimization errors
+       RedExceptSerialize - serialization errors
+       RedExceptExec      - execution errors
+     RedExceptUser        - caused by user input
+       RedExceptParse     - malformed regexes (with position)
+       RedExceptApi       - bad calls/arguments
+     RedExceptLimit       - limit reached
+*/
 
 #pragma once
 
@@ -8,20 +26,6 @@
 #include "Consts.h"
 
 namespace zezax::red {
-
-/* Exception hierarchy:
-
-   RedExcept - superclass
-     RedExceptInternal - programming errors
-       RedExceptCompile - compilation errors
-       RedExceptMinimize - minimization errors
-       RedExceptSerialize - serialization errors
-       RedExceptExec - execution errors
-     RedExceptUser - caused by user input
-       RedExceptParse - malformed regexes (with position)
-       RedExceptApi - bad calls/arguments
-     RedExceptLimit - limit reached
-*/
 
 class RedExcept : public std::runtime_error {
   using std::runtime_error::runtime_error;

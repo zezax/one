@@ -1,4 +1,13 @@
-// default map header
+/* DefaultMap.h - default map header
+
+   A DefaultMap is just a wrapper around unordered_map with the behavior
+   that lookups for nonexistent keys always yield the default value.
+   Also, default values aren't explicitly stored.  DefaultMap saves lots
+   of memory when representing state transitions, most of which go to
+   zero, the error state.
+
+   This is not directly iterable, as in theory it is infinite.
+ */
 
 #pragma once
 

@@ -1,4 +1,7 @@
-// constant definition header for zezax::red
+/* Consts.h - constant definition header for zezax::red
+
+   This contains definitions that are generally applicable across the project.
+ */
 
 #pragma once
 
