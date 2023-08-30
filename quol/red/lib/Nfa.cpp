@@ -1,4 +1,7 @@
-// non-deterministic finite automaton object implementation
+/* Nfa.cpp - non-deterministic finite automaton object implementation
+
+   See general description in Nfa.h
+ */
 
 #include "Nfa.h"
 

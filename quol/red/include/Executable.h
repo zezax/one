@@ -1,4 +1,19 @@
-// dfa executable header
+/* Executable.h - DFA executable header
+
+   Executable encapsulates a serialized optimized DFA for use by
+   Matcher.  There are various ways to populate an Executable and
+   they have different semantics in terms of ownership and disposal.
+   This allows flexibility in avoiding copies of DFAs (which can be
+   large) if they come from, say, a memory-mapped file, a database
+   query, or an old C library.
+
+   Usage can be like:
+
+   Executable proc(std::move(dfsStr));
+   Result res = check(prog, "foobar", styFull);
+
+   Executable throws RedExcept if the DFA is null or corrupted.
+ */
 
 #pragma once
 

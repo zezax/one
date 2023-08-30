@@ -10,7 +10,7 @@
    hash results.
 
    While there are hash functions that behave better in hashing
-   benchmarks such as smhasher, FNV is in the sweet spot of quality
+   benchmarks such as SMhasher, FNV is in the sweet spot of quality
    and efficiency for small inputs.  This, along with its small
    code size, is why FNV is widely used in general-purpose hash
    tables such as in the C implementation of Python.

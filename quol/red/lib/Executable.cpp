@@ -1,4 +1,7 @@
-// dfa executable implementation
+/* Executable.cpp - dfa executable implementation
+
+   See general description in Executable.h
+ */
 
 #include "Executable.h"
 

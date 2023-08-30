@@ -1,4 +1,32 @@
-// deterministic finite automaton object header
+/* Dfa.h - deterministic finite automaton object header
+
+   DfaObj is a working representation of a DFA.  It's a container of
+   states.  It also contains useful functions to operate on and
+   transform the DFA.  It includes the map of character equivalence
+   classes.
+
+   Two iterators, DfaIter and DfaConstIter provide breadth-first
+   traversal of the reachable states.  They also maintain a "seen"
+   set of DFA state IDs.
+
+   A matchFull() method is provided in order to verify behavior of
+   the DFA at this state of processing.
+
+   In general DfaObj isn't directly useful, but it is used by
+   Powerset, Minimizer, and Serializer.  Small tests can be composed
+   like this:
+
+   DfaObj dfa;
+   DfaId s0 = dfa.newState();
+   DfaId s1 = dfa.newState();
+   DfaId s2 = dfa.newState();
+   dfa[s2].result_ = 1;
+   dfa[s1].trans_.set('a', s2);
+   for (DfaConstIter it = dfa.citer(); it; ++it)
+     std::cout << it.id() << std::endl;
+
+   DfaObj can throw RedExcept if Budget is exceeded or internal error.
+ */
 
 #pragma once
 

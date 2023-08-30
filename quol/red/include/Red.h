@@ -1,70 +1,71 @@
-// Main public header for RED - Regular Expression DFA
+/* Red.h - main public header for RED - Regular Expression DFA
 
-/*
-  API Usage:
-  ----------
+   API Usage:
+   ----------
 
-  The simplest usage would look like:
+   The simplest usage would look like:
 
-    Outcome oc = Red::matchFull("0123456789", "[0-9]+");
+     Outcome oc = Red::matchFull("0123456789", "[0-9]+");
 
-  This is achieved by implicit construction of a Red object from a string.
-  More straightforward would look like:
+   This is achieved by implicit construction of a Red object from a string.
+   More straightforward would look like:
 
-    Red re("[0-9]+");
-    Outcome oc = Red::matchFull("0123456789", re);
+     Red re("[0-9]+");
+     Outcome oc = Red::matchFull("0123456789", re);
 
-  This has the advantages of making the compilation step separate, and
-  allowing the Red object to be reused.  For those who prefer a more
-  object-oriented approach, the code can look like:
+   This has the advantages of making the compilation step separate, and
+   allowing the Red object to be reused.  For those who prefer a more
+   object-oriented approach, the code can look like:
 
-    Red re("[0-9]+");
-    Outcome oc = re.matchFull("0123456789");
+     Red re("[0-9]+");
+     Outcome oc = re.matchFull("0123456789");
 
-  Orthogonal Naming:
-  ------------------
+   Most calls to Red functions may throw RedExcept.
 
-  There are many ways to process text via a regex.  To avoid the confusion of
-  ad-hoc naming, such functions are named according to a scheme:
+   Orthogonal Naming:
+   ------------------
 
-  <VERB><?QUANTIFIER?><STYLE>
+   There are many ways to process text via a regex.  To avoid the confusion of
+   ad-hoc naming, such functions are named according to a scheme:
 
-  VERB is inspired by Python usage:
+   <VERB><?QUANTIFIER?><STYLE>
 
-  - match:   process the regex from the start of the text
-  - search:  try the regex at successive positions until a match is found
-  - replace: rewrite text based on regex matches
+   VERB is inspired by Python usage:
 
-  QUANTIFIER is just for 'replace':
+   - match:   process the regex from the start of the text
+   - search:  try the regex at successive positions until a match is found
+   - replace: rewrite text based on regex matches
 
-  - One: replace just first occurrence
-  - All: replace all occurrences
+   QUANTIFIER is just for 'replace':
 
-  STYLE can be:
+   - One: replace just first occurrence
+   - All: replace all occurrences
 
-  - Instant: stop processing as soon as an accepting state is reached
-  - First:   as instant, but continue as long as the result is the same
-  - Tangent: as instant, but continue while still accepting
-  - Last:    process until end, returning last accepting state reached
-  - Full:    process entire text against regex, return based on final state
+   STYLE can be:
 
-  These API functions return Outcome structs, and take either
-  std::string_view or C-style char pointer inputs.  They all enable
-  the leader optimization for fixed prefixes.  More choices and
-  documentation are availabile in Matcher.h.  Specifically, if the
-  style is known only at run-time, look there.  Also, high-performance
-  options that return a scalar Result are available, as are ways to
-  disable the leader optimization.  Let benchmarks be your guide.
+   - Instant: stop processing as soon as an accepting state is reached
+   - First:   as instant, but continue as long as the result is the same
+   - Tangent: as instant, but continue while still accepting
+   - Last:    process until end, returning last accepting state reached
+   - Full:    process entire text against regex, return based on final state
 
-  Examples:
+   These API functions return Outcome structs, and take either
+   std::string_view or C-style char pointer inputs.  They all enable
+   the leader optimization for fixed prefixes.  More choices and
+   documentation are availabile in Matcher.h.  Specifically, if the
+   style is known only at run-time, look there.  Also, high-performance
+   options that return a scalar Result are available, as are ways to
+   disable the leader optimization.  Let benchmarks be your guide.
 
-  matchFull()         - what RE2 calls FullMatch()
-  matchTangent()      - a less-greedy prefix match
-  matchLast()         - a more conventional prefix match
-  searchInstant()     - appropriate for grep
-  searchTangent()     - what RE2 calls PartialMatch()
-  replaceOneTangent() - like RE2 Replace()
-  replaceAllLast()    - global longest-match replacement
+   Examples:
+
+   matchFull()         - what RE2 calls FullMatch()
+   matchTangent()      - a less-greedy prefix match
+   matchLast()         - a more conventional prefix match
+   searchInstant()     - appropriate for grep
+   searchTangent()     - what RE2 calls PartialMatch()
+   replaceOneTangent() - like RE2 Replace()
+   replaceAllLast()    - global longest-match replacement
  */
 
 #pragma once
