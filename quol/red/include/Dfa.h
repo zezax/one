@@ -21,7 +21,7 @@
    DfaId s1 = dfa.newState();
    DfaId s2 = dfa.newState();
    dfa[s2].result_ = 1;
-   dfa[s1].trans_.set('a', s2);
+   dfa[s1].transitions_.set('a', s2);
    for (DfaConstIter it = dfa.citer(); it; ++it)
      std::cout << it.id() << std::endl;
 
@@ -47,7 +47,7 @@ typedef std::unordered_map<DfaId, DfaId> StateToStateMap;
 struct DfaState {
   Result         result_;
   bool           deadEnd_;
-  CharToStateMap trans_;
+  CharToStateMap transitions_;
 };
 
 
@@ -70,7 +70,7 @@ public:
       id_ = todo_.front(); // breadth-first traversal
       todo_.pop_front();
       state_ = stateBase_ + id_;
-      for (auto [_, next] : state_->trans_.getMap())
+      for (auto [_, next] : state_->transitions_.getMap())
         if (!seen_.testAndSet(next))
           todo_.push_back(next);
     }
@@ -116,7 +116,7 @@ public:
       id_ = todo_.front(); // breadth-first traversal
       todo_.pop_front();
       state_ = stateBase_ + id_;
-      for (auto [_, next] : state_->trans_.getMap())
+      for (auto [_, next] : state_->transitions_.getMap())
         if (!seen_.testAndSet(next))
           todo_.push_back(next);
     }

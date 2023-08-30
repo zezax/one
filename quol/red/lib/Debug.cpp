@@ -133,7 +133,7 @@ void toStringAppend(string &out, const DfaState &ds) {
   out += "DfaState -> " + to_string(ds.result_) + '\n';
   if (ds.deadEnd_)
     out += "  DeadEnd\n";
-  out += toString(ds.trans_);
+  out += toString(ds.transitions_);
 }
 
 

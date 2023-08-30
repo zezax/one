@@ -148,7 +148,7 @@ DfaEdgeToIds invert(const DfaIdSet         &stateSet,
     const DfaState &ds = stateVec[did];
     for (CharIdx ch = 0; ch <= maxChar; ++ch) { // need to enumerate all
       std::pair<DfaEdge, DfaIdSet> node;
-      node.first.id_ = ds.trans_[ch];
+      node.first.id_ = ds.transitions_[ch];
       node.first.char_ = ch;
       auto [it, _] = rv.emplace(std::move(node));
       it->second.insert(did);
@@ -252,7 +252,7 @@ bool containedIn(BlockId                 needleId,
 
   for (DfaId id : needle) {
     const DfaState &ds = stateVec[id];
-    if (!haystack.get(ds.trans_[ch]))
+    if (!haystack.get(ds.transitions_[ch]))
       return false;
   }
 
@@ -347,8 +347,8 @@ void makeDfaFromBlocks(const DfaObj           &srcDfa,
     if (it != dis.end()) {
       const DfaState &srcState = srcDfa[*it];
       DfaState &outState = outDfa[oldToNew[*it]];
-      for (auto [ch, st] : srcState.trans_.getMap())
-        outState.trans_.emplace(ch, oldToNew[st]);
+      for (auto [ch, st] : srcState.transitions_.getMap())
+        outState.transitions_.emplace(ch, oldToNew[st]);
       outState.result_  = srcState.result_;
       outState.deadEnd_ = srcState.deadEnd_;
     }

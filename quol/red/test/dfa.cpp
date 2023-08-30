@@ -19,7 +19,7 @@ DfaId mkState(DfaObj &dfa, Result r) {
 
 
 void addTrans(DfaObj &dfa, DfaId from, DfaId to, CharIdx ch) {
-  dfa[from].trans_.set(ch, to);
+  dfa[from].transitions_.set(ch, to);
 }
 
 

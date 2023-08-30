@@ -26,12 +26,12 @@ namespace {
 
 bool determineDeadEnd(const DfaState &ds, DfaId id, CharIdx maxChar) {
   // (likely) try sparse first...
-  const std::unordered_map<CharIdx, DfaId> &sparse = ds.trans_.getMap();
+  const std::unordered_map<CharIdx, DfaId> &sparse = ds.transitions_.getMap();
   for (const auto [ch, tid] : sparse)
     if ((ch < gAlphabetSize) && (tid != id))
       return false;
   // if not in sparse, could be default value
-  if ((sparse.size() < maxChar) && (id != ds.trans_.getDefault()))
+  if ((sparse.size() < maxChar) && (id != ds.transitions_.getDefault()))
     return false;
   return true;
 }
@@ -84,7 +84,7 @@ DfaIdSet DfaObj::allStateIds() const {
 CharIdx DfaObj::findMaxChar() const {
   CharIdx high = 0;
   for (DfaConstIter it = citer(); it; ++it)
-    for (auto [ch, _] : it.state().trans_.getMap())
+    for (auto [ch, _] : it.state().transitions_.getMap())
       if (ch > high)
         high = ch;
   return high;
@@ -95,7 +95,7 @@ CharIdx DfaObj::findUsedChars(MultiChar &used) const {
   CharIdx high = 0;
   used.clearAll();
   for (DfaConstIter it = citer(); it; ++it)
-    for (auto [ch, _] : it.state().trans_.getMap()) {
+    for (auto [ch, _] : it.state().transitions_.getMap()) {
       used.set(ch);
       if (ch > high)
         high = ch;
@@ -116,7 +116,7 @@ Result DfaObj::findMaxResult() const {
 void DfaObj::chopEndMarks() {
   for (DfaState &ds : states_) {
     CharIdx low = numeric_limits<CharIdx>::max();
-    CharToStateMap::Map &tmap = ds.trans_.getMap();
+    CharToStateMap::Map &tmap = ds.transitions_.getMap();
     for (auto it = tmap.begin(); it != tmap.end(); ) {
       CharIdx ch = it->first;
       if ((ch >= gAlphabetSize) && (it->second != gDfaErrorId)) {
@@ -151,7 +151,7 @@ string DfaObj::fixedPrefix(DfaId &nextId) const {
     const DfaState &ds = states_[id];
     if (ds.result_ > 0) // if we're already accepting, it's not required
       break;
-    const std::unordered_map<CharIdx, DfaId> &sparse = ds.trans_.getMap();
+    const std::unordered_map<CharIdx, DfaId> &sparse = ds.transitions_.getMap();
     if (sparse.size() != 1) // only looking for unique non-error transitions
       break;
     auto it = sparse.cbegin();
@@ -174,7 +174,7 @@ Result DfaObj::matchFull(string_view sv) {
     CharIdx ch = static_cast<unsigned char>(c);
     if (ch < equivMap_.size())
       ch = equivMap_[ch];
-    ds = &states_[ds->trans_[ch]];
+    ds = &states_[ds->transitions_[ch]];
     if (ds->deadEnd_)
       break;
   }
@@ -236,7 +236,7 @@ vector<CharIdx> makeEquivalenceMap(const vector<DfaState> &states,
   for (DfaId id = gDfaInitialId; id < numStates; ++id) { // skip error state
     const DfaState &ds = states[id];
     zeroVec(flatTrans);
-    for (auto [ch, st] : ds.trans_.getMap())
+    for (auto [ch, st] : ds.transitions_.getMap())
       flatTrans[ch] = st;
 
     CharIdx numParts = partSize; // don't iterate the ones we will add
@@ -287,9 +287,9 @@ void remapStates(vector<DfaState> &states, const vector<CharIdx> &map) {
     throw RedExceptCompile("empty equivalence map");
   for (DfaState &ds : states) {
     CharToStateMap work;
-    for (auto [ch, id] : ds.trans_.getMap())
+    for (auto [ch, id] : ds.transitions_.getMap())
       work.set(map[ch], id);
-    ds.trans_.swap(work);
+    ds.transitions_.swap(work);
   }
 }
 
