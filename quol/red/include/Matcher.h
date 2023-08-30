@@ -1,4 +1,58 @@
-// fast matcher using serialized dfa representation - header
+/* Matcher.h - fast matcher using serialized dfa representation - header
+
+   This is the place where the DFA is actually used to match against
+   input strings.  Multiple different matching styles are available.
+   There is no "matcher class", just free functions and templates.
+
+   Variations are provided based on a number of axes:
+
+   VERB: check   - lightweight, archored to front of text, returns Result
+         match   - like check, but returns full Outcome, slightly slower
+         scan    - sliding-window version of check; finds first match
+         search  - sliding-window version of match; finds first match
+         replace - rewrite string based on regex match(es)
+
+   INPUT: void pointer and length
+          char pointer (C-style null-terminated)
+          std::string
+          std::string_view
+
+   STYLE: when to finish matching, based on accepting states of DFA (see below)
+
+   DO-LEADER: true  - optimize matching based on required prefix if present
+              false - disable optimization, for known-leaderless cases
+
+   Styles Described:
+
+   Instant: stop at shortest possible match
+            re('[0-9]+' -> 1) on '0123456789' matches '0'
+            re('abc' -> 1, 'abcd' -> 2) on 'abcde' matches 'abc'
+            re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new'
+   First:   shortest match and then continue while result is the same
+            re('[0-9]+' -> 1) on '0123456789' matches '0123456789'
+            re('abc' -> 1, 'abcd' -> 2) on 'abcde' matches 'abc'
+            re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new'
+   Tangent: shortest match and continue while result is accepting
+            re('[0-9]+' -> 1) on '0123456789' matches '0123456789'
+            re('abc' -> 1, 'abcd' -> 2) on 'abcde' matches 'abcd'
+            re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new'
+   Last:    longest accepting match
+            re('[0-9]+' -> 1) on '0123456789' matches '0123456789'
+            re('abc' -> 1, 'abcd' -> 2) on 'abcde' matches 'abcd'
+            re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new york'
+   Full:    entire text must match
+            re('[0-9]+' -> 1) on '0123456789' matches '0123456789'
+            re('abc' -> 1, 'abcd' -> 2) on 'abcde' fails
+            re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new york'
+
+   Usage is like:
+
+   Parser p;
+   p.add("foo.*bar", 1, 0);
+   Executable prog = compile(p);
+   Outcome out = search<styLast, true>(prog, "afoolsbarf");
+   std::cout << out.result_ << ' ' << out.start_ << std::endl;
+ */
 
 #pragma once
 
@@ -9,51 +63,6 @@
 #include "Proxy.h"
 
 namespace zezax::red {
-
-/*
-  There is no "matcher class", just free functions and templates.
-
-  Variations are provided based on a number of axes:
-
-  VERB: check   - lightweight, archored to front of text, returns Result
-        match   - like check, but returns full Outcome, slightly slower
-        scan    - sliding-window version of check; finds first match
-        search  - sliding-window version of match; finds first match
-        replace - rewrite string based on regex match(es)
-
-  INPUT: void pointer and length
-         char pointer (C-style null-terminated)
-         std::string
-         std::string_view
-
-  STYLE: when to finish matching, based on accepting states of DFA (see below)
-
-  DO-LEADER: true  - optimize matching based on required prefix if present
-             false - disable optimization, for known-leaderless cases
-
-  Styles Described:
-
-  Instant: stop at shortest possible match
-           re('[0-9]+' -> 1) on '0123456789' matches '0'
-           re('abc' -> 1, 'abcd' -> 2) on 'abcde' matches 'abc'
-           re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new'
-  First:   shortest match and then continue while result is the same
-           re('[0-9]+' -> 1) on '0123456789' matches '0123456789'
-           re('abc' -> 1, 'abcd' -> 2) on 'abcde' matches 'abc'
-           re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new'
-  Tangent: shortest match and continue while result is accepting
-           re('[0-9]+' -> 1) on '0123456789' matches '0123456789'
-           re('abc' -> 1, 'abcd' -> 2) on 'abcde' matches 'abcd'
-           re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new'
-  Last:    longest accepting match
-           re('[0-9]+' -> 1) on '0123456789' matches '0123456789'
-           re('abc' -> 1, 'abcd' -> 2) on 'abcde' matches 'abcd'
-           re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new york'
-  Full:    entire text must match
-           re('[0-9]+' -> 1) on '0123456789' matches '0123456789'
-           re('abc' -> 1, 'abcd' -> 2) on 'abcde' fails
-           re('new' -> 1, 'new york' -> 2) on 'new york' matches 'new york'
- */
 
 enum Style {
   styInvalid = 0,

@@ -6,7 +6,8 @@
    of memory when representing state transitions, most of which go to
    zero, the error state.
 
-   This is not directly iterable, as in theory it is infinite.
+   This is not directly iterable, as in theory it is infinite.  The
+   underlying map, however, is iterable via getMap().
  */
 
 #pragma once

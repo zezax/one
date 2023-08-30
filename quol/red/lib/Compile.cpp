@@ -1,4 +1,7 @@
-// compilation conveniences implementation
+/* Compile.cpp - compilation conveniences implementation
+
+   See general description in Compile.h
+*/
 
 #include "Compile.h"
 

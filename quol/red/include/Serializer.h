@@ -1,4 +1,26 @@
-// optimized format for dfa
+/* Serializer.h - creates optimized format for dfa - header
+
+   The serialized format of the DFA is optimized to run fast.  It is
+   small in order to increase locality of reference.  It is a single
+   byte sequence, suitable for storage or transmission.  It is the
+   format encapsulated in Executable and consumed by all the functions
+   in Matcher.
+
+   The DFA passed in should already be minimized and have a map
+   of character equivalence classes.  If fmtDirectAuto is used,
+   the code will use the smallest format that can represent the
+   DFA.
+
+   Functions are provided to load and validate serialized DFAs.
+   A checksum protects the DFA from corruption.
+
+   Usage is like:
+
+   Serializer ser(dfa, stats);
+   ser.serializeToFile(fmtDirectAuto, "/tmp/foobar");
+
+   Serializer can throw RedExcept for various unlikely situations.
+ */
 
 #pragma once
 

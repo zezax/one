@@ -1,4 +1,10 @@
-// optimized format for dfa
+/* Serializer.cpp - creates optimized format for dfa - implementation
+
+   See general description in Serializer.h
+
+   This uses templates from Proxy.h in order to generate multiple
+   formats from one code flow.
+ */
 
 #include "Serializer.h"
 

@@ -1,4 +1,11 @@
-// small utility functions implementation
+/* Util.cpp - small utility functions implementation
+
+   See general description in Util.h
+
+   The bytesUsed() function is interesting in that it normally reports
+   the resident set size from /proc, but if compiled with jemalloc, it
+   reports total allocations.  If it's not Linux, all bets are off.
+ */
 
 #include "Util.h"
 

@@ -1,20 +1,20 @@
 /* Budget.h - resource budget header
 
-  A Budget object limits consumption of certain resources during
-  compilation, generally memory.  The available settings are:
+   A Budget object limits consumption of certain resources during
+   compilation, generally memory.  The available settings are:
 
-  States - This unit of measure encompasses NFA states and DFA states.
-           It's easy to account for, but doesn't really translate
-           directly to bytes.  Roughly 11-22kB per state on amd64.
+   States - This unit of measure encompasses NFA states and DFA states.
+            It's easy to account for, but doesn't really translate
+            directly to bytes.  Roughly 11-22kB per state on amd64.
 
-  Parens - Limits nesting of the recursive descent parser.  Basically,
-           this counts levels of parentheses in order to prevent
-           stack overflow.
+   Parens - Limits nesting of the recursive descent parser.  Basically,
+            this counts levels of parentheses in order to prevent
+            stack overflow.
 
-  A Budget must live longer than the compilation that uses it.
-  Don't share a Budget across threads.  There's no locking here.
+   A Budget must live longer than the compilation that uses it.
+   Don't share a Budget across threads.  There's no locking here.
 
-  In general, RedExceptLimit is thrown when the budget is exceeded.
+   In general, RedExceptLimit is thrown when the budget is exceeded.
  */
 
 #pragma once

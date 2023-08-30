@@ -1,4 +1,34 @@
-// non-deterministic finite automaton object header
+/* Nfa.h - non-deterministic finite automaton object header
+
+   NfaObj is a representation of an NFA.  It's a container of states.
+   It's also the the intermediate representation of a regular
+   expression, produced by Parser and consumed by Powerset, which
+   converts it to a DFA.
+
+   Provided are convenience functions for building the NFA, as well
+   as functions to transform and inspect the NFA.
+
+   Two iterators, NfaIter and NfaConstIter provide breadth-first
+   traversal of the reachable states.  They also maintain a "seen"
+   set of NFA state IDs.
+
+   In general NfaObj isn't directly useful, but it is used by Parser
+   and Powerset.  Small tests can be composed like this:
+
+   NfaObj nfa;
+   NfaId s1 = nfa.newState(0);
+   NfaId s2 = nfa.newState(1);
+   NfaTransition x;
+   x.next_ = s2;
+   x.multiChar_.insert('a');
+   nfa[s1].transitions_.emplace_back(std::move(x));
+   nfa.setInitial(s1);
+   nfa.setGoal(s2);
+   for (NfaConstIter it = nfa.citer(); it; ++it)
+     std::cout << it.id() << std::endl;
+
+   NfaObj can throw RedExcept if Budget or other limits apply.
+ */
 
 #pragma once
 

@@ -1,4 +1,10 @@
-// deterministic finite automaton object implementation
+/* Dfa.cpp - deterministic finite automaton object implementation
+
+   See general description in Dfa.h
+
+   makeEquivalenceMap() is the most interesting function here.  It
+   is documented below.
+ */
 
 #include "Dfa.h"
 

@@ -1,4 +1,19 @@
-// fast matcher using serialized dfa representation - implementation
+/* Matcher.cpp - fast matcher using serialized dfa - implementation
+
+   See general description in Matcher.h
+
+   Herein are implemented the matching functions that operate on the
+   serialized DFA representation encapsulated in Executable.
+
+   There's a lot of macro and template gymnastics here in order to
+   avoid repetition in the critical code.  Some of the templates come
+   from Proxy.h, but most are here and in Matcher.h.
+
+   A goal is to minimize run-time decision-making so that this code is
+   suitable for performance-critical applications.  The compiler
+   provides the leverage to generate all the specific-case functions
+   that may be needed.
+ */
 
 #include "Matcher.h"
 

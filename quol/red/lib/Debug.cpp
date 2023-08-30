@@ -1,5 +1,9 @@
-// general printing and debugging implementation
-// in theory, none of this code should end up linked into a final binary
+/* Debug.cpp - general printing and debugging implementation
+
+   See general description in Debug.h
+
+   In theory, none of this code should end up linked into a final binary.
+*/
 
 #include "Debug.h"
 
