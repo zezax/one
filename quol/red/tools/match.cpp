@@ -14,23 +14,36 @@ using std::string;
 using std::string_view;
 
 int main(int argc, char **argv) {
-  bool raw = false;
-  bool glob = false;
   try {
     Parser p;
     int cur = 0;
+    bool aut = false;
+    bool glob = false;
+    bool exact = false;
+    Flags flags = 0;
+
     for (int ii = 1; ii < argc; ++ii) {
       string_view arg = argv[ii];
-      if (arg == "-r")
-        raw = true;
+      if (arg == "-a")
+        aut = true;
       else if (arg == "-g")
         glob = true;
-      else if (raw)
-        p.add(arg, ++cur, 0);
+      else if (arg == "-x")
+        exact = true;
+      else if (arg == "-i")
+        flags |= fIgnoreCase;
+      else if (arg == "-ls")
+        flags |= fLooseStart;
+      else if (arg == "-le")
+        flags |= fLooseEnd;
+      else if (aut)
+        p.addAuto(arg, ++cur, flags);
       else if (glob)
-        p.addGlob(arg, ++cur, 0);
+        p.addGlob(arg, ++cur, flags);
+      else if (exact)
+        p.addExact(arg, ++cur, flags);
       else
-        p.addAuto(arg, ++cur, 0);
+        p.add(arg, ++cur, flags);
     }
     p.finish();
     DfaObj dfa;

@@ -71,6 +71,11 @@ public:
   //   [!a-z] - inverts the character class; ^ or ! both work
   void addGlob(std::string_view glob, Result result, Flags flags);
 
+  // As add(), but no characters have special meaning; use this
+  // for byte-for-byte matching.  Optimized to use less memory
+  // and less CPU when compiling fixed strings.
+  void addExact(std::string_view glob, Result result, Flags flags);
+
   // Must call this after all adds, before conversion to DFA.
   void finish();
 

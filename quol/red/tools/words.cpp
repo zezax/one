@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
 #endif
 
   int goal = 0;
+  bool exact = false;
   Flags flags = fIgnoreCase;
 
   for (int ii = 1; ii < argc; ++ii) {
@@ -67,6 +68,8 @@ int main(int argc, char **argv) {
       flags |= fLooseEnd;
     else if (arg == "-cs")
       flags &= ~fIgnoreCase;
+    else if (arg == "-x")
+      exact = true;
     else
       from_chars(arg.data(), arg.data() + arg.size(), goal);
   }
@@ -99,8 +102,14 @@ int main(int argc, char **argv) {
     {
       Parser p(nullptr, &stats);
       Result res = 0;
-      for (string &word : words)
-        p.add(word, ++res, flags);
+      if (exact) {
+        for (string &word : words)
+          p.addExact(word, ++res, flags);
+      }
+      else {
+        for (string &word : words)
+          p.add(word, ++res, flags);
+      }
       rex = compile(p, fmtDirectAuto);
     }
 

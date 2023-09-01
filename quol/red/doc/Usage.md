@@ -179,7 +179,8 @@ and has the meaning described above:
 An `Outcome` has three fields:
 
 - `result_` - zero if no match, otherwise,
-the `Result` value passed to `Parser::add()`, `addAuto()`, or `addGlob()`
+the `Result` value passed to `Parser::add()`, `addAuto()`, `addGlob()`,
+or `addExact()`.
 - `start_` - the index at which DFA processing exited the initial state.
 This is will be the start of the match for a specific but common case:
 a DFA with a single-regex starting with `.*`

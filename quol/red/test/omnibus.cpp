@@ -156,7 +156,7 @@ TEST(Omnibus, glob2) {
   EXPECT_EQ(0, dfa.matchFull("-a.--"));
   EXPECT_EQ(1, dfa.matchFull("-a.0-"));
   EXPECT_EQ(1, dfa.matchFull("-abb-"));
-  EXPECT_EQ(1, dfa.matchFull("-ab@-"));
+  EXPECT_EQ(1, dfa.matchFull("-aB@-"));
 }
 
 
@@ -170,6 +170,50 @@ TEST(Omnibus, globerr) {
   EXPECT_THROW(p.addGlob("[a-", 1, 0), RedExceptParse);
   EXPECT_THROW(p.addGlob("[a-z", 1, 0), RedExceptParse);
   EXPECT_THROW(p.addGlob("[z-a]", 1, 0), RedExceptParse);
+}
+
+
+TEST(Omnibus, exact1) {
+  Parser p;
+  p.addExact("foobar", 1, 0);
+  p.finish();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(p.getNfa());
+    dfa = psc.convert();
+    p.freeAll();
+  }
+  EXPECT_EQ(0, dfa.matchFull(""));
+  EXPECT_EQ(0, dfa.matchFull("abc"));
+  EXPECT_EQ(0, dfa.matchFull("fooba"));
+  EXPECT_EQ(0, dfa.matchFull("foobarr"));
+  EXPECT_EQ(0, dfa.matchFull("ffoobar"));
+  EXPECT_EQ(0, dfa.matchFull("FOOBAR"));
+  EXPECT_EQ(1, dfa.matchFull("foobar"));
+}
+
+
+TEST(Omnibus, exact2) {
+  Budget budget;
+  CompStats stats;
+  Parser p(&budget, &stats);
+  p.addExact("foobar", 1, fIgnoreCase | fLooseStart | fLooseEnd);
+  p.finish();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(p.getNfa());
+    dfa = psc.convert();
+    p.freeAll();
+  }
+  EXPECT_EQ(0, dfa.matchFull("fooba"));
+  EXPECT_EQ(0, dfa.matchFull("rfooba"));
+  EXPECT_EQ(0, dfa.matchFull("oobarf"));
+  EXPECT_EQ(0, dfa.matchFull(""));
+  EXPECT_EQ(0, dfa.matchFull("abc"));
+  EXPECT_EQ(1, dfa.matchFull("foobar"));
+  EXPECT_EQ(1, dfa.matchFull("ffoobar"));
+  EXPECT_EQ(1, dfa.matchFull("foobarr"));
+  EXPECT_EQ(1, dfa.matchFull("fFOOBARr"));
 }
 
 
