@@ -315,11 +315,12 @@ NfaId NfaObj::stateEndMark(CharIdx res) {
   CharIdx x = res + gAlphabetSize;
   if ((x < res) || (x < gAlphabetSize))
     throw RedExceptLimit("end-mark overflow");
-  MultiChar mc;
-  mc.insert(x);
   NfaId init = newState(0);
   NfaId goal = newGoalState();
-  states_[init].transitions_.emplace_back(NfaTransition{goal, mc});
+  NfaTransition tr;
+  tr.next_ = goal;
+  tr.multiChar_.insert(x);
+  states_[init].transitions_.emplace_back(std::move(tr));
   return init;
 }
 

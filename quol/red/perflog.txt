@@ -128,6 +128,16 @@ COMMIT 2023/3/17
   TEST: words ratio 1:25 (9397)
   RESULT: ucpu 0:19.942 peak 2.566GB one-sec rss 2.563GB
 
+Exact:
+
+COMMIT 2023/9/1
+  addExact() for fixed strings avoids creating useless states
+  TEST: words (regex) ratio 1:25 (9397)
+  METRICS: ucpu 0:20.273 peak 2.568GB
+  TEST: words (exact) ratio 1:25 (9397)
+  METRICS: ucpu 0:17.480 peak 1.482GB
+  RESULT: 13.8% faster, 42.3% less memory
+
 MATCHING:
 ---------
   23 words from /usr/dict/words

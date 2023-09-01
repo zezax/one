@@ -12,6 +12,7 @@
 #include "Parser.h"
 
 #include <chrono>
+#include <limits>
 
 #include "Except.h"
 
@@ -22,6 +23,7 @@ namespace chrono = std::chrono;
 using namespace std::chrono_literals;
 
 using chrono::steady_clock;
+using std::numeric_limits;
 using std::string_view;
 
 Parser::Parser(Budget *budget, CompStats *stats)
@@ -46,6 +48,9 @@ Parser::Parser(Budget *budget, CompStats *stats)
 void Parser::add(string_view regex, Result result, Flags flags) {
   if (result <= 0)
     throw RedExceptApi("result must be positive");
+  if (result > (numeric_limits<Result>::max() -
+                static_cast<Result>(gAlphabetSize)))
+    throw RedExceptApi("result too large");
 
   nfa_.setGoal(result);
   flags_ = flags;
@@ -115,6 +120,9 @@ void Parser::addAuto(string_view regex, Result result, Flags flags) {
 void Parser::addGlob(string_view glob, Result result, Flags flags) {
   if (result <= 0)
     throw RedExceptApi("result must be positive");
+  if (result > (numeric_limits<Result>::max() -
+                static_cast<Result>(gAlphabetSize)))
+    throw RedExceptApi("result too large");
 
   nfa_.setGoal(result);
   flags_ = flags;
@@ -143,6 +151,64 @@ void Parser::addGlob(string_view glob, Result result, Flags flags) {
 
   if (stats_) {
     stats_->numTokens_   += tokens;
+    stats_->numPatterns_ += 1;
+  }
+}
+
+
+void Parser::addExact(string_view glob, Result result, Flags flags) {
+  if (result <= 0)
+    throw RedExceptApi("result must be positive");
+  if (result > (numeric_limits<Result>::max() -
+                static_cast<Result>(gAlphabetSize)))
+    throw RedExceptApi("result too large");
+
+  nfa_.setGoal(result);
+  flags_ = flags;
+
+  NfaId startWild = gNfaNullId;
+  if (flags_ & fLooseStart)
+    startWild = nfa_.stateWildcard(); // do early for expected numbering
+
+  NfaId state = gNfaNullId;
+  NfaId cur = nfa_.newState(0);
+
+  size_t len = glob.size();
+  const Byte *beg = reinterpret_cast<const Byte *>(glob.data());
+  const Byte *end = beg + len;
+  for (const Byte *ptr = beg; ptr < end; ++ptr) {
+    NfaId next = nfa_.newState(0);
+    NfaTransition tr;
+    tr.next_ = next;
+    tr.multiChar_.insert(*ptr);
+    nfa_[cur].transitions_.emplace_back(std::move(tr));
+    state = nfa_.stateConcat(state, cur);
+    cur = next;
+  }
+
+  if (flags_ & fLooseEnd)
+    nfa_[cur].result_ = result;
+  else {
+    NfaId next = nfa_.newGoalState();
+    NfaTransition tr;
+    tr.next_ = next;
+    tr.multiChar_.insert(result + gAlphabetSize); // make endmark directly
+    nfa_[cur].transitions_.emplace_back(std::move(tr));
+  }
+
+  if (flags_ & fIgnoreCase)
+    state = nfa_.stateIgnoreCase(state);
+
+  if (startWild)
+    state = nfa_.stateConcat(startWild, state);
+  if (flags_ & fLooseEnd) {
+    state = nfa_.stateConcat(state, nfa_.stateWildcard());
+    state = nfa_.stateConcat(state, nfa_.stateEndMark(result));
+  }
+  nfa_.selfUnion(state); // all added regexes are acceptable
+
+  if (stats_) {
+    stats_->numTokens_   += len;
     stats_->numPatterns_ += 1;
   }
 }
