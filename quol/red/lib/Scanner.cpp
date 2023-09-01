@@ -137,6 +137,7 @@ Token Scanner::scanNext() {
 }
 
 
+// see also Parser::parseClass()
 Token Scanner::scanSet() {
   Token rv(tChars, pos());
   int xx;             // primary char being parsed, start or only char
@@ -154,7 +155,6 @@ Token Scanner::scanSet() {
     if (xx < 0)
       throw RedExceptParse("incomplete inverted character class", pos());
   }
-  rv.multiChar_.truncate();
 
   if (!xxEsc && ((xx == '-') || (xx == ']'))) {
     rv.multiChar_.insert(xx);
@@ -179,7 +179,7 @@ Token Scanner::scanSet() {
         continue;
       }
       if (xx > yy)
-        throw RedExceptParse("backward range", pos());
+        throw RedExceptParse("backward character class range", pos());
       rv.multiChar_.setSpan(xx, yy);
       xx = interpretSingleChar(xxEsc);
       if (xx < 0)

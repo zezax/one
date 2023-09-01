@@ -119,6 +119,60 @@ TEST(Omnibus, classes3) {
 }
 
 
+TEST(Omnibus, glob1) {
+  Parser p;
+  p.addGlob("[-abc-z]*.[ch]", 1, 0);
+  p.finish();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(p.getNfa());
+    dfa = psc.convert();
+    p.freeAll();
+  }
+  EXPECT_EQ(0, dfa.matchFull("123.c"));
+  EXPECT_EQ(0, dfa.matchFull("abc.o"));
+  EXPECT_EQ(0, dfa.matchFull(".h"));
+  EXPECT_EQ(1, dfa.matchFull("abc.c"));
+  EXPECT_EQ(1, dfa.matchFull("foo.h"));
+  EXPECT_EQ(1, dfa.matchFull("z.c"));
+  EXPECT_EQ(1, dfa.matchFull("f00.c"));
+}
+
+
+TEST(Omnibus, glob2) {
+  Budget budget;
+  CompStats stats;
+  Parser p(&budget, &stats);
+  p.addGlob("[^]0-9-]?[!a-]", 1, fIgnoreCase | fLooseStart | fLooseEnd);
+  p.finish();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(p.getNfa());
+    dfa = psc.convert();
+    p.freeAll();
+  }
+  EXPECT_EQ(0, dfa.matchFull("-].0-"));
+  EXPECT_EQ(0, dfa.matchFull("--.0-"));
+  EXPECT_EQ(0, dfa.matchFull("-a.--"));
+  EXPECT_EQ(1, dfa.matchFull("-a.0-"));
+  EXPECT_EQ(1, dfa.matchFull("-abb-"));
+  EXPECT_EQ(1, dfa.matchFull("-ab@-"));
+}
+
+
+TEST(Omnibus, globerr) {
+  Parser p;
+  EXPECT_THROW(p.addGlob("", 1, 0), RedExceptParse);
+  EXPECT_THROW(p.addGlob("[", 1, 0), RedExceptParse);
+  EXPECT_THROW(p.addGlob("[^", 1, 0), RedExceptParse);
+  EXPECT_THROW(p.addGlob("[]", 1, 0), RedExceptParse);
+  EXPECT_THROW(p.addGlob("[a", 1, 0), RedExceptParse);
+  EXPECT_THROW(p.addGlob("[a-", 1, 0), RedExceptParse);
+  EXPECT_THROW(p.addGlob("[a-z", 1, 0), RedExceptParse);
+  EXPECT_THROW(p.addGlob("[z-a]", 1, 0), RedExceptParse);
+}
+
+
 TEST(Omnibus, null) {
   Parser p;
   p.finish();

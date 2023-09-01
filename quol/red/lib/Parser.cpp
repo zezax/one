@@ -112,6 +112,42 @@ void Parser::addAuto(string_view regex, Result result, Flags flags) {
 }
 
 
+void Parser::addGlob(string_view glob, Result result, Flags flags) {
+  if (result <= 0)
+    throw RedExceptApi("result must be positive");
+
+  nfa_.setGoal(result);
+  flags_ = flags;
+
+  NfaId startWild = gNfaNullId;
+  if (flags_ & fLooseStart)
+    startWild = nfa_.stateWildcard(); // do early for expected numbering
+
+  const Byte *beg = reinterpret_cast<const Byte *>(glob.data());
+  const Byte *end = beg + glob.size();
+  size_t tokens = 0;
+  NfaId state = parseGlob(beg, end, tokens);
+  if (!state)
+    throw RedExceptParse("uncategorized parsing error");
+
+  if (flags_ & fIgnoreCase)
+    state = nfa_.stateIgnoreCase(state);
+
+  if (startWild)
+    state = nfa_.stateConcat(startWild, state);
+  if (flags_ & fLooseEnd)
+    state = nfa_.stateConcat(state, nfa_.stateWildcard());
+
+  state = nfa_.stateConcat(state, nfa_.stateEndMark(result));
+  nfa_.selfUnion(state); // all added regexes are acceptable
+
+  if (stats_) {
+    stats_->numTokens_   += tokens;
+    stats_->numPatterns_ += 1;
+  }
+}
+
+
 void Parser::finish() {
   if (nfa_.numStates() == 0)
     nfa_.setInitial(nfa_.newState(1)); // empty matches empty
@@ -244,6 +280,94 @@ NfaId Parser::parseCharBits() {
   NfaId init = nfa_.newState(0);
   NfaId goal = nfa_.newGoalState();
   nfa_[init].transitions_.emplace_back(NfaTransition{goal, tok_.multiChar_});
+  return init;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+NfaId Parser::parseGlob(const Byte *beg, const Byte *end, size_t &tokens) {
+  NfaId state = gNfaNullId;
+
+  for (const Byte *ptr = beg; ptr < end; ++ptr) {
+    switch (*ptr) {
+    case '*':
+      state = nfa_.stateConcat(state, nfa_.stateWildcard());
+      break;
+    case '?':
+      state = nfa_.stateConcat(state, nfa_.stateAnyChar());
+      break;
+    case '[':
+      state = nfa_.stateConcat(state, parseClass(ptr, beg, end));
+      break;
+    default:
+      state = nfa_.stateConcat(state, nfa_.stateChar(*ptr));
+      break;
+    }
+    ++tokens;
+  }
+
+  return state;
+}
+
+
+// simplified version of Scanner::scanSet()
+NfaId Parser::parseClass(const Byte *&ptr, const Byte *beg, const Byte *end) {
+  bool invert = false;
+  NfaId init = nfa_.newState(0);
+  NfaId goal = nfa_.newGoalState();
+  NfaTransition tr;
+  tr.next_ = goal;
+
+  if (++ptr >= end)
+    throw RedExceptParse("unclosed glob class", ptr - beg);
+  Byte xx = *ptr;
+  if ((xx == '^') || (xx == '!')) { // two ways to invert in globs
+    invert = true;
+    if (++ptr >= end)
+      throw RedExceptParse("unclosed inverted glob class", ptr - beg);
+    xx = *ptr;
+  }
+
+  if ((xx == '-') || (xx == ']')) {
+    tr.multiChar_.insert(xx);
+    if (++ptr >= end)
+      throw RedExceptParse("unclosed glob class", ptr - beg);
+    xx = *ptr;
+  }
+
+  while (xx != ']') {
+    if (++ptr >= end)
+      throw RedExceptParse("unclosed glob class", ptr - beg);
+    Byte yy = *ptr;
+    if (yy == '-') {
+      if (++ptr >= end)
+        throw RedExceptParse("unended glob class range", ptr - beg);
+      yy = *ptr;
+      if (yy == ']') {
+        tr.multiChar_.insert(xx);
+        tr.multiChar_.insert('-');
+        xx = yy;
+        continue;
+      }
+      if (xx > yy)
+        throw RedExceptParse("backward glob class range", ptr - beg);
+      tr.multiChar_.setSpan(xx, yy);
+      if (++ptr >= end)
+        throw RedExceptParse("unclosed glob class range", ptr - beg);
+      xx = *ptr;
+    }
+    else {
+      tr.multiChar_.insert(xx);
+      xx = yy;
+    }
+  }
+
+  if (invert) {
+    tr.multiChar_.resize(gAlphabetSize);
+    tr.multiChar_.flipAll();
+  }
+
+  nfa_[init].transitions_.emplace_back(std::move(tr));
   return init;
 }
 

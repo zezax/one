@@ -283,14 +283,31 @@ NfaId NfaObj::stateIgnoreCase(NfaId id) {
 }
 
 
-NfaId NfaObj::stateWildcard() { // basically dot-star
-  MultiChar mc;
-  mc.resize(gAlphabetSize);
-  mc.setAll();
+NfaId NfaObj::stateChar(Byte ch) {
   NfaId init = newState(0);
   NfaId goal = newGoalState();
-  states_[init].transitions_.emplace_back(NfaTransition{goal, mc});
-  return stateKleenStar(init);
+  NfaTransition tr;
+  tr.next_ = goal;
+  tr.multiChar_.insert(ch);
+  states_[init].transitions_.emplace_back(std::move(tr));
+  return init;
+}
+
+
+NfaId NfaObj::stateAnyChar() { // basically dot
+  NfaId init = newState(0);
+  NfaId goal = newGoalState();
+  NfaTransition tr;
+  tr.next_ = goal;
+  tr.multiChar_.resize(gAlphabetSize);
+  tr.multiChar_.setAll();
+  states_[init].transitions_.emplace_back(std::move(tr));
+  return init;
+}
+
+
+NfaId NfaObj::stateWildcard() { // basically dot-star
+  return stateKleenStar(stateAnyChar());
 }
 
 
