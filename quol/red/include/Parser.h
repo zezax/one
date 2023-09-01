@@ -6,9 +6,10 @@
    be passed to PowersetConverter which will build an equivalent
    deterministic finite automaton (DFA).
 
-   There are two "add" methods here.  The basic add() is the raw
+   There are multiple "add" methods here.  The basic add() is the raw
    version.  The more clever addAuto() tries to do what many people
    expect from using regexes in other contexts.  See comments below.
+   To use shell-style globs instead of regexes, call addGlob().
    Each add supplies a Result, which must be positive.  Different
    result values can be used to distinguish which regex matched.
 
@@ -61,6 +62,15 @@ public:
   // Also note that ^ and $ are not sepcial characters anywhere else.
   void addAuto(std::string_view regex, Result result, Flags flags);
 
+  // As add(), but takes shell-style globs instead of full-blown
+  // regular expressions.  The only special things in a glob are:
+  //   ?      - matches any one character
+  //   *      - matches zero or more of any characters
+  //   [abc]  - matches any of 'a', 'b', or 'c'
+  //   [a-z]  - matches any character in the range 'a' through 'z'
+  //   [!a-z] - inverts the character class; ^ or ! both work
+  void addGlob(std::string_view glob, Result result, Flags flags);
+
   // Must call this after all adds, before conversion to DFA.
   void finish();
 
@@ -78,6 +88,8 @@ private:
   NfaId parseMulti();
   NfaId parseUnit();
   NfaId parseCharBits();
+  NfaId parseGlob(const Byte *beg, const Byte *end, size_t &tokens);
+  NfaId parseClass(const Byte *&ptr, const Byte *beg, const Byte *end);
 
   Flags      flags_;
   int        level_;

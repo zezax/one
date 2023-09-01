@@ -15,6 +15,7 @@ using std::string_view;
 
 int main(int argc, char **argv) {
   bool raw = false;
+  bool glob = false;
   try {
     Parser p;
     int cur = 0;
@@ -22,8 +23,12 @@ int main(int argc, char **argv) {
       string_view arg = argv[ii];
       if (arg == "-r")
         raw = true;
+      else if (arg == "-g")
+        glob = true;
       else if (raw)
         p.add(arg, ++cur, 0);
+      else if (glob)
+        p.addGlob(arg, ++cur, 0);
       else
         p.addAuto(arg, ++cur, 0);
     }

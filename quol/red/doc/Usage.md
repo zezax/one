@@ -179,7 +179,7 @@ and has the meaning described above:
 An `Outcome` has three fields:
 
 - `result_` - zero if no match, otherwise,
-the `Result` value passed to `Parser::add()` or `addAuto()`
+the `Result` value passed to `Parser::add()`, `addAuto()`, or `addGlob()`
 - `start_` - the index at which DFA processing exited the initial state.
 This is will be the start of the match for a specific but common case:
 a DFA with a single-regex starting with `.*`
@@ -208,6 +208,25 @@ The rules of `addAuto()` are simple and fallible:
 
 Note that this hueristic fails for a regex like `^a|b$`.
 Also, `^` and `$` are not special anywhere else.
+
+## addGlob()
+
+If matching via shell-style globs is desired, the `addGlob()` method
+is useful.
+Globs are simpler than regular expressions.
+The special parts of globs are:
+
+- `?` - matches any single character
+- `*` - matches zero or more of any characters
+- `[abc]` - matches any of `a`, `b`, or `c`
+- `[a-z]` - matches any character from `a` to `z`
+- `[^a]` - matches any character except `a`
+- `[!a]` - matches any character except `a`
+- `[]a]` - matches right square bracket or `a`
+- `[-a]` - matches hyphen or `a`
+- `[[]` - matches left square bracket
+- `[?]` - matches question mark
+- `[*]` - matches asterisk
 
 ## The Null Regex
 

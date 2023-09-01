@@ -205,6 +205,8 @@ public:
   NfaId stateKleenStar(NfaId id);
   NfaId stateClosure(NfaId id, int min, int max);
   NfaId stateIgnoreCase(NfaId id);
+  NfaId stateChar(Byte ch);
+  NfaId stateAnyChar(); // dot
   NfaId stateWildcard(); // dot-star
   NfaId stateEndMark(CharIdx r);
 
