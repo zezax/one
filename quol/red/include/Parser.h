@@ -40,6 +40,14 @@
 
 namespace zezax::red {
 
+enum Language {
+  langInvalid   = 0,
+  langRegexRaw  = 1,
+  langRegexAuto = 2,
+  langGlob      = 3,
+  langExact     = 4,
+};
+
 class Parser {
 public:
   explicit Parser(Budget *budget = nullptr, CompStats *stats = nullptr);
@@ -75,6 +83,9 @@ public:
   // for byte-for-byte matching.  Optimized to use less memory
   // and less CPU when compiling fixed strings.
   void addExact(std::string_view glob, Result result, Flags flags);
+
+  // selects one of the above input languages at runtime
+  void addAs(Language lang, std::string_view inp, Result result, Flags flags);
 
   // Must call this after all adds, before conversion to DFA.
   void finish();

@@ -214,6 +214,29 @@ void Parser::addExact(string_view glob, Result result, Flags flags) {
 }
 
 
+void Parser::addAs(Language    lang,
+                   string_view inp,
+                   Result      result,
+                   Flags       flags) {
+  switch (lang) {
+  case langRegexRaw:
+    add(inp, result, flags);
+    break;
+  case langRegexAuto:
+    addAuto(inp, result, flags);
+    break;
+  case langGlob:
+    addGlob(inp, result, flags);
+    break;
+  case langExact:
+    addExact(inp, result, flags);
+    break;
+  default:
+    throw RedExceptApi("unrecognized regex language");
+  }
+}
+
+
 void Parser::finish() {
   if (nfa_.numStates() == 0)
     nfa_.setInitial(nfa_.newState(1)); // empty matches empty
