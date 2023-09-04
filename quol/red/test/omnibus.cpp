@@ -23,6 +23,22 @@ using testing::TestWithParam;
 using testing::Values;
 using testing::ValuesIn;
 
+namespace {
+
+DfaObj simpleParse(Language lang, const char *str, Flags flags) {
+  Parser p;
+  p.addAs(lang, str, 1, flags);
+  p.finish();
+  DfaObj dfa;
+  {
+    PowersetConverter psc(p.getNfa());
+    dfa = psc.convert();
+    p.freeAll();
+  }
+  return dfa;
+}
+
+} // anonymous
 
 // FIXME: move this to a matching test
 TEST(Omnibus, multi) {
@@ -51,15 +67,7 @@ TEST(Omnibus, multi) {
 
 
 TEST(Omnibus, classes1) {
-  Parser p;
-  p.add("[abcd][defg][ghij][0-9]z", 1, 0);
-  p.finish();
-  DfaObj dfa;
-  {
-    PowersetConverter psc(p.getNfa());
-    dfa = psc.convert();
-    p.freeAll();
-  }
+  DfaObj dfa = simpleParse(langRegexRaw, "[abcd][defg][ghij][0-9]z", 0);
   EXPECT_EQ(0, dfa.matchFull("edg0z"));
   EXPECT_EQ(0, dfa.matchFull("aai0z"));
   EXPECT_EQ(0, dfa.matchFull("adk0z"));
@@ -74,15 +82,7 @@ TEST(Omnibus, classes1) {
 
 
 TEST(Omnibus, classes2) {
-  Parser p;
-  p.add("[abcd][defg][abcdefg][0-9]z", 1, 0);
-  p.finish();
-  DfaObj dfa;
-  {
-    PowersetConverter psc(p.getNfa());
-    dfa = psc.convert();
-    p.freeAll();
-  }
+  DfaObj dfa = simpleParse(langRegexRaw, "[abcd][defg][abcdefg][0-9]z", 0);
   EXPECT_EQ(0, dfa.matchFull("edg0z"));
   EXPECT_EQ(0, dfa.matchFull("aag0z"));
   EXPECT_EQ(0, dfa.matchFull("adk0z"));
@@ -97,15 +97,7 @@ TEST(Omnibus, classes2) {
 
 
 TEST(Omnibus, classes3) {
-  Parser p;
-  p.add("[abcd].[ghij][0-9]z", 1, 0);
-  p.finish();
-  DfaObj dfa;
-  {
-    PowersetConverter psc(p.getNfa());
-    dfa = psc.convert();
-    p.freeAll();
-  }
+  DfaObj dfa = simpleParse(langRegexRaw, "[abcd].[ghij][0-9]z", 0);
   EXPECT_EQ(0, dfa.matchFull("edg0z"));
   EXPECT_EQ(1, dfa.matchFull("aai0z"));
   EXPECT_EQ(0, dfa.matchFull("adk0z"));
@@ -120,15 +112,7 @@ TEST(Omnibus, classes3) {
 
 
 TEST(Omnibus, glob1) {
-  Parser p;
-  p.addGlob("[-abc-z]*.[ch]", 1, 0);
-  p.finish();
-  DfaObj dfa;
-  {
-    PowersetConverter psc(p.getNfa());
-    dfa = psc.convert();
-    p.freeAll();
-  }
+  DfaObj dfa = simpleParse(langGlob, "[-abc-z]*.[ch]", 0);
   EXPECT_EQ(0, dfa.matchFull("123.c"));
   EXPECT_EQ(0, dfa.matchFull("abc.o"));
   EXPECT_EQ(0, dfa.matchFull(".h"));
@@ -174,15 +158,7 @@ TEST(Omnibus, globerr) {
 
 
 TEST(Omnibus, exact1) {
-  Parser p;
-  p.addExact("foobar", 1, 0);
-  p.finish();
-  DfaObj dfa;
-  {
-    PowersetConverter psc(p.getNfa());
-    dfa = psc.convert();
-    p.freeAll();
-  }
+  DfaObj dfa = simpleParse(langExact, "foobar", 0);
   EXPECT_EQ(0, dfa.matchFull(""));
   EXPECT_EQ(0, dfa.matchFull("abc"));
   EXPECT_EQ(0, dfa.matchFull("fooba"));
@@ -214,6 +190,30 @@ TEST(Omnibus, exact2) {
   EXPECT_EQ(1, dfa.matchFull("ffoobar"));
   EXPECT_EQ(1, dfa.matchFull("foobarr"));
   EXPECT_EQ(1, dfa.matchFull("fFOOBARr"));
+}
+
+
+TEST(Omnibus, addas) {
+  {
+    DfaObj dfa = simpleParse(langRegexRaw, "foo.*bar", 0);
+    EXPECT_EQ(0, dfa.matchFull(".foobar"));
+    EXPECT_EQ(1, dfa.matchFull("foolsbar"));
+  }
+  {
+    DfaObj dfa = simpleParse(langRegexAuto, "foo.*bar", 0);
+    EXPECT_EQ(0, dfa.matchFull("foaobar"));
+    EXPECT_EQ(1, dfa.matchFull(".foolsbarf"));
+  }
+  {
+    DfaObj dfa = simpleParse(langGlob, "foo.*bar", 0);
+    EXPECT_EQ(0, dfa.matchFull("foobar"));
+    EXPECT_EQ(1, dfa.matchFull("foo.babar"));
+  }
+  {
+    DfaObj dfa = simpleParse(langExact, "foo.*bar", 0);
+    EXPECT_EQ(0, dfa.matchFull("foobar"));
+    EXPECT_EQ(1, dfa.matchFull("foo.*bar"));
+  }
 }
 
 
