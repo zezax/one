@@ -42,18 +42,24 @@
 
 namespace zezax::red {
 
+// NfaTransition represents a possible outbound transition.  Any input
+// characters in the multi-char can lead to the indicated next state.
 struct NfaTransition {
   NfaId     next_;
   MultiChar multiChar_;
 };
 
 
+// NfaState represents a state in the NFA.  Each state has a result;
+// positive numbers indicate accepting states.  The transitions array
+// holds the possible (and potentially conflicting) outbound transitions.
 struct NfaState {
   Result result_;
   std::vector<NfaTransition> transitions_;
 };
 
 
+// NfaStateTransition is a directed edge in the NFA
 struct NfaStateTransition {
   NfaId         state_;
   NfaTransition transition_;
@@ -65,6 +71,7 @@ inline bool operator==(const NfaTransition &aa, const NfaTransition &bb) {
 }
 
 
+// MultiCharSet represents a set of sets of characters
 typedef std::unordered_set<MultiChar> MultiCharSet;
 
 
@@ -160,6 +167,10 @@ private:
   friend NfaObj;
 };
 
+
+// NfaObj holds an array of NFA states.  Each state's ID is its index into
+// this array.  NfaObj stores the initial state ID.  NfaObj also provides
+// functionality used by the parser and the minimizer to do their jobs.
 
 class NfaObj {
 public:

@@ -431,15 +431,6 @@ string toString(const DfaEdge &e) {
 }
 
 
-// DfaEdgeSet
-string toString(const DfaEdgeSet &des) {
-  string rv = "edges{\n";
-  for (const DfaEdge &e : des)
-    rv += "  " + toString(e) + '\n';
-  return rv + "}\n";
-}
-
-
 // DfaEdgeToIds (reverse map)
 string toString(const DfaEdgeToIds &rev) {
   string rv = "rev{\n";

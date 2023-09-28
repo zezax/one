@@ -39,26 +39,40 @@
 
 namespace zezax::red {
 
+// BlockId is actually an index into the array of blocks
 typedef int64_t BlockId;
 
+// DfaEdge represents a transition to a specific DFA state ID due to
+// encountering a specific input character.  DfaMinimizer incorporates
+// DfaEdge elements into an inverse of the original DFA, for working
+// backward to a set of states.  This makes splitting blocks efficient.
 struct DfaEdge {
   DfaId   id_;
   CharIdx char_;
 };
 
+// BlockRec represents a work item in the "list".  The idea is to split
+// the block with respect to the character.
 struct BlockRec {
   BlockId block_;
   CharIdx char_;
 };
 
+// Patch represents the fix-up work after splitting a block.  The Gries
+// paper explains the twin.  Basically, the twin is the block to which
+// states are moved after removing them from the block.
 struct Patch {
   BlockId block_;
   BlockId twin_;
 };
 
-typedef std::unordered_set<DfaEdge>           DfaEdgeSet;
+// DfaEdgeToIds represents the inverse DFA used for splitting
 typedef std::unordered_map<DfaEdge, DfaIdSet> DfaEdgeToIds;
+
+// BlockRecSet is the "list" of work to be done
 typedef std::unordered_set<BlockRec>          BlockRecSet;
+
+// PatchSet holds the fix-up work to be done after each iteration
 typedef std::unordered_set<Patch>             PatchSet;
 
 } // namespace zezax::red

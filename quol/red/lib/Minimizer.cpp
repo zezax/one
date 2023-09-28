@@ -159,27 +159,32 @@ DfaEdgeToIds invert(const DfaIdSet         &stateSet,
 }
 
 
+// Create initial partition of blocks by result
 void partition(const DfaIdSet         &stateSet,
                const vector<DfaState> &stateVec,
                vector<DfaIdSet>       &blockVec) {
-  ResultSet resultSet;
-  resultSet.insert(0); // make sure non-accepting result is present
-  for (DfaId did : stateSet)
-    resultSet.insert(stateVec[did].result_);
-
   // states with different results must be differentiated into different blocks
   std::map<Result, BlockId> result2block;
-  BlockId block = 0;
-  for (Result res : resultSet)
-    result2block[res] = block++;
+
+  {
+    ResultSet resultSet;
+    resultSet.insert(0); // make sure non-accepting result is present
+    for (DfaId did : stateSet)
+      resultSet.insert(stateVec[did].result_);
+
+    BlockId block = 0;
+    for (Result res : resultSet)
+      result2block[res] = block++;
+  }
 
   for (DfaId did : stateSet) {
-    block = result2block[stateVec[did].result_];
+    BlockId block = result2block[stateVec[did].result_];
     safeRef(blockVec, block).insert(did);
   }
 }
 
 
+// Create the initial work list: either rejecting block or all accepting
 BlockRecSet makeList(CharIdx                 maxChar,
                      const vector<DfaIdSet> &blocks) {
   DfaId zeroSize = blocks[0].size();
@@ -260,6 +265,7 @@ bool containedIn(BlockId                 needleId,
 }
 
 
+// While splitting, move state to appropriate twin and record patch
 void handleTwins(DfaId             stateId,
                  BlockId           blockId,
                  vector<DfaIdSet> &blocks,

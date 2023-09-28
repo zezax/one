@@ -39,7 +39,6 @@ std::string toString(const DfaIdSet &dis);
 std::string toString(const DfaState &ds);
 std::string toString(const DfaObj &dfa);
 std::string toString(const DfaEdge &e);
-std::string toString(const DfaEdgeSet &des);
 std::string toString(const DfaEdgeToIds &rev);
 std::string toString(const std::vector<DfaIdSet> &blocks);
 std::string toString(const BlockRec &br);
