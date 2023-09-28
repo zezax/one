@@ -13,8 +13,8 @@
    the DFA at this state of processing.
 
    In general DfaObj isn't directly useful, but it is used by
-   Powerset, Minimizer, and Serializer.  Small tests can be composed
-   like this:
+   Powerset, DfaMinimizer, and Serializer.  Small tests can be
+   composed like this:
 
    DfaObj dfa;
    DfaId s0 = dfa.newState();
@@ -40,15 +40,24 @@
 
 namespace zezax::red {
 
+// CharToStateMap represents the outbound transitions from a state.  It
+// indicates the next state based on the input character.
 typedef DefaultMap<CharIdx, DfaId>       CharToStateMap;
-typedef std::unordered_map<DfaId, DfaId> StateToStateMap;
 
 
+// DfaState represents a state in the DFA.  Each state has a result;
+// positive numbers indicate accepting states.  The dead-end flag is set
+// when all possible inputs lead to the same result.  Most important are
+// the transitions, a map of input character to next state ID.
 struct DfaState {
   Result         result_;
   bool           deadEnd_;
   CharToStateMap transitions_;
 };
+
+
+// StateToStateMap is used for context when transcribing DFAs
+typedef std::unordered_map<DfaId, DfaId> StateToStateMap;
 
 
 class DfaObj; // the main attraction is farther down...
@@ -145,6 +154,11 @@ private:
   friend DfaObj;
 };
 
+
+// DfaObj holds an array of DFA states.  Each state's ID is its index into
+// this array.  ID zero is the error state.  ID one is the initial state.
+// DfaObj also holds the map to equivalence classes.  Many operations on the
+// DFA are provided for the powerset converter and the minimizer.
 
 class DfaObj {
 public:
