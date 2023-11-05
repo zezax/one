@@ -39,6 +39,7 @@ using std::vector;
 
 namespace {
 
+// Picks the best from a set of NFA states, or -1 if no acceptances
 Result getResult(const NfaIdSet     &nis,
                  const NfaIdToCount &counts,
                  const NfaObj       &nfa) {
@@ -63,6 +64,7 @@ Result getResult(const NfaIdSet     &nis,
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// The main driver function for the NFA to DFA conversion
 DfaObj PowersetConverter::convert() {
   if (stats_)
     stats_->preDfa_ = std::chrono::steady_clock::now();
@@ -116,6 +118,7 @@ DfaObj PowersetConverter::convert() {
 }
 
 
+// Doorway function to recursive transcription to final DFA
 DfaId PowersetConverter::dfaFromNfa(const std::vector<MultiChar> &multiChars,
                                     const NfaStatesToTransitions &table,
                                     const NfaIdToCount           &counts,
@@ -172,7 +175,9 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
 }
 
 
-// this is a performace-critical function
+// Make the translation table that the entire conversion process depends
+// on.  Map sets of NFA states to maps from multi-chars to NFA state sets.
+// This is a performace-critical function.
 NfaStatesToTransitions makeTable(NfaId                    initial,
                                  const NfaObj            &nfa,
                                  const vector<MultiChar> &allMultiChars) {
@@ -212,6 +217,7 @@ NfaStatesToTransitions makeTable(NfaId                    initial,
 }
 
 
+// Sum all the occurrences of each accepting state in the translation table
 NfaIdToCount countAcceptingStates(const NfaStatesToTransitions &table,
                                   const NfaObj                 &nfa) {
   NfaIdToCount rv;
@@ -225,6 +231,7 @@ NfaIdToCount countAcceptingStates(const NfaStatesToTransitions &table,
 }
 
 
+// The real work of building the DFA from the translation table, counts, etc.
 DfaId dfaFromNfaRecurse(const vector<MultiChar>      &multiChars,
                         const NfaStatesToTransitions &table,
                         const NfaIdToCount           &counts,

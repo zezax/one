@@ -45,17 +45,26 @@
 
 namespace zezax::red {
 
+// This is a mapping from a distinct multi-char to a set of NFA state IDs.
+// All the distinct multi-chars are put in an array at the start.  The
+// index into that array becomes the index into this sparse array.
 typedef SparseVec<NfaIdSet> IdxToNfaIdSet;
 
-// sometimes called translation or transition table...
+// This is sometimes called the translation or transition table.  It maps
+// sets of NFA states to the mapping described above.
 typedef std::unordered_map<NfaIdSet, IdxToNfaIdSet> NfaStatesToTransitions;
 
+// Here we keep track of how many times each accepting state occurs in
+// the translation table.  This is used as a tie-breaker when multiple
+// accepting results are possible; the lowest number wins.
 typedef std::unordered_map<NfaId, size_t> NfaIdToCount;
 
+// NfaStatesToId keeps the mapping from sets of NFA states to the
+// corresponding DFA state, by ID.  Final conversion uses this.
 typedef std::unordered_map<NfaIdSet, DfaId> NfaStatesToId;
 
 
-// converts nfa to dfa via rabin-scott
+// Main class that converts NFA to DFA via Rabin-Scott
 class PowersetConverter {
 public:
   explicit PowersetConverter(const NfaObj &input,
