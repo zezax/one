@@ -1,0 +1,35 @@
+#!/bin/bash
+
+QUERY=/tmp/vtq.$$
+CONN=/tmp/vtc.$$
+function cleanup {
+  rm -f "${QUERY}" "${CONN}"
+}
+trap cleanup EXIT
+
+xrandr -q > "${QUERY}" || exit 1
+grep ' connected ' < "${QUERY}" > "${CONN}"
+
+NCONN=$(cat "${CONN}" | wc -l)
+NACTIVE=$(grep '[0-9]x[0-9]' < "${CONN}" | wc -l)
+PRIMARYMON=$(grep ' primary ' < "${QUERY}" | awk '{print$1}')
+OTHERMON=$(grep -v ' primary ' < "${CONN}" | awk '{print$1}')
+
+CMD="xrandr --output ${PRIMARYMON} --auto --scale 1"
+
+if [[ $NCONN = $NACTIVE ]]; then
+  # All currently in use.  Revert to just built-in.
+  for MON in ${OTHERMON}; do
+    CMD="${CMD} --output ${MON} --off"
+  done
+else
+  # All not in use.  Try to use all.
+  for MON in ${OTHERMON}; do
+    CMD="${CMD} --output ${MON} --auto --scale 1 --same-as ${PRIMARYMON}"
+  done
+fi
+
+cleanup
+exec ${CMD}
+
+##### EOF #####
