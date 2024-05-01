@@ -48,7 +48,9 @@ if not agree:
     sys.exit(1)
 
 cmd = ['xrandr']
-for dev in devs:
+for i, dev in enumerate(devs):
     cmd.extend(['--output', dev, '--mode', mode, '--scale', '1'])
+    if i > 0:
+        cmd.extend(['--same-as', devs[0]])
 cp = subprocess.run(cmd, check=True)
 sys.exit(cp.returncode)
