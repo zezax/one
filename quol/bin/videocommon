@@ -1,0 +1,54 @@
+#!/usr/bin/python3
+
+import re
+import sys
+import subprocess
+
+conn_re = re.compile(r'(\w+) connected')
+mode_re = re.compile(r'\s+([0-9]+x[0-9]+)')
+
+cmd = ['xrandr', '-q']
+cp = subprocess.run(cmd, capture_output=True, check=True, text=True)
+lines = cp.stdout.split('\n')
+
+devs = []
+modes = {}
+for line in lines:
+    mat = conn_re.match(line)
+    if mat:
+        dev = mat.group(1)
+        devs.append(dev)
+    mat = mode_re.match(line)
+    if mat:
+        mode = mat.group(1)
+        ary = modes.get(dev)
+        if ary is None:
+            ary = []
+            modes[dev] = ary
+        ary.append(mode)
+
+saw_data = True
+while saw_data:
+    mode = min([ary[0] for ary in modes.values()])
+    saw_data = False
+    agree = True
+    for dev in devs:
+        ary = modes[dev]
+        if ary:
+            saw_data = True
+            if ary[0] > mode:
+                agree = False
+                ary.pop(0)
+        else:
+            argree = False
+    if agree:
+        break
+
+if not agree:
+    sys.exit(1)
+
+cmd = ['xrandr']
+for dev in devs:
+    cmd.extend(['--output', dev, '--mode', mode, '--scale', '1'])
+cp = subprocess.run(cmd, check=True)
+sys.exit(cp.returncode)
