@@ -1,7 +1,7 @@
 /* Powerset.h - powerset NFA to DFA converter header
 
    PowersetConverter takes a non-deterministic finite automaton (NFA)
-   as input and creates an equivalent determinitic automaton (DFA) as
+   as input and creates an equivalent deterministic automaton (DFA) as
    output.  The algorithm is Rabin-Scott powerset construction (1959)
    as described here:
    https://en.wikipedia.org/wiki/Powerset_construction
@@ -17,7 +17,7 @@
 
    This implementation assumes that the source NFA employs end-marks.
    Classic automata have only two results: reject (0) and accept (1).
-   Endmarks are a way around this limitation, enableing multiple
+   Endmarks are a way around this limitation, enabling multiple
    accepting result values.  End marks are extra states that are
    reached via an out-of-alphabet transition, the value of which
    indicates the result.  The resulting DFA will have the end marks

@@ -1,6 +1,6 @@
 /* SparseVec.h - sparse vector header
 
-   SparseVec acts mostly like a vector, providing acces by index,
+   SparseVec acts mostly like a vector, providing access by index,
    but saves memory by storing elements sparsely.  This comes at the
    cost of extra processing.  Lookups are O(log N) and storing new
    values can be O(N).

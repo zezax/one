@@ -177,7 +177,7 @@ MultiCharSet basisMultiChars(const MultiCharSet &mcs) {
 
 // Make the translation table that the entire conversion process depends
 // on.  Map sets of NFA states to maps from multi-chars to NFA state sets.
-// This is a performace-critical function.
+// This is a performance-critical function.
 NfaStatesToTransitions makeTable(NfaId                    initial,
                                  const NfaObj            &nfa,
                                  const vector<MultiChar> &allMultiChars) {

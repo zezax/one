@@ -5,7 +5,7 @@
    They handle powerset conversion, DFA minimization and serialization
    into the efficient executable format.
 
-   There is no need to call finalize() on the parser.  Any Budget or
+   There is no need to call finish() on the parser.  Any Budget or
    CompStats pointers given to the parser will be propagated through
    the subsequent compilation stages.
 

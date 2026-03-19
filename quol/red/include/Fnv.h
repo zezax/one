@@ -18,7 +18,7 @@
    Usage is like:
 
    std::string s = "Rocky Raccoon";
-   unit64_t hash = fnv1a(s.data(), s.size());
+   uint64_t hash = fnv1a(s.data(), s.size());
  */
 
 #pragma once

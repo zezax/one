@@ -1,3 +1,5 @@
+- matchCore might advance doLeader like checkCore does?
+- makeTable might cache/precompute hasIntersection for multiChar,basisMC
 - verify start_ in collect
 - mapped replace based on result
 - matchAll styles

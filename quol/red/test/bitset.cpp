@@ -5,6 +5,8 @@
 #include "Consts.h"
 #include "Debug.h"
 
+#pragma GCC diagnostic ignored "-Wself-move"
+
 using namespace zezax::red;
 
 namespace {

@@ -67,7 +67,7 @@ public:
   // leading ^ is present, it is removed and fLooseStart is disabled.
   // A trailing $ disables fLooseEnd and is removed.
   // Note that this is not correct for something like ^a|b$
-  // Also note that ^ and $ are not sepcial characters anywhere else.
+  // Also note that ^ and $ are not special characters anywhere else.
   void addAuto(std::string_view regex, Result result, Flags flags);
 
   // As add(), but takes shell-style globs instead of full-blown
