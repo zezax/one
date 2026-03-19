@@ -10,7 +10,7 @@
    piece of code.
 
    Factoring code this way reduces the number of lines of code
-   without sacrificing run-time performace.  It also prevents
+   without sacrificing run-time performance.  It also prevents
    divergence in behavior and provides fewer places where bugs can
    hide, making testing more effective.
  */

@@ -4,6 +4,8 @@
 
 #include "DefaultMap.h"
 
+#pragma GCC diagnostic ignored "-Wself-move"
+
 using namespace zezax::red;
 
 TEST(DefaultMap, smoke) {

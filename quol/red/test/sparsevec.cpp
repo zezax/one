@@ -6,6 +6,8 @@
 
 #include "SparseVec.h"
 
+#pragma GCC diagnostic ignored "-Wself-move"
+
 using namespace zezax::red;
 
 using std::vector;

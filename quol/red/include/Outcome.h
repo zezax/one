@@ -45,7 +45,7 @@ struct Outcome {
     Outcome rv;
     rv.result_ = 0;
     rv.start_ = 0;
-    rv.end_= 0 ;
+    rv.end_ = 0 ;
     return rv;
   }
 };

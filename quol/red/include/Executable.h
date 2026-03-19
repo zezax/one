@@ -29,7 +29,7 @@ class Executable {
 public:
   Executable()
     : buf_(nullptr), end_(nullptr), equivMap_(nullptr), base_(nullptr),
-      inStr_(false), usedMalloc_(false) {}
+      inStr_(false), usedNew_(false), usedMalloc_(false) {}
   Executable(Executable &&other);
 
   // these take a serialized dfa...

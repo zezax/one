@@ -1,7 +1,7 @@
 /* Nfa.h - non-deterministic finite automaton object header
 
    NfaObj is a representation of an NFA.  It's a container of states.
-   It's also the the intermediate representation of a regular
+   It's also the intermediate representation of a regular
    expression, produced by Parser and consumed by Powerset, which
    converts it to a DFA.
 
