@@ -41,9 +41,9 @@ enum Format : uint8_t {
 
 struct FileHeader {
   uint8_t  magic_[4]; // "REDA"
+  uint32_t checksum_; // FNV-1a of all that follows
   uint16_t majVer_;
   uint16_t minVer_;
-  uint32_t checksum_; // FNV-1a of all that follows
   uint8_t  format_;
   uint8_t  maxChar_;
   uint8_t  leaderLen_; // leader is a fixed prefix required by the dfa

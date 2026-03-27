@@ -281,14 +281,39 @@ const char *checkHeader(const void *ptr, size_t len) {
   uint32_t csum = calcChecksum(ptr, len);
   if (hdr->checksum_ != csum) {
     if (hdr->checksum_ == __builtin_bswap32(csum))
-      return "serialized DFA: foreign endian-ness";
-    return "serialized DFA: checksum mismatch";
+      return "Serialized DFA: foreign endian-ness";
+    return "Serialized DFA: checksum mismatch";
   }
+
+  uint8_t maxChar = hdr->maxChar_;
+  for (uint8_t ch : hdr->equivMap_)
+    if (ch > maxChar)
+      return "Serialized DFA: bad equivalence mapping";
+
+  uint8_t leaderLen = hdr->leaderLen_;
+  if (leaderLen > (len - sizeof(FileHeader)))
+    return "Serialized DFA: leader too long";
+  unsigned pad8 = (leaderLen + 7U) & ~7U;
+  size_t endOff = len - sizeof(FileHeader) - pad8;
 
   switch (hdr->format_) {
   case fmtDirect1:
+    if (!DfaProxy<fmtDirect1>::validOffset(hdr->initialOff_, endOff, maxChar))
+      return "Serialized DFA: bad initial offset";
+    if (!DfaProxy<fmtDirect1>::validOffset(hdr->leaderOff_, endOff, maxChar))
+      return "Serialized DFA: bad leader offset";
+    break;
   case fmtDirect2:
+    if (!DfaProxy<fmtDirect2>::validOffset(hdr->initialOff_, endOff, maxChar))
+      return "Serialized DFA: bad initial offset";
+    if (!DfaProxy<fmtDirect2>::validOffset(hdr->leaderOff_, endOff, maxChar))
+      return "Serialized DFA: bad leader offset";
+    break;
   case fmtDirect4:
+    if (!DfaProxy<fmtDirect4>::validOffset(hdr->initialOff_, endOff, maxChar))
+      return "Serialized DFA: bad initial offset";
+    if (!DfaProxy<fmtDirect4>::validOffset(hdr->leaderOff_, endOff, maxChar))
+      return "Serialized DFA: bad leader offset";
     break;
   default:
     return "Serialized DFA: unsupported format";
@@ -300,7 +325,7 @@ const char *checkHeader(const void *ptr, size_t len) {
 
 uint32_t calcChecksum(const void *ptr, size_t len) {
   const FileHeader *hdr = reinterpret_cast<const FileHeader *>(ptr);
-  const char *beg = reinterpret_cast<const char *>(&hdr->format_);
+  const char *beg = reinterpret_cast<const char *>(&hdr->majVer_);
   const char *end = reinterpret_cast<const char *>(ptr) + len;
   return fnv1a<uint32_t>(beg, end - beg);
 }

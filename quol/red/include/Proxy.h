@@ -183,6 +183,31 @@ public:
     return static_cast<Value>((res & resultMask_) | (de << deadEndShift_));
   }
 
+  static bool validOffset(size_t off, size_t endOff, CharIdx maxChar) {
+    if (off >= endOff)
+      return false;
+    size_t recSiz = stateSize(maxChar);
+    return ((off % recSiz) == 0);
+  }
+
+  bool checkAllOffsets(const char *base, const char *end, CharIdx maxChar) {
+    size_t len = end - base;
+    size_t recSiz = stateSize(maxChar);
+    if ((len % recSiz) != 0)
+      return false;
+    for (const char *ptr = base; ptr < end; ptr += recSiz) {
+      state_ = reinterpret_cast<const State *>(ptr);
+      for (CharIdx ch = 0; ch <= maxChar; ++ch) {
+        size_t off = trans(ch);
+        if (off >= len)
+          return false;
+        if ((off % recSiz) != 0)
+          return false;
+      }
+    }
+    return true;
+  }
+
 private:
   const State *__restrict__ state_;
 };

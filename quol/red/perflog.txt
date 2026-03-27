@@ -5,7 +5,8 @@ Testing Platform:
   Lenovo T560 laptop, 16GB RAM
   Intel(R) Core(TM) i7-6600U CPU @ 2.60GHz (2 cores * 2 hyperthreads)
   Gentoo Linux 5.15.75, GCC 11.3.0 (g++ -std=c++20) - until 5/2/2023
-  Gentoo Linux 6.1.19, GCC 12.2.1 (g++ -std=c++20) - current
+  Gentoo Linux 6.1.19, GCC 12.2.1 (g++ -std=c++20) - until 3/18/2026
+  Gentoo Linux 6.1.19, GCC 13.2.1 (g++ -std=c++20) - current
 
 Some of the results/deltas below seem disproportionate to the code
 changes.  It's possible that aliasing effects in the instruction cache
