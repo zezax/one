@@ -9,6 +9,7 @@
 
 #include "Except.h"
 #include "Fnv.h"
+#include "Proxy.h"
 #include "Serializer.h"
 
 namespace zezax::red {
@@ -167,6 +168,30 @@ void Executable::validate() {
   leader_ = (leaderLen_ == 0) ? nullptr : hdr->bytes_;
   base_ = reinterpret_cast<const char *>(hdr->bytes_ + pad);
   fmt_ = static_cast<Format>(hdr->format_);
+
+  CharIdx maxChar = hdr->maxChar_;
+  switch (fmt_) {
+  case fmtDirect1: {
+    DfaProxy<fmtDirect1> proxy;
+    if (!proxy.checkAllOffsets(base_, end_, maxChar))
+      throw RedExceptApi("Executable: bad offset found");
+    break;
+  }
+  case fmtDirect2: {
+    DfaProxy<fmtDirect2> proxy;
+    if (!proxy.checkAllOffsets(base_, end_, maxChar))
+      throw RedExceptApi("Executable: bad offset found");
+    break;
+  }
+  case fmtDirect4: {
+    DfaProxy<fmtDirect4> proxy;
+    if (!proxy.checkAllOffsets(base_, end_, maxChar))
+      throw RedExceptApi("Executable: bad offset found");
+    break;
+  }
+  default:
+    throw RedExceptApi("Executable: bad format");
+  }
 }
 
 } // namespace zezax::red
