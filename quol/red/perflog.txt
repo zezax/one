@@ -191,6 +191,14 @@ COMMIT 2023/4/23
   Build-out Red API
   TEST: bench 1000 matchLast
   RESULT: ucpu 18.345 (wide range)
+UPGRADE 2026/3/18
+  New gcc 13.2.1
+  TEST: bench 1000 matchLast
+  RESULT: ucpu 20.387
+COMMIT 2026/3/26
+  Harden loading of serialized DFA files
+  TEST: bench 1000 matchLast
+  RESULT: ucpu 20.879
 
 COMPARISON - SET
 ----------------
