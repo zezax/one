@@ -8,8 +8,8 @@ RRD=/var/log/hdtemp.rrd
 VALS=N
 
 for X in a b c d e f g h i j k; do
-  ARY=($(smartctl -n standby -A /dev/sd${X} | grep '^19[04]'))
-  VALS="${VALS}:${ARY[9]}"
+  ARY=($(smartctl -n standby -d sat,16 -A /dev/sd${X} |& grep '^19[04]'))
+  VALS="${VALS}:${ARY[9]:-0}"
 done
 
 rrdtool update "${RRD}" "${VALS}"

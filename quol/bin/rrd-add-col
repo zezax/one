@@ -1,16 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # 9/6/2013 - Initial version
+# 10/18/2026 - Port to Python 3
 #
 # Insert/append a column to an rrd.
-#
-# To do:
-# - Python 3
-#
 
 import sys
 import os
 import re
+import subprocess
 
 ###############################################################################
 
@@ -25,7 +23,7 @@ def usage():
   -minhb <num>  minimum heartbeat of new column (300)
   -min <num>    minimum value of new column (0)
   -max <num>    maximum value of new column (12000)'''
-  print m
+  print(m)
 
 class cvt_t:
 
@@ -61,8 +59,6 @@ class cvt_t:
       out = sys.stdout
     else:
       out = open(self.xmlpath, 'w', 65536)
-    cmd = 'rrdtool dump %s' % self.rrdpath
-    inp = os.popen(cmd)
 
     state = 0
     dscnt = 0
@@ -74,44 +70,49 @@ class cvt_t:
     rowre = self.rowre
     rraendre = self.rraendre
 
-    for line in inp:
-      if state == 0:
-        if self.dsre.search(line):
-          if dscnt == idx:
-            self.insertds(out)
-            didds = True
-          dscnt += 1
-        elif self.dsendre.search(line):
-          if not didds:
-            self.insertds(out)
-            idx = dscnt
-          state = 1
-          dscnt = 0
-      elif state == 1:
-        if self.dsre.search(line):
-          if dscnt == idx:
-            self.insertcdp(out)
-            didcdp = True
-          dscnt += 1
-        elif self.cdpendre.search(line):
-          if not didcdp:
-            self.insertcdp(out)
-          state = 2
-          dscnt = 0
-      else:
-        mat = rowre.search(line)
-        if mat:
-          prefix = line[0 : mat.start()]
-          ary = mat.group(1).split(delim)
-          ary[idx : idx] = nan
-          s = delim.join(ary)
-          line = prefix + '<row><v>' + s + '</v></row>\n'
-        elif rraendre.search(line):
-          state = 1
-          dscnt = 0
-      out.write(line)
-    inp.close()
-    out.close()
+    cmd = ['rrdtool', 'dump', self.rrdpath]
+    with subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True) as inp:
+      for line in inp.stdout:
+        if state == 0:
+          if self.dsre.search(line):
+            if dscnt == idx:
+              self.insertds(out)
+              didds = True
+            dscnt += 1
+          elif self.dsendre.search(line):
+            if not didds:
+              self.insertds(out)
+              idx = dscnt
+            state = 1
+            dscnt = 0
+        elif state == 1:
+          if self.dsre.search(line):
+            if dscnt == idx:
+              self.insertcdp(out)
+              didcdp = True
+            dscnt += 1
+          elif self.cdpendre.search(line):
+            if not didcdp:
+              self.insertcdp(out)
+            state = 2
+            dscnt = 0
+        else:
+          mat = rowre.search(line)
+          if mat:
+            prefix = line[0 : mat.start()]
+            ary = mat.group(1).split(delim)
+            ary[idx : idx] = nan
+            s = delim.join(ary)
+            line = prefix + '<row><v>' + s + '</v></row>\n'
+          elif rraendre.search(line):
+            state = 1
+            dscnt = 0
+        out.write(line)
+    if inp.returncode:
+      raise RuntimeError('dump failed')
+
+    if out != sys.stdout:
+      out.close()
 
 
   def restore(self):
@@ -120,13 +121,13 @@ class cvt_t:
     try:
       os.stat(bak)
     except Exception:
-      cmd = 'cp -p %s %s' % (self.rrdpath, bak)
+      cmd = ['cp', '-p', self.rrdpath, bak]
     if cmd:
-      os.system(cmd)
+      subprocess.run(cmd, check=True)
 
     os.unlink(self.rrdpath)
-    cmd = 'rrdtool restore %s %s' % (self.xmlpath, self.rrdpath)
-    os.system(cmd)
+    cmd = ['rrdtool', 'restore', self.xmlpath, self.rrdpath]
+    subprocess.run(cmd, check=True)
     os.unlink(self.xmlpath)
 
 
@@ -185,14 +186,14 @@ def main(args = None):
       elif arg == '-max':
         cvt.max = float(args.pop(0))
       else:
-        raise RuntimeError, 'unknown option ' + arg
+        raise RuntimeError('unknown option ' + arg)
     if not cvt.rrdpath:
-      raise RuntimeError, 'no -rrd specified'
+      raise RuntimeError('no -rrd specified')
     if not cvt.name:
-      raise RuntimeError, 'no -name specified'
-  except StandardError, se:
+      raise RuntimeError('no -name specified')
+  except Exception as ex:
     usage()
-    print se
+    print(ex)
     return 1
 
   cvt.run()
