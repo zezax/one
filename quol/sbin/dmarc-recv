@@ -26,10 +26,12 @@ class dmarcRecvT:
   def __init__(self):
     self.myIps = ['12.34.56.78']
     self.reportFn = '/tmp/dmarc.out'
+    self.errFn = '/tmp/dmarc.err'
     self.savePfx = '/tmp/dmarc.'
     self.mimeRe = re.compile(r'application/(xml|g?zip)|text/xml$')
     self.facility = syslog.LOG_MAIL
     self.nop = False
+    self.msg = None
 
   def run(self):
     os.umask(0o22)
@@ -42,8 +44,12 @@ class dmarcRecvT:
       self.procRows()
       self.saveXml()
     except Exception as ex:
-      syslog.syslog(syslog.LOG_ERR,
-                    "exception: %s" % str(ex))
+      msg = 'Exception: %s' % str(ex)
+      if self.msg:
+        with open(self.errFn, 'ab') as fil:
+          fil.write(self.msg.as_bytes(unixfrom=True))
+        msg += ', from %s, %s' % (self.msg['from'], self.msg['subject'])
+      syslog.syslog(syslog.LOG_ERR, msg)
       return -1
     return 0
 
@@ -54,7 +60,7 @@ class dmarcRecvT:
     if not msg:
       raise RuntimeError('Failed to parse email')
     syslog.syslog(syslog.LOG_INFO,
-                  "%s %s" % (msg['from'], msg['subject']))
+                  "Received from %s, %s" % (msg['from'], msg['subject']))
     self.msg = msg
 
 
